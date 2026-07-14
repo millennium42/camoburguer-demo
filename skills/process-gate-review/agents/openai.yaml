@@ -1,0 +1,4 @@
+interface:
+  display_name: "Process Gate Review"
+  short_description: "Review operational process handoffs"
+  default_prompt: "Use $process-gate-review to review the Camoburguer process artifacts."

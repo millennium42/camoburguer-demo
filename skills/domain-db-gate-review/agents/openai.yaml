@@ -1,0 +1,4 @@
+interface:
+  display_name: "Domain DB Gate Review"
+  short_description: "Review schema and invariants"
+  default_prompt: "Use $domain-db-gate-review to review the Camoburguer domain and schema."

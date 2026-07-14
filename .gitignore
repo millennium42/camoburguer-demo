@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+dist/
+coverage/
+tmp/
+apps/print-bridge/spool/
+apps/print-bridge/data/
+*.log
+.m1nd/
+daemon_state.json
+graphify-out/cache/
+graphify-out/20*/
+graphify-out/.graphify_root

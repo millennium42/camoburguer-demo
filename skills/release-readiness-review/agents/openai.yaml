@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Readiness Review"
+  short_description: "Decide go or no-go with evidence"
+  default_prompt: "Use $release-readiness-review to assess Camoburguer release readiness."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Operator UI Builder"
+  short_description: "Build fast and light operator screens"
+  default_prompt: "Use $operator-ui-builder to implement Camoburguer operational UI changes."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Finance Insight Curator"
+  short_description: "Shape useful small-business finance views"
+  default_prompt: "Use $finance-insight-curator to refine Camoburguer finance insights."

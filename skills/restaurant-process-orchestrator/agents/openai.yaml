@@ -1,0 +1,4 @@
+interface:
+  display_name: "Restaurant Process Orchestrator"
+  short_description: "Map intake, kitchen and cash flow"
+  default_prompt: "Use $restaurant-process-orchestrator to update the Camoburguer process artifacts."

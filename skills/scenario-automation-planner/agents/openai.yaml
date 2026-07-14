@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scenario Automation Planner"
+  short_description: "Shape configurable scenario rules"
+  default_prompt: "Use $scenario-automation-planner to refine Camoburguer scenario automations."

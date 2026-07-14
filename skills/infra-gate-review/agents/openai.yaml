@@ -1,0 +1,4 @@
+interface:
+  display_name: "Infra Gate Review"
+  short_description: "Review runtime health and boot flow"
+  default_prompt: "Use $infra-gate-review to review Camoburguer infra and compose changes."

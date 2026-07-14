@@ -1,0 +1,4 @@
+interface:
+  display_name: "Restaurant Demo QA"
+  short_description: "Validate orders, kitchen and finance"
+  default_prompt: "Use $restaurant-demo-qa to validate the Camoburguer demo."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Operator Friction Audit"
+  short_description: "Find clicks, confusion and avoidable errors"
+  default_prompt: "Use $operator-friction-audit to audit Camoburguer operator friction."

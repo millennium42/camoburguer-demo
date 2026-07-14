@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Gate Review"
+  short_description: "Review clarity and operator risk"
+  default_prompt: "Use $frontend-gate-review to review Camoburguer UI changes."

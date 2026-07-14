@@ -1,0 +1,4 @@
+interface:
+  display_name: "Print Infra Specialist"
+  short_description: "Build print bridge and compose runtime"
+  default_prompt: "Use $print-infra-specialist to implement Camoburguer printing and infra work."

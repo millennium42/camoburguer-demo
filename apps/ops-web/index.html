@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Camoburguer Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Camoburguer</p>
+          <h1>Pedidos, cozinha e financeiro</h1>
+          <p class="lede">Uma operação simples, rápida e centralizada.</p>
+        </div>
+        <div class="status-card" role="status" aria-live="polite">
+          <span id="api-status">Conectando API...</span>
+          <small id="last-sync">Aguardando dados</small>
+        </div>
+      </header>
+
+      <nav class="tab-bar" aria-label="Áreas do sistema">
+        <button type="button" class="tab-button active" data-tab="pedidos">Pedidos</button>
+        <button type="button" class="tab-button" data-tab="cozinha">Cozinha</button>
+        <button type="button" class="tab-button" data-tab="financeiro">Financeiro</button>
+      </nav>
+
+      <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
+
+      <main>
+        <section class="tab-panel active" id="tab-pedidos">
+          <div class="grid two">
+            <article class="card">
+              <h2>Novo pedido</h2>
+              <form id="order-form" class="stack">
+                <div class="grid two">
+                  <label>Canal
+                    <select name="source" required>
+                      <option value="counter">Balcão</option>
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="ifood">iFood</option>
+                      <option value="olaclick">OlaClick</option>
+                    </select>
+                  </label>
+                  <label>Modalidade
+                    <select id="fulfillment-mode" name="fulfillmentMode" required>
+                      <option value="delivery">Delivery</option>
+                      <option value="pickup">Retirada</option>
+                      <option value="local" selected>Local</option>
+                    </select>
+                  </label>
+                </div>
+                <label id="delivery-address-field" hidden>Endereço para entrega
+                  <input id="delivery-address" name="deliveryAddress" autocomplete="street-address" placeholder="Rua, número e referência" />
+                </label>
+                <div class="grid two">
+                  <label>Cliente<input name="customerName" placeholder="Nome do cliente" /></label>
+                  <label>Pagamento
+                    <select name="paymentMethod" required>
+                      <option value="cash">Dinheiro</option>
+                      <option value="pix">Pix</option>
+                      <option value="credit_card">Crédito</option>
+                      <option value="debit_card">Débito</option>
+                      <option value="app_paid">Pago no app</option>
+                    </select>
+                  </label>
+                </div>
+                <label>Observações do pedido<input name="notes" placeholder="Sem cebola, ponto da carne..." /></label>
+                <fieldset class="stack catalog-picker">
+                  <legend>Adicionar item</legend>
+                  <label>Item do cardápio<select id="catalog-select"></select></label>
+                  <div class="inline">
+                    <label>Quantidade<input type="number" id="catalog-qty" min="1" step="1" value="1" inputmode="numeric" /></label>
+                    <label>Observação do item<input id="catalog-notes" placeholder="Detalhe do item" /></label>
+                    <button type="button" id="add-item">Adicionar</button>
+                  </div>
+                </fieldset>
+                <div>
+                  <div class="section-heading">
+                    <h3>Itens do pedido</h3>
+                    <strong id="order-total">R$ 0,00</strong>
+                  </div>
+                  <ul id="order-items" class="item-list" aria-live="polite"></ul>
+                </div>
+                <button type="submit" class="primary">Finalizar pedido</button>
+              </form>
+            </article>
+
+            <article class="card">
+              <h2>Fila de atendimento</h2>
+              <div id="orders-list" class="stack"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-cozinha">
+          <article class="card">
+            <h2>Fila da cozinha</h2>
+            <div id="kitchen-list" class="stack"></div>
+          </article>
+        </section>
+
+        <section class="tab-panel" id="tab-financeiro">
+          <div class="grid two">
+            <article class="card">
+              <h2>Resumo</h2>
+              <div id="finance-summary" class="stats-grid"></div>
+            </article>
+            <article class="card">
+              <div class="section-heading">
+                <h2>Caixa</h2>
+                <span id="cash-status" class="pill" role="status">Carregando...</span>
+              </div>
+              <p id="cash-details" class="lede"></p>
+
+              <form id="shift-form" class="stack" hidden>
+                <label>Valor de abertura
+                  <input name="openingAmount" type="number" min="0" step="0.01" value="100" required />
+                </label>
+                <button type="submit" class="primary">Abrir caixa</button>
+              </form>
+
+              <div id="open-shift-actions" class="stack" hidden>
+                <button type="button" id="open-adjustment-dialog">Adicionar movimentação</button>
+                <form id="close-shift-form" class="stack divided-form">
+                  <label>Valor contado
+                    <input name="declaredAmount" type="number" min="0" step="0.01" required />
+                  </label>
+                  <button type="submit" class="danger">Fechar caixa</button>
+                </form>
+              </div>
+
+              <details class="shift-history">
+                <summary>Histórico de caixas</summary>
+                <div id="shift-list" class="stack"></div>
+              </details>
+            </article>
+          </div>
+          <article class="card">
+            <h2>Lançamentos</h2>
+            <div id="finance-entries" class="stack"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="adjustment-dialog" aria-labelledby="adjustment-title">
+      <form id="adjustment-form" class="stack">
+        <div class="section-heading">
+          <h2 id="adjustment-title">Adicionar movimentação</h2>
+          <button type="button" id="close-adjustment-dialog" class="icon-button" aria-label="Fechar">×</button>
+        </div>
+        <label>Tipo
+          <select name="kind" required>
+            <option value="reinforcement">Reforço</option>
+            <option value="withdrawal">Sangria</option>
+          </select>
+        </label>
+        <label>Valor<input name="amount" type="number" min="0.01" step="0.01" required /></label>
+        <label>Motivo<input name="reason" placeholder="Troco, retirada para pagamento..." required /></label>
+        <button type="submit" class="primary">Salvar movimentação</button>
+      </form>
+    </dialog>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

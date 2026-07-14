@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Gate Review"
+  short_description: "Review routes, events and failures"
+  default_prompt: "Use $backend-gate-review to review Camoburguer backend changes."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Restaurant Backend Builder"
+  short_description: "Build API, events and finance flow"
+  default_prompt: "Use $restaurant-backend-builder to implement Camoburguer backend work."

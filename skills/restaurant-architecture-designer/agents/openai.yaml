@@ -1,0 +1,4 @@
+interface:
+  display_name: "Restaurant Architecture Designer"
+  short_description: "Design modules, events and boundaries"
+  default_prompt: "Use $restaurant-architecture-designer to refine the Camoburguer architecture."

@@ -1,0 +1,79 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: camoburguer
+      POSTGRES_USER: camoburguer
+      POSTGRES_PASSWORD: camoburguer
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U camoburguer -d camoburguer"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgres://camoburguer:camoburguer@db:5432/camoburguer
+      PRINT_BRIDGE_URL: http://print-bridge:3100
+      DEFAULT_PRINTER: cozinha-principal
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+      print-bridge:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  print-bridge:
+    build:
+      context: .
+      dockerfile: apps/print-bridge/Dockerfile
+    environment:
+      PORT: 3100
+      PRINT_BRIDGE_MODE: filesystem
+      PRINT_SPOOL_DIR: /data/spool
+    ports:
+      - "3100:3100"
+    volumes:
+      - print-spool:/data/spool
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  ops-web:
+    build:
+      context: .
+      dockerfile: apps/ops-web/Dockerfile
+    ports:
+      - "8081:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  event-simulator:
+    build:
+      context: .
+      dockerfile: apps/event-simulator/Dockerfile
+    environment:
+      API_BASE_URL: http://api:3001
+    depends_on:
+      api:
+        condition: service_healthy
+    profiles:
+      - seed
+
+volumes:
+  print-spool:

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kitchen Ticket Ergonomics Review"
+  short_description: "Review kitchen ticket scan speed"
+  default_prompt: "Use $kitchen-ticket-ergonomics-review to review Camoburguer kitchen ticket changes."

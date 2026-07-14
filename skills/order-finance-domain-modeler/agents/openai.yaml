@@ -1,0 +1,4 @@
+interface:
+  display_name: "Order Finance Domain Modeler"
+  short_description: "Model order, cash and finance rules"
+  default_prompt: "Use $order-finance-domain-modeler to refine Camoburguer domain contracts."

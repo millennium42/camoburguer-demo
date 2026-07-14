@@ -1,0 +1,4 @@
+interface:
+  display_name: "Architecture Gate Review"
+  short_description: "Review boundaries and coupling risks"
+  default_prompt: "Use $architecture-gate-review to review the Camoburguer architecture."
