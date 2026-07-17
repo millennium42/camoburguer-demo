@@ -37,21 +37,41 @@
 
 ```mermaid
 flowchart LR
-  UI["ops-web: carrinho local"] -->|"POST /orders + Idempotency-Key"| API["API Fastify"]
-  API --> DOMAIN["Domínio: validação e total"]
-  API --> DB[("PostgreSQL")]
-  DB --> KITCHEN["Fila da cozinha + SSE"]
-  DB --> JOB["print_job idempotente"]
+  EXTERNAL["Balcão, WhatsApp, iFood e OlaClick"] -->|"POST /orders"| API["API Fastify"]
+  UI["ops-web: rascunho local"] -->|"POST /tabs/:id/rounds + Idempotency-Key"| API
+  API --> DOMAIN["Domínio: catálogo, adicionais, descontos e totais"]
+  API --> TX["Transação da rodada"]
+  TX --> STOCK[("stock_balances + movements")]
+  TX --> ORDERS[("orders imutáveis")]
+  TX --> JOB["print_job idempotente"]
+  ORDERS --> KITCHEN["Fila da cozinha + SSE"]
   JOB --> BRIDGE["print-bridge"]
   BRIDGE --> SPOOL[("Spool persistente")]
-  API -->|"order.completed"| FINANCE["Lançamento financeiro"]
-  FINANCE --> DB
+  UI -->|"parcelas/estornos"| PAYMENTS[("tab_payments")]
+  PAYMENTS --> FINANCE[("finance_entries")]
+  EXTERNAL -->|"order.completed"| FINANCE
+  FINANCE --> SUMMARY["Resumo/lista com os mesmos filtros"]
 ```
 
 - `Finalizar pedido` não limpa o carrinho antes de a API confirmar sucesso. Repetir a mesma finalização deve devolver o mesmo pedido, sem duplicar itens, impressão ou lançamento financeiro.
 - O frontend não envia nem exibe operador: a v1 é de posto único, sem login e sem identidade administrativa.
 - `fulfillment` aceita apenas `delivery`, `pickup` e `local`. Endereço é obrigatório somente para `delivery` e deve ser ocultado/ignorado nos demais modos.
 - A cozinha recebe somente pedidos confirmados. O horário impresso é o `createdAt` persistido no pedido, nunca o horário local da impressora.
+- Rodadas de produção e cancelamento são novos `orders`; `reverses_order_id` referencia a origem, sem `UPDATE` destrutivo no ticket já emitido.
+- A baixa de estoque, o pedido e o `print_job` compartilham a transação. Qualquer insuficiência aborta o conjunto inteiro.
+- O saldo comercial da comanda deriva das rodadas menos cancelamentos e das parcelas menos estornos; nenhum total mutável paralelo é fonte de verdade.
+
+## Modelo de persistência consolidado
+
+| Agregado/tabela | Responsabilidade | Regra de integridade principal |
+| --- | --- | --- |
+| `service_tabs` | identidade e ciclo comercial de comanda/mesa | um identificador normalizado por comanda aberta |
+| `orders` | rodada de produção ou cancelamento | número sequencial por comanda e linhas estáveis |
+| `stock_balances` | saldo corrente das três categorias | quantidade nunca negativa |
+| `stock_movements` | auditoria de carga, ajuste, venda e reversão | efeito idempotente e vínculo ao pedido quando aplicável |
+| `tab_payments` | parcelas e compensações em centavos | valor positivo, saldo não excedido e original preservado |
+| `finance_entries` | livro gerencial de venda, caixa e pagamento | vínculo opcional a comanda/parcela e lançamento append-only |
+| `print_jobs` | entrega recuperável do ticket | um job por efeito e spool idempotente |
 
 ## Caixa
 

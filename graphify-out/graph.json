@@ -9,7 +9,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_api_package",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_json",
       "community": 3,
       "norm_label": "package.json"
     },
@@ -19,7 +19,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L2",
       "_origin": "ast",
-      "id": "apps_api_package_name",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_name",
       "community": 3,
       "norm_label": "name"
     },
@@ -29,7 +29,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "apps_api_package_version",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_version",
       "community": 3,
       "norm_label": "version"
     },
@@ -39,7 +39,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L4",
       "_origin": "ast",
-      "id": "apps_api_package_private",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_private",
       "community": 3,
       "norm_label": "private"
     },
@@ -49,7 +49,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L5",
       "_origin": "ast",
-      "id": "apps_api_package_type",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_type",
       "community": 3,
       "norm_label": "type"
     },
@@ -59,7 +59,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "apps_api_package_scripts",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_scripts",
       "community": 3,
       "norm_label": "scripts"
     },
@@ -69,7 +69,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L7",
       "_origin": "ast",
-      "id": "apps_api_package_scripts_start",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_scripts_start",
       "community": 3,
       "norm_label": "start"
     },
@@ -79,7 +79,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L9",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies",
       "community": 3,
       "norm_label": "dependencies"
     },
@@ -89,7 +89,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_camoburguer_domain",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_camoburguer_domain",
       "community": 3,
       "norm_label": "@camoburguer/domain"
     },
@@ -109,7 +109,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L11",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_camoburguer_finance_core",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_camoburguer_finance_core",
       "community": 3,
       "norm_label": "@camoburguer/finance-core"
     },
@@ -129,7 +129,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L12",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_camoburguer_shared_types",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_camoburguer_shared_types",
       "community": 3,
       "norm_label": "@camoburguer/shared-types"
     },
@@ -149,7 +149,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L13",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_fastify_cors",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_fastify_cors",
       "community": 3,
       "norm_label": "@fastify/cors"
     },
@@ -169,7 +169,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L14",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_dotenv",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_dotenv",
       "community": 3,
       "norm_label": "dotenv"
     },
@@ -189,7 +189,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L15",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_fastify",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_fastify",
       "community": 3,
       "norm_label": "fastify"
     },
@@ -209,7 +209,7 @@
       "source_file": "apps/api/package.json",
       "source_location": "L16",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_pg",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_pg",
       "community": 3,
       "norm_label": "pg"
     },
@@ -669,8 +669,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_event_simulator_package",
-      "community": 9,
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_json",
+      "community": 15,
       "norm_label": "package.json"
     },
     {
@@ -679,8 +679,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L2",
       "_origin": "ast",
-      "id": "apps_event_simulator_package_name",
-      "community": 9,
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_name",
+      "community": 15,
       "norm_label": "name"
     },
     {
@@ -689,8 +689,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "apps_event_simulator_package_version",
-      "community": 9,
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_version",
+      "community": 15,
       "norm_label": "version"
     },
     {
@@ -699,8 +699,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L4",
       "_origin": "ast",
-      "id": "apps_event_simulator_package_private",
-      "community": 9,
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_private",
+      "community": 15,
       "norm_label": "private"
     },
     {
@@ -709,8 +709,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L5",
       "_origin": "ast",
-      "id": "apps_event_simulator_package_type",
-      "community": 9,
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_type",
+      "community": 15,
       "norm_label": "type"
     },
     {
@@ -719,8 +719,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "apps_event_simulator_package_scripts",
-      "community": 9,
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_scripts",
+      "community": 15,
       "norm_label": "scripts"
     },
     {
@@ -729,8 +729,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L7",
       "_origin": "ast",
-      "id": "apps_event_simulator_package_scripts_start",
-      "community": 9,
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_scripts_start",
+      "community": 15,
       "norm_label": "start"
     },
     {
@@ -859,7 +859,7 @@
       "source_file": "apps/ops-web/main.js",
       "source_location": "L66",
       "_origin": "ast",
-      "id": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "id": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "community": 0,
       "norm_label": "$()"
     },
@@ -1199,7 +1199,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_print_bridge_package",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_json",
       "community": 5,
       "norm_label": "package.json"
     },
@@ -1209,7 +1209,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L2",
       "_origin": "ast",
-      "id": "apps_print_bridge_package_name",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_name",
       "community": 5,
       "norm_label": "name"
     },
@@ -1219,7 +1219,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "apps_print_bridge_package_version",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_version",
       "community": 5,
       "norm_label": "version"
     },
@@ -1229,7 +1229,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L4",
       "_origin": "ast",
-      "id": "apps_print_bridge_package_private",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_private",
       "community": 5,
       "norm_label": "private"
     },
@@ -1239,7 +1239,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L5",
       "_origin": "ast",
-      "id": "apps_print_bridge_package_type",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_type",
       "community": 5,
       "norm_label": "type"
     },
@@ -1249,7 +1249,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "apps_print_bridge_package_scripts",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_scripts",
       "community": 5,
       "norm_label": "scripts"
     },
@@ -1259,7 +1259,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L7",
       "_origin": "ast",
-      "id": "apps_print_bridge_package_scripts_start",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_scripts_start",
       "community": 5,
       "norm_label": "start"
     },
@@ -1269,7 +1269,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L9",
       "_origin": "ast",
-      "id": "apps_print_bridge_package_dependencies",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies",
       "community": 5,
       "norm_label": "dependencies"
     },
@@ -1279,7 +1279,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "apps_print_bridge_package_dependencies_dotenv",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies_dotenv",
       "community": 5,
       "norm_label": "dotenv"
     },
@@ -1299,7 +1299,7 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L11",
       "_origin": "ast",
-      "id": "apps_print_bridge_package_dependencies_fastify",
+      "id": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies_fastify",
       "community": 5,
       "norm_label": "fastify"
     },
@@ -1699,7 +1699,7 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "packages_domain_package",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_json",
       "community": 7,
       "norm_label": "package.json"
     },
@@ -1709,7 +1709,7 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L2",
       "_origin": "ast",
-      "id": "packages_domain_package_name",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_name",
       "community": 7,
       "norm_label": "name"
     },
@@ -1719,7 +1719,7 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "packages_domain_package_version",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_version",
       "community": 7,
       "norm_label": "version"
     },
@@ -1729,7 +1729,7 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L4",
       "_origin": "ast",
-      "id": "packages_domain_package_private",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_private",
       "community": 7,
       "norm_label": "private"
     },
@@ -1739,7 +1739,7 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L5",
       "_origin": "ast",
-      "id": "packages_domain_package_type",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_type",
       "community": 7,
       "norm_label": "type"
     },
@@ -1749,7 +1749,7 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "packages_domain_package_main",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_main",
       "community": 7,
       "norm_label": "main"
     },
@@ -1759,7 +1759,7 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L7",
       "_origin": "ast",
-      "id": "packages_domain_package_dependencies",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_dependencies",
       "community": 7,
       "norm_label": "dependencies"
     },
@@ -1769,7 +1769,7 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L8",
       "_origin": "ast",
-      "id": "packages_domain_package_dependencies_camoburguer_shared_types",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_dependencies_camoburguer_shared_types",
       "community": 7,
       "norm_label": "@camoburguer/shared-types"
     },
@@ -1859,7 +1859,7 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "packages_finance_core_package",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_json",
       "community": 8,
       "norm_label": "package.json"
     },
@@ -1869,7 +1869,7 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L2",
       "_origin": "ast",
-      "id": "packages_finance_core_package_name",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_name",
       "community": 8,
       "norm_label": "name"
     },
@@ -1879,7 +1879,7 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "packages_finance_core_package_version",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_version",
       "community": 8,
       "norm_label": "version"
     },
@@ -1889,7 +1889,7 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L4",
       "_origin": "ast",
-      "id": "packages_finance_core_package_private",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_private",
       "community": 8,
       "norm_label": "private"
     },
@@ -1899,7 +1899,7 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L5",
       "_origin": "ast",
-      "id": "packages_finance_core_package_type",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_type",
       "community": 8,
       "norm_label": "type"
     },
@@ -1909,7 +1909,7 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "packages_finance_core_package_main",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_main",
       "community": 8,
       "norm_label": "main"
     },
@@ -1919,7 +1919,7 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L7",
       "_origin": "ast",
-      "id": "packages_finance_core_package_dependencies",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_dependencies",
       "community": 8,
       "norm_label": "dependencies"
     },
@@ -1929,7 +1929,7 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L8",
       "_origin": "ast",
-      "id": "packages_finance_core_package_dependencies_camoburguer_shared_types",
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_dependencies_camoburguer_shared_types",
       "community": 8,
       "norm_label": "@camoburguer/shared-types"
     },
@@ -2039,8 +2039,8 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "packages_shared_types_package",
-      "community": 10,
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_json",
+      "community": 22,
       "norm_label": "package.json"
     },
     {
@@ -2049,8 +2049,8 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L2",
       "_origin": "ast",
-      "id": "packages_shared_types_package_name",
-      "community": 10,
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_name",
+      "community": 22,
       "norm_label": "name"
     },
     {
@@ -2059,8 +2059,8 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "packages_shared_types_package_version",
-      "community": 10,
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_version",
+      "community": 22,
       "norm_label": "version"
     },
     {
@@ -2069,8 +2069,8 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L4",
       "_origin": "ast",
-      "id": "packages_shared_types_package_private",
-      "community": 10,
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_private",
+      "community": 22,
       "norm_label": "private"
     },
     {
@@ -2079,8 +2079,8 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L5",
       "_origin": "ast",
-      "id": "packages_shared_types_package_type",
-      "community": 10,
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_type",
+      "community": 22,
       "norm_label": "type"
     },
     {
@@ -2089,9 +2089,37 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "packages_shared_types_package_main",
-      "community": 10,
+      "id": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_main",
+      "community": 22,
       "norm_label": "main"
+    },
+    {
+      "label": "graphify-update-wsl.sh",
+      "file_type": "code",
+      "source_file": "scripts/graphify-update-wsl.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "file"
+      },
+      "_origin": "ast",
+      "id": "scripts_graphify_update_wsl",
+      "community": 46,
+      "norm_label": "graphify-update-wsl.sh"
+    },
+    {
+      "label": "graphify-update-wsl.sh script",
+      "file_type": "code",
+      "source_file": "scripts/graphify-update-wsl.sh",
+      "source_location": "L1",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_entrypoint"
+      },
+      "_origin": "ast",
+      "id": "scripts_graphify_update_wsl_sh__entry",
+      "community": 46,
+      "norm_label": "graphify-update-wsl.sh script"
     },
     {
       "label": "domain.test.js",
@@ -2229,8 +2257,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "agents",
-      "community": 15,
+      "id": "mnt_d_milla_documents_camoburguer_demo_agents_md",
+      "community": 9,
       "norm_label": "agents.md"
     },
     {
@@ -2239,8 +2267,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "agents_camoburguer_demo_agents",
-      "community": 15,
+      "id": "mnt_d_milla_documents_camoburguer_demo_agents_camoburguer_demo_agents",
+      "community": 9,
       "norm_label": "camoburguer demo - agents"
     },
     {
@@ -2249,8 +2277,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "agents_operating_doctrine",
-      "community": 15,
+      "id": "mnt_d_milla_documents_camoburguer_demo_agents_operating_doctrine",
+      "community": 9,
       "norm_label": "operating doctrine"
     },
     {
@@ -2259,8 +2287,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "agents_speeds",
-      "community": 15,
+      "id": "mnt_d_milla_documents_camoburguer_demo_agents_speeds",
+      "community": 9,
       "norm_label": "speeds"
     },
     {
@@ -2269,8 +2297,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L15",
       "_origin": "ast",
-      "id": "agents_graphify",
-      "community": 15,
+      "id": "mnt_d_milla_documents_camoburguer_demo_agents_graphify",
+      "community": 9,
       "norm_label": "graphify"
     },
     {
@@ -2279,8 +2307,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L28",
       "_origin": "ast",
-      "id": "agents_implementation_boundaries",
-      "community": 15,
+      "id": "mnt_d_milla_documents_camoburguer_demo_agents_implementation_boundaries",
+      "community": 9,
       "norm_label": "implementation boundaries"
     },
     {
@@ -2289,8 +2317,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L35",
       "_origin": "ast",
-      "id": "agents_required_seed_artifacts",
-      "community": 15,
+      "id": "mnt_d_milla_documents_camoburguer_demo_agents_required_seed_artifacts",
+      "community": 9,
       "norm_label": "required seed artifacts"
     },
     {
@@ -2299,8 +2327,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L50",
       "_origin": "ast",
-      "id": "agents_review_standard",
-      "community": 15,
+      "id": "mnt_d_milla_documents_camoburguer_demo_agents_review_standard",
+      "community": 9,
       "norm_label": "review standard"
     },
     {
@@ -2324,10 +2352,20 @@
       "norm_label": "camoburguer demo"
     },
     {
-      "label": "Executar a demo",
+      "label": "Escopo entregue",
       "file_type": "document",
       "source_file": "README.md",
       "source_location": "L5",
+      "_origin": "ast",
+      "id": "readme_escopo_entregue",
+      "community": 13,
+      "norm_label": "escopo entregue"
+    },
+    {
+      "label": "Executar a demo",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L15",
       "_origin": "ast",
       "id": "readme_executar_a_demo",
       "community": 13,
@@ -2337,17 +2375,27 @@
       "label": "Validar",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L17",
+      "source_location": "L27",
       "_origin": "ast",
       "id": "readme_validar",
       "community": 13,
       "norm_label": "validar"
     },
     {
+      "label": "Contratos HTTP principais",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L38",
+      "_origin": "ast",
+      "id": "readme_contratos_http_principais",
+      "community": 13,
+      "norm_label": "contratos http principais"
+    },
+    {
       "label": "Estrutura",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L28",
+      "source_location": "L51",
       "_origin": "ast",
       "id": "readme_estrutura",
       "community": 13,
@@ -2357,7 +2405,7 @@
       "label": "Doutrina de desenvolvimento",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L45",
+      "source_location": "L69",
       "_origin": "ast",
       "id": "readme_doutrina_de_desenvolvimento",
       "community": 13,
@@ -2367,7 +2415,7 @@
       "label": "Limites da v1",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L52",
+      "source_location": "L76",
       "_origin": "ast",
       "id": "readme_limites_da_v1",
       "community": 13,
@@ -2379,8 +2427,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "subagentes",
-      "community": 17,
+      "id": "mnt_d_milla_documents_camoburguer_demo_subagentes_md",
+      "community": 10,
       "norm_label": "subagentes.md"
     },
     {
@@ -2389,8 +2437,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "subagentes_camoburguer_demo_subagentes",
-      "community": 17,
+      "id": "mnt_d_milla_documents_camoburguer_demo_subagentes_camoburguer_demo_subagentes",
+      "community": 10,
       "norm_label": "camoburguer demo - subagentes"
     },
     {
@@ -2399,8 +2447,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "subagentes_sequ\u00eancia_obrigat\u00f3ria",
-      "community": 17,
+      "id": "mnt_d_milla_documents_camoburguer_demo_subagentes_sequ\u00eancia_obrigat\u00f3ria",
+      "community": 10,
       "norm_label": "sequencia obrigatoria"
     },
     {
@@ -2409,8 +2457,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L20",
       "_origin": "ast",
-      "id": "subagentes_skill_obrigat\u00f3ria_por_subagente",
-      "community": 17,
+      "id": "mnt_d_milla_documents_camoburguer_demo_subagentes_skill_obrigat\u00f3ria_por_subagente",
+      "community": 10,
       "norm_label": "skill obrigatoria por subagente"
     },
     {
@@ -2419,8 +2467,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L39",
       "_origin": "ast",
-      "id": "subagentes_doutrina_comum",
-      "community": 17,
+      "id": "mnt_d_milla_documents_camoburguer_demo_subagentes_doutrina_comum",
+      "community": 10,
       "norm_label": "doutrina comum"
     },
     {
@@ -2429,8 +2477,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L46",
       "_origin": "ast",
-      "id": "subagentes_entrega_obrigat\u00f3ria_de_cada_subagente",
-      "community": 17,
+      "id": "mnt_d_milla_documents_camoburguer_demo_subagentes_entrega_obrigat\u00f3ria_de_cada_subagente",
+      "community": 10,
       "norm_label": "entrega obrigatoria de cada subagente"
     },
     {
@@ -2439,8 +2487,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L55",
       "_origin": "ast",
-      "id": "subagentes_poder_do_revisor",
-      "community": 17,
+      "id": "mnt_d_milla_documents_camoburguer_demo_subagentes_poder_do_revisor",
+      "community": 10,
       "norm_label": "poder do revisor"
     },
     {
@@ -2449,8 +2497,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L65",
       "_origin": "ast",
-      "id": "subagentes_foco_por_etapa",
-      "community": 17,
+      "id": "mnt_d_milla_documents_camoburguer_demo_subagentes_foco_por_etapa",
+      "community": 10,
       "norm_label": "foco por etapa"
     },
     {
@@ -2574,6 +2622,16 @@
       "norm_label": "pr 8 \u2014 retirada e filtros financeiros"
     },
     {
+      "label": "PR 9 \u2014 QA, documenta\u00e7\u00e3o e release",
+      "file_type": "document",
+      "source_file": "docs/5w2h-evolucao.md",
+      "source_location": "L189",
+      "_origin": "ast",
+      "id": "docs_5w2h_evolucao_pr_9_qa_documenta\u00e7\u00e3o_e_release",
+      "community": 13,
+      "norm_label": "pr 9 \u2014 qa, documentacao e release"
+    },
+    {
       "label": "arquitetura-do-sistema.md",
       "file_type": "document",
       "source_file": "docs/arquitetura-do-sistema.md",
@@ -2644,10 +2702,20 @@
       "norm_label": "fluxo operacional obrigatorio"
     },
     {
+      "label": "Modelo de persist\u00eancia consolidado",
+      "file_type": "document",
+      "source_file": "docs/arquitetura-do-sistema.md",
+      "source_location": "L64",
+      "_origin": "ast",
+      "id": "docs_arquitetura_do_sistema_modelo_de_persist\u00eancia_consolidado",
+      "community": 14,
+      "norm_label": "modelo de persistencia consolidado"
+    },
+    {
       "label": "Caixa",
       "file_type": "document",
       "source_file": "docs/arquitetura-do-sistema.md",
-      "source_location": "L56",
+      "source_location": "L76",
       "_origin": "ast",
       "id": "docs_arquitetura_do_sistema_caixa",
       "community": 14,
@@ -2657,7 +2725,7 @@
       "label": "Fronteiras e seams",
       "file_type": "document",
       "source_file": "docs/arquitetura-do-sistema.md",
-      "source_location": "L62",
+      "source_location": "L82",
       "_origin": "ast",
       "id": "docs_arquitetura_do_sistema_fronteiras_e_seams",
       "community": 14,
@@ -2667,7 +2735,7 @@
       "label": "Eventos internos",
       "file_type": "document",
       "source_file": "docs/arquitetura-do-sistema.md",
-      "source_location": "L71",
+      "source_location": "L91",
       "_origin": "ast",
       "id": "docs_arquitetura_do_sistema_eventos_internos",
       "community": 14,
@@ -2677,7 +2745,7 @@
       "label": "Riscos arquiteturais",
       "file_type": "document",
       "source_file": "docs/arquitetura-do-sistema.md",
-      "source_location": "L78",
+      "source_location": "L98",
       "_origin": "ast",
       "id": "docs_arquitetura_do_sistema_riscos_arquiteturais",
       "community": 14,
@@ -2724,10 +2792,20 @@
       "norm_label": "cenarios iniciais"
     },
     {
-      "label": "Estrutura esperada de regra",
+      "label": "Automa\u00e7\u00f5es operacionais implementadas",
       "file_type": "document",
       "source_file": "docs/automacoes-por-cenario.md",
       "source_location": "L15",
+      "_origin": "ast",
+      "id": "docs_automacoes_por_cenario_automa\u00e7\u00f5es_operacionais_implementadas",
+      "community": 23,
+      "norm_label": "automacoes operacionais implementadas"
+    },
+    {
+      "label": "Estrutura esperada de regra",
+      "file_type": "document",
+      "source_file": "docs/automacoes-por-cenario.md",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "docs_automacoes_por_cenario_estrutura_esperada_de_regra",
       "community": 23,
@@ -2739,7 +2817,7 @@
       "source_file": "docs/canais-e-captura.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "docs_canais_e_captura",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_md",
       "community": 24,
       "norm_label": "canais-e-captura.md"
     },
@@ -2749,7 +2827,7 @@
       "source_file": "docs/canais-e-captura.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "docs_canais_e_captura_canais_e_captura",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_canais_e_captura",
       "community": 24,
       "norm_label": "canais e captura"
     },
@@ -2759,7 +2837,7 @@
       "source_file": "docs/canais-e-captura.md",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "docs_canais_e_captura_fontes_de_pedido",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_fontes_de_pedido",
       "community": 24,
       "norm_label": "fontes de pedido"
     },
@@ -2769,7 +2847,7 @@
       "source_file": "docs/canais-e-captura.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "docs_canais_e_captura_estrat\u00e9gia_v1",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_estrat\u00e9gia_v1",
       "community": 24,
       "norm_label": "estrategia v1"
     },
@@ -2779,7 +2857,7 @@
       "source_file": "docs/canais-e-captura.md",
       "source_location": "L17",
       "_origin": "ast",
-      "id": "docs_canais_e_captura_campos_m\u00ednimos_por_captura",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_campos_m\u00ednimos_por_captura",
       "community": 24,
       "norm_label": "campos minimos por captura"
     },
@@ -2964,13 +3042,33 @@
       "norm_label": "objetivo da demo"
     },
     {
+      "label": "Consumo local",
+      "file_type": "document",
+      "source_file": "docs/contexto-operacional.md",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "docs_contexto_operacional_consumo_local",
+      "community": 21,
+      "norm_label": "consumo local"
+    },
+    {
+      "label": "Responsabilidades adicionais da v1",
+      "file_type": "document",
+      "source_file": "docs/contexto-operacional.md",
+      "source_location": "L37",
+      "_origin": "ast",
+      "id": "docs_contexto_operacional_responsabilidades_adicionais_da_v1",
+      "community": 21,
+      "norm_label": "responsabilidades adicionais da v1"
+    },
+    {
       "label": "estoque.md",
       "file_type": "document",
       "source_file": "docs/estoque.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "docs_estoque",
-      "community": 22,
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_md",
+      "community": 17,
       "norm_label": "estoque.md"
     },
     {
@@ -2979,8 +3077,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "docs_estoque_estoque_por_categoria",
-      "community": 22,
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_estoque_por_categoria",
+      "community": 17,
       "norm_label": "estoque por categoria"
     },
     {
@@ -2989,8 +3087,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "docs_estoque_escopo",
-      "community": 22,
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_escopo",
+      "community": 17,
       "norm_label": "escopo"
     },
     {
@@ -2999,8 +3097,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L7",
       "_origin": "ast",
-      "id": "docs_estoque_fluxo",
-      "community": 22,
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_fluxo",
+      "community": 17,
       "norm_label": "fluxo"
     },
     {
@@ -3009,8 +3107,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L17",
       "_origin": "ast",
-      "id": "docs_estoque_corte_de_migra\u00e7\u00e3o",
-      "community": 22,
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_corte_de_migra\u00e7\u00e3o",
+      "community": 17,
       "norm_label": "corte de migracao"
     },
     {
@@ -3019,8 +3117,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L21",
       "_origin": "ast",
-      "id": "docs_estoque_auditoria_e_limites",
-      "community": 22,
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_auditoria_e_limites",
+      "community": 17,
       "norm_label": "auditoria e limites"
     },
     {
@@ -3084,10 +3182,20 @@
       "norm_label": "implementacao"
     },
     {
-      "label": "Valida\u00e7\u00e3o",
+      "label": "Migra\u00e7\u00f5es e compatibilidade",
       "file_type": "document",
       "source_file": "docs/guia-de-desenvolvimento.md",
       "source_location": "L41",
+      "_origin": "ast",
+      "id": "docs_guia_de_desenvolvimento_migra\u00e7\u00f5es_e_compatibilidade",
+      "community": 13,
+      "norm_label": "migracoes e compatibilidade"
+    },
+    {
+      "label": "Valida\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/guia-de-desenvolvimento.md",
+      "source_location": "L49",
       "_origin": "ast",
       "id": "docs_guia_de_desenvolvimento_valida\u00e7\u00e3o",
       "community": 13,
@@ -3097,17 +3205,27 @@
       "label": "Revis\u00e3o e aceite",
       "file_type": "document",
       "source_file": "docs/guia-de-desenvolvimento.md",
-      "source_location": "L69",
+      "source_location": "L80",
       "_origin": "ast",
       "id": "docs_guia_de_desenvolvimento_revis\u00e3o_e_aceite",
       "community": 13,
       "norm_label": "revisao e aceite"
     },
     {
+      "label": "Publica\u00e7\u00e3o e promo\u00e7\u00e3o",
+      "file_type": "document",
+      "source_file": "docs/guia-de-desenvolvimento.md",
+      "source_location": "L95",
+      "_origin": "ast",
+      "id": "docs_guia_de_desenvolvimento_publica\u00e7\u00e3o_e_promo\u00e7\u00e3o",
+      "community": 13,
+      "norm_label": "publicacao e promocao"
+    },
+    {
       "label": "Rollback e solu\u00e7\u00e3o de problemas",
       "file_type": "document",
       "source_file": "docs/guia-de-desenvolvimento.md",
-      "source_location": "L82",
+      "source_location": "L104",
       "_origin": "ast",
       "id": "docs_guia_de_desenvolvimento_rollback_e_solu\u00e7\u00e3o_de_problemas",
       "community": 13,
@@ -3119,7 +3237,7 @@
       "source_file": "docs/padrao-ticket-cozinha.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "docs_padrao_ticket_cozinha",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_md",
       "community": 25,
       "norm_label": "padrao-ticket-cozinha.md"
     },
@@ -3129,7 +3247,7 @@
       "source_file": "docs/padrao-ticket-cozinha.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
       "community": 25,
       "norm_label": "padrao de ticket de cozinha"
     },
@@ -3139,7 +3257,7 @@
       "source_file": "docs/padrao-ticket-cozinha.md",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "docs_padrao_ticket_cozinha_campos_obrigat\u00f3rios",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_campos_obrigat\u00f3rios",
       "community": 25,
       "norm_label": "campos obrigatorios"
     },
@@ -3149,7 +3267,7 @@
       "source_file": "docs/padrao-ticket-cozinha.md",
       "source_location": "L17",
       "_origin": "ast",
-      "id": "docs_padrao_ticket_cozinha_regras_de_legibilidade",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_regras_de_legibilidade",
       "community": 25,
       "norm_label": "regras de legibilidade"
     },
@@ -3159,7 +3277,7 @@
       "source_file": "docs/padrao-ticket-cozinha.md",
       "source_location": "L26",
       "_origin": "ast",
-      "id": "docs_padrao_ticket_cozinha_ticket_corretivo",
+      "id": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_ticket_corretivo",
       "community": 25,
       "norm_label": "ticket corretivo"
     },
@@ -3314,14 +3432,44 @@
       "norm_label": "incremento: retirada e filtros financeiros"
     },
     {
-      "label": "Risco residual aceito",
+      "label": "Incremento: QA, documenta\u00e7\u00e3o e release",
       "file_type": "document",
       "source_file": "docs/relatorio-validacao.md",
       "source_location": "L75",
       "_origin": "ast",
-      "id": "docs_relatorio_validacao_risco_residual_aceito",
+      "id": "docs_relatorio_validacao_incremento_qa_documenta\u00e7\u00e3o_e_release",
       "community": 18,
-      "norm_label": "risco residual aceito"
+      "norm_label": "incremento: qa, documentacao e release"
+    },
+    {
+      "label": "Incidente de valida\u00e7\u00e3o resolvido",
+      "file_type": "document",
+      "source_file": "docs/relatorio-validacao.md",
+      "source_location": "L89",
+      "_origin": "ast",
+      "id": "docs_relatorio_validacao_incidente_de_valida\u00e7\u00e3o_resolvido",
+      "community": 18,
+      "norm_label": "incidente de validacao resolvido"
+    },
+    {
+      "label": "Sequ\u00eancia maker/reviewer desta PR",
+      "file_type": "document",
+      "source_file": "docs/relatorio-validacao.md",
+      "source_location": "L95",
+      "_origin": "ast",
+      "id": "docs_relatorio_validacao_sequ\u00eancia_maker_reviewer_desta_pr",
+      "community": 18,
+      "norm_label": "sequencia maker/reviewer desta pr"
+    },
+    {
+      "label": "Decis\u00e3o de release",
+      "file_type": "document",
+      "source_file": "docs/relatorio-validacao.md",
+      "source_location": "L114",
+      "_origin": "ast",
+      "id": "docs_relatorio_validacao_decis\u00e3o_de_release",
+      "community": 18,
+      "norm_label": "decisao de release"
     },
     {
       "label": "SKILL.md",
@@ -3329,7 +3477,7 @@
       "source_file": "skills/architecture-gate-review/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_architecture_gate_review_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_md",
       "community": 26,
       "norm_label": "skill.md"
     },
@@ -3339,7 +3487,7 @@
       "source_file": "skills/architecture-gate-review/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_architecture_gate_review_skill_architecture_gate_review",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_architecture_gate_review",
       "community": 26,
       "norm_label": "architecture gate review"
     },
@@ -3349,7 +3497,7 @@
       "source_file": "skills/architecture-gate-review/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_architecture_gate_review_skill_checklist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_checklist",
       "community": 26,
       "norm_label": "checklist"
     },
@@ -3359,7 +3507,7 @@
       "source_file": "skills/architecture-gate-review/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_architecture_gate_review_skill_decision_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_decision_output",
       "community": 26,
       "norm_label": "decision output"
     },
@@ -3369,7 +3517,7 @@
       "source_file": "skills/architecture-gate-review/SKILL.md",
       "source_location": "L23",
       "_origin": "ast",
-      "id": "skills_architecture_gate_review_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_tool_doctrine",
       "community": 26,
       "norm_label": "tool doctrine"
     },
@@ -3379,7 +3527,7 @@
       "source_file": "skills/backend-gate-review/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_backend_gate_review_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_md",
       "community": 27,
       "norm_label": "skill.md"
     },
@@ -3389,7 +3537,7 @@
       "source_file": "skills/backend-gate-review/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_backend_gate_review_skill_backend_gate_review",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_backend_gate_review",
       "community": 27,
       "norm_label": "backend gate review"
     },
@@ -3399,7 +3547,7 @@
       "source_file": "skills/backend-gate-review/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_backend_gate_review_skill_checklist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_checklist",
       "community": 27,
       "norm_label": "checklist"
     },
@@ -3409,7 +3557,7 @@
       "source_file": "skills/backend-gate-review/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_backend_gate_review_skill_decision_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_decision_output",
       "community": 27,
       "norm_label": "decision output"
     },
@@ -3419,7 +3567,7 @@
       "source_file": "skills/backend-gate-review/SKILL.md",
       "source_location": "L23",
       "_origin": "ast",
-      "id": "skills_backend_gate_review_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_tool_doctrine",
       "community": 27,
       "norm_label": "tool doctrine"
     },
@@ -3429,7 +3577,7 @@
       "source_file": "skills/domain-db-gate-review/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_domain_db_gate_review_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_md",
       "community": 28,
       "norm_label": "skill.md"
     },
@@ -3439,7 +3587,7 @@
       "source_file": "skills/domain-db-gate-review/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_domain_db_gate_review_skill_domain_db_gate_review",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_domain_db_gate_review",
       "community": 28,
       "norm_label": "domain db gate review"
     },
@@ -3449,7 +3597,7 @@
       "source_file": "skills/domain-db-gate-review/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_domain_db_gate_review_skill_checklist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_checklist",
       "community": 28,
       "norm_label": "checklist"
     },
@@ -3459,7 +3607,7 @@
       "source_file": "skills/domain-db-gate-review/SKILL.md",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "skills_domain_db_gate_review_skill_decision_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_decision_output",
       "community": 28,
       "norm_label": "decision output"
     },
@@ -3469,7 +3617,7 @@
       "source_file": "skills/domain-db-gate-review/SKILL.md",
       "source_location": "L22",
       "_origin": "ast",
-      "id": "skills_domain_db_gate_review_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_tool_doctrine",
       "community": 28,
       "norm_label": "tool doctrine"
     },
@@ -3479,7 +3627,7 @@
       "source_file": "skills/finance-insight-curator/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_finance_insight_curator_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_md",
       "community": 41,
       "norm_label": "skill.md"
     },
@@ -3489,7 +3637,7 @@
       "source_file": "skills/finance-insight-curator/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_finance_insight_curator_skill_finance_insight_curator",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_finance_insight_curator",
       "community": 41,
       "norm_label": "finance insight curator"
     },
@@ -3499,7 +3647,7 @@
       "source_file": "skills/finance-insight-curator/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_finance_insight_curator_skill_focus",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_focus",
       "community": 41,
       "norm_label": "focus"
     },
@@ -3509,7 +3657,7 @@
       "source_file": "skills/finance-insight-curator/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_finance_insight_curator_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_tool_doctrine",
       "community": 41,
       "norm_label": "tool doctrine"
     },
@@ -3519,7 +3667,7 @@
       "source_file": "skills/frontend-gate-review/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_frontend_gate_review_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_md",
       "community": 29,
       "norm_label": "skill.md"
     },
@@ -3529,7 +3677,7 @@
       "source_file": "skills/frontend-gate-review/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_frontend_gate_review_skill_frontend_gate_review",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_frontend_gate_review",
       "community": 29,
       "norm_label": "frontend gate review"
     },
@@ -3539,7 +3687,7 @@
       "source_file": "skills/frontend-gate-review/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_frontend_gate_review_skill_checklist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_checklist",
       "community": 29,
       "norm_label": "checklist"
     },
@@ -3549,7 +3697,7 @@
       "source_file": "skills/frontend-gate-review/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_frontend_gate_review_skill_decision_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_decision_output",
       "community": 29,
       "norm_label": "decision output"
     },
@@ -3559,7 +3707,7 @@
       "source_file": "skills/frontend-gate-review/SKILL.md",
       "source_location": "L23",
       "_origin": "ast",
-      "id": "skills_frontend_gate_review_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_tool_doctrine",
       "community": 29,
       "norm_label": "tool doctrine"
     },
@@ -3569,7 +3717,7 @@
       "source_file": "skills/infra-gate-review/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_infra_gate_review_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_md",
       "community": 30,
       "norm_label": "skill.md"
     },
@@ -3579,7 +3727,7 @@
       "source_file": "skills/infra-gate-review/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_infra_gate_review_skill_infra_gate_review",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_infra_gate_review",
       "community": 30,
       "norm_label": "infra gate review"
     },
@@ -3589,7 +3737,7 @@
       "source_file": "skills/infra-gate-review/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_infra_gate_review_skill_checklist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_checklist",
       "community": 30,
       "norm_label": "checklist"
     },
@@ -3599,7 +3747,7 @@
       "source_file": "skills/infra-gate-review/SKILL.md",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "skills_infra_gate_review_skill_decision_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_decision_output",
       "community": 30,
       "norm_label": "decision output"
     },
@@ -3609,7 +3757,7 @@
       "source_file": "skills/infra-gate-review/SKILL.md",
       "source_location": "L22",
       "_origin": "ast",
-      "id": "skills_infra_gate_review_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_tool_doctrine",
       "community": 30,
       "norm_label": "tool doctrine"
     },
@@ -3619,7 +3767,7 @@
       "source_file": "skills/kitchen-ticket-ergonomics-review/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_kitchen_ticket_ergonomics_review_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_md",
       "community": 42,
       "norm_label": "skill.md"
     },
@@ -3629,7 +3777,7 @@
       "source_file": "skills/kitchen-ticket-ergonomics-review/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_kitchen_ticket_ergonomics_review_skill_kitchen_ticket_ergonomics_review",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_kitchen_ticket_ergonomics_review",
       "community": 42,
       "norm_label": "kitchen ticket ergonomics review"
     },
@@ -3639,7 +3787,7 @@
       "source_file": "skills/kitchen-ticket-ergonomics-review/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_kitchen_ticket_ergonomics_review_skill_checklist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_checklist",
       "community": 42,
       "norm_label": "checklist"
     },
@@ -3649,7 +3797,7 @@
       "source_file": "skills/kitchen-ticket-ergonomics-review/SKILL.md",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "skills_kitchen_ticket_ergonomics_review_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_tool_doctrine",
       "community": 42,
       "norm_label": "tool doctrine"
     },
@@ -3659,7 +3807,7 @@
       "source_file": "skills/operator-friction-audit/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_operator_friction_audit_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_md",
       "community": 43,
       "norm_label": "skill.md"
     },
@@ -3669,7 +3817,7 @@
       "source_file": "skills/operator-friction-audit/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_operator_friction_audit_skill_operator_friction_audit",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_operator_friction_audit",
       "community": 43,
       "norm_label": "operator friction audit"
     },
@@ -3679,7 +3827,7 @@
       "source_file": "skills/operator-friction-audit/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_operator_friction_audit_skill_checklist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_checklist",
       "community": 43,
       "norm_label": "checklist"
     },
@@ -3689,7 +3837,7 @@
       "source_file": "skills/operator-friction-audit/SKILL.md",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "skills_operator_friction_audit_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_tool_doctrine",
       "community": 43,
       "norm_label": "tool doctrine"
     },
@@ -3699,7 +3847,7 @@
       "source_file": "skills/operator-ui-builder/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_operator_ui_builder_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_md",
       "community": 31,
       "norm_label": "skill.md"
     },
@@ -3709,7 +3857,7 @@
       "source_file": "skills/operator-ui-builder/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_operator_ui_builder_skill_operator_ui_builder",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_operator_ui_builder",
       "community": 31,
       "norm_label": "operator ui builder"
     },
@@ -3719,7 +3867,7 @@
       "source_file": "skills/operator-ui-builder/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_operator_ui_builder_skill_focus",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_focus",
       "community": 31,
       "norm_label": "focus"
     },
@@ -3729,7 +3877,7 @@
       "source_file": "skills/operator-ui-builder/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_operator_ui_builder_skill_mandatory_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_mandatory_output",
       "community": 31,
       "norm_label": "mandatory output"
     },
@@ -3739,7 +3887,7 @@
       "source_file": "skills/operator-ui-builder/SKILL.md",
       "source_location": "L26",
       "_origin": "ast",
-      "id": "skills_operator_ui_builder_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_tool_doctrine",
       "community": 31,
       "norm_label": "tool doctrine"
     },
@@ -3749,7 +3897,7 @@
       "source_file": "skills/order-finance-domain-modeler/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_order_finance_domain_modeler_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_md",
       "community": 32,
       "norm_label": "skill.md"
     },
@@ -3759,7 +3907,7 @@
       "source_file": "skills/order-finance-domain-modeler/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
       "community": 32,
       "norm_label": "order finance domain modeler"
     },
@@ -3769,7 +3917,7 @@
       "source_file": "skills/order-finance-domain-modeler/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_order_finance_domain_modeler_skill_focus",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_focus",
       "community": 32,
       "norm_label": "focus"
     },
@@ -3779,7 +3927,7 @@
       "source_file": "skills/order-finance-domain-modeler/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_order_finance_domain_modeler_skill_mandatory_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_mandatory_output",
       "community": 32,
       "norm_label": "mandatory output"
     },
@@ -3789,7 +3937,7 @@
       "source_file": "skills/order-finance-domain-modeler/SKILL.md",
       "source_location": "L26",
       "_origin": "ast",
-      "id": "skills_order_finance_domain_modeler_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_tool_doctrine",
       "community": 32,
       "norm_label": "tool doctrine"
     },
@@ -3799,7 +3947,7 @@
       "source_file": "skills/print-infra-specialist/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_print_infra_specialist_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_md",
       "community": 33,
       "norm_label": "skill.md"
     },
@@ -3809,7 +3957,7 @@
       "source_file": "skills/print-infra-specialist/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_print_infra_specialist_skill_print_infra_specialist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_print_infra_specialist",
       "community": 33,
       "norm_label": "print infra specialist"
     },
@@ -3819,7 +3967,7 @@
       "source_file": "skills/print-infra-specialist/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_print_infra_specialist_skill_focus",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_focus",
       "community": 33,
       "norm_label": "focus"
     },
@@ -3829,7 +3977,7 @@
       "source_file": "skills/print-infra-specialist/SKILL.md",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "skills_print_infra_specialist_skill_mandatory_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_mandatory_output",
       "community": 33,
       "norm_label": "mandatory output"
     },
@@ -3839,7 +3987,7 @@
       "source_file": "skills/print-infra-specialist/SKILL.md",
       "source_location": "L25",
       "_origin": "ast",
-      "id": "skills_print_infra_specialist_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_tool_doctrine",
       "community": 33,
       "norm_label": "tool doctrine"
     },
@@ -3849,7 +3997,7 @@
       "source_file": "skills/process-gate-review/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_process_gate_review_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_md",
       "community": 34,
       "norm_label": "skill.md"
     },
@@ -3859,7 +4007,7 @@
       "source_file": "skills/process-gate-review/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_process_gate_review_skill_process_gate_review",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_process_gate_review",
       "community": 34,
       "norm_label": "process gate review"
     },
@@ -3869,7 +4017,7 @@
       "source_file": "skills/process-gate-review/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_process_gate_review_skill_checklist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_checklist",
       "community": 34,
       "norm_label": "checklist"
     },
@@ -3879,7 +4027,7 @@
       "source_file": "skills/process-gate-review/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_process_gate_review_skill_decision_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_decision_output",
       "community": 34,
       "norm_label": "decision output"
     },
@@ -3889,7 +4037,7 @@
       "source_file": "skills/process-gate-review/SKILL.md",
       "source_location": "L29",
       "_origin": "ast",
-      "id": "skills_process_gate_review_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_tool_doctrine",
       "community": 34,
       "norm_label": "tool doctrine"
     },
@@ -3899,7 +4047,7 @@
       "source_file": "skills/release-readiness-review/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_release_readiness_review_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_md",
       "community": 35,
       "norm_label": "skill.md"
     },
@@ -3909,7 +4057,7 @@
       "source_file": "skills/release-readiness-review/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_release_readiness_review_skill_release_readiness_review",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_release_readiness_review",
       "community": 35,
       "norm_label": "release readiness review"
     },
@@ -3919,7 +4067,7 @@
       "source_file": "skills/release-readiness-review/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_release_readiness_review_skill_required_inputs",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_required_inputs",
       "community": 35,
       "norm_label": "required inputs"
     },
@@ -3929,7 +4077,7 @@
       "source_file": "skills/release-readiness-review/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_release_readiness_review_skill_mandatory_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_mandatory_output",
       "community": 35,
       "norm_label": "mandatory output"
     },
@@ -3939,7 +4087,7 @@
       "source_file": "skills/release-readiness-review/SKILL.md",
       "source_location": "L26",
       "_origin": "ast",
-      "id": "skills_release_readiness_review_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_tool_doctrine",
       "community": 35,
       "norm_label": "tool doctrine"
     },
@@ -3949,7 +4097,7 @@
       "source_file": "skills/restaurant-architecture-designer/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_restaurant_architecture_designer_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_md",
       "community": 36,
       "norm_label": "skill.md"
     },
@@ -3959,7 +4107,7 @@
       "source_file": "skills/restaurant-architecture-designer/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
       "community": 36,
       "norm_label": "restaurant architecture designer"
     },
@@ -3969,7 +4117,7 @@
       "source_file": "skills/restaurant-architecture-designer/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_restaurant_architecture_designer_skill_focus",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_focus",
       "community": 36,
       "norm_label": "focus"
     },
@@ -3979,7 +4127,7 @@
       "source_file": "skills/restaurant-architecture-designer/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_restaurant_architecture_designer_skill_mandatory_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_mandatory_output",
       "community": 36,
       "norm_label": "mandatory output"
     },
@@ -3989,7 +4137,7 @@
       "source_file": "skills/restaurant-architecture-designer/SKILL.md",
       "source_location": "L27",
       "_origin": "ast",
-      "id": "skills_restaurant_architecture_designer_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_tool_doctrine",
       "community": 36,
       "norm_label": "tool doctrine"
     },
@@ -3999,7 +4147,7 @@
       "source_file": "skills/restaurant-backend-builder/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_restaurant_backend_builder_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_md",
       "community": 37,
       "norm_label": "skill.md"
     },
@@ -4009,7 +4157,7 @@
       "source_file": "skills/restaurant-backend-builder/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_restaurant_backend_builder_skill_restaurant_backend_builder",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_restaurant_backend_builder",
       "community": 37,
       "norm_label": "restaurant backend builder"
     },
@@ -4019,7 +4167,7 @@
       "source_file": "skills/restaurant-backend-builder/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_restaurant_backend_builder_skill_focus",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_focus",
       "community": 37,
       "norm_label": "focus"
     },
@@ -4029,7 +4177,7 @@
       "source_file": "skills/restaurant-backend-builder/SKILL.md",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "skills_restaurant_backend_builder_skill_mandatory_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_mandatory_output",
       "community": 37,
       "norm_label": "mandatory output"
     },
@@ -4039,7 +4187,7 @@
       "source_file": "skills/restaurant-backend-builder/SKILL.md",
       "source_location": "L26",
       "_origin": "ast",
-      "id": "skills_restaurant_backend_builder_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_tool_doctrine",
       "community": 37,
       "norm_label": "tool doctrine"
     },
@@ -4049,7 +4197,7 @@
       "source_file": "skills/restaurant-demo-qa/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_restaurant_demo_qa_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_md",
       "community": 38,
       "norm_label": "skill.md"
     },
@@ -4059,7 +4207,7 @@
       "source_file": "skills/restaurant-demo-qa/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_restaurant_demo_qa_skill_restaurant_demo_qa",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_restaurant_demo_qa",
       "community": 38,
       "norm_label": "restaurant demo qa"
     },
@@ -4069,7 +4217,7 @@
       "source_file": "skills/restaurant-demo-qa/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_restaurant_demo_qa_skill_test_scope",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_test_scope",
       "community": 38,
       "norm_label": "test scope"
     },
@@ -4079,7 +4227,7 @@
       "source_file": "skills/restaurant-demo-qa/SKILL.md",
       "source_location": "L20",
       "_origin": "ast",
-      "id": "skills_restaurant_demo_qa_skill_mandatory_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_mandatory_output",
       "community": 38,
       "norm_label": "mandatory output"
     },
@@ -4089,7 +4237,7 @@
       "source_file": "skills/restaurant-demo-qa/SKILL.md",
       "source_location": "L28",
       "_origin": "ast",
-      "id": "skills_restaurant_demo_qa_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_tool_doctrine",
       "community": 38,
       "norm_label": "tool doctrine"
     },
@@ -4099,7 +4247,7 @@
       "source_file": "skills/restaurant-process-orchestrator/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_restaurant_process_orchestrator_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_md",
       "community": 39,
       "norm_label": "skill.md"
     },
@@ -4109,7 +4257,7 @@
       "source_file": "skills/restaurant-process-orchestrator/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
       "community": 39,
       "norm_label": "restaurant process orchestrator"
     },
@@ -4119,7 +4267,7 @@
       "source_file": "skills/restaurant-process-orchestrator/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_restaurant_process_orchestrator_skill_workflow",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_workflow",
       "community": 39,
       "norm_label": "workflow"
     },
@@ -4129,7 +4277,7 @@
       "source_file": "skills/restaurant-process-orchestrator/SKILL.md",
       "source_location": "L17",
       "_origin": "ast",
-      "id": "skills_restaurant_process_orchestrator_skill_mandatory_output",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_mandatory_output",
       "community": 39,
       "norm_label": "mandatory output"
     },
@@ -4139,7 +4287,7 @@
       "source_file": "skills/restaurant-process-orchestrator/SKILL.md",
       "source_location": "L25",
       "_origin": "ast",
-      "id": "skills_restaurant_process_orchestrator_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_tool_doctrine",
       "community": 39,
       "norm_label": "tool doctrine"
     },
@@ -4149,7 +4297,7 @@
       "source_file": "skills/scenario-automation-planner/SKILL.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "skills_scenario_automation_planner_skill",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_md",
       "community": 44,
       "norm_label": "skill.md"
     },
@@ -4159,7 +4307,7 @@
       "source_file": "skills/scenario-automation-planner/SKILL.md",
       "source_location": "L6",
       "_origin": "ast",
-      "id": "skills_scenario_automation_planner_skill_scenario_automation_planner",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_scenario_automation_planner",
       "community": 44,
       "norm_label": "scenario automation planner"
     },
@@ -4169,7 +4317,7 @@
       "source_file": "skills/scenario-automation-planner/SKILL.md",
       "source_location": "L10",
       "_origin": "ast",
-      "id": "skills_scenario_automation_planner_skill_focus",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_focus",
       "community": 44,
       "norm_label": "focus"
     },
@@ -4179,7 +4327,7 @@
       "source_file": "skills/scenario-automation-planner/SKILL.md",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "skills_scenario_automation_planner_skill_tool_doctrine",
+      "id": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_tool_doctrine",
       "community": 44,
       "norm_label": "tool doctrine"
     },
@@ -4189,7 +4337,7 @@
       "source_file": "workflows/camoburguer-implementation-flow.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "workflows_camoburguer_implementation_flow",
+      "id": "mnt_d_milla_documents_camoburguer_demo_workflows_camoburguer_implementation_flow_md",
       "community": 45,
       "norm_label": "camoburguer-implementation-flow.md"
     },
@@ -4199,7 +4347,7 @@
       "source_file": "workflows/camoburguer-implementation-flow.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "workflows_camoburguer_implementation_flow_workflow_de_implementa\u00e7\u00e3o",
+      "id": "mnt_d_milla_documents_camoburguer_demo_workflows_camoburguer_implementation_flow_workflow_de_implementa\u00e7\u00e3o",
       "community": 45,
       "norm_label": "workflow de implementacao"
     },
@@ -4209,7 +4357,7 @@
       "source_file": "workflows/review-template.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "workflows_review_template",
+      "id": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_md",
       "community": 40,
       "norm_label": "review-template.md"
     },
@@ -4219,7 +4367,7 @@
       "source_file": "workflows/review-template.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "workflows_review_template_template_de_revis\u00e3o",
+      "id": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_template_de_revis\u00e3o",
       "community": 40,
       "norm_label": "template de revisao"
     },
@@ -4229,7 +4377,7 @@
       "source_file": "workflows/review-template.md",
       "source_location": "L3",
       "_origin": "ast",
-      "id": "workflows_review_template_estado",
+      "id": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_estado",
       "community": 40,
       "norm_label": "estado"
     },
@@ -4239,7 +4387,7 @@
       "source_file": "workflows/review-template.md",
       "source_location": "L9",
       "_origin": "ast",
-      "id": "workflows_review_template_checklist",
+      "id": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_checklist",
       "community": 40,
       "norm_label": "checklist"
     },
@@ -4249,7 +4397,7 @@
       "source_file": "workflows/review-template.md",
       "source_location": "L17",
       "_origin": "ast",
-      "id": "workflows_review_template_sa\u00edda_obrigat\u00f3ria",
+      "id": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_sa\u00edda_obrigat\u00f3ria",
       "community": 40,
       "norm_label": "saida obrigatoria"
     }
@@ -4261,8 +4409,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L9",
       "weight": 1.0,
-      "source": "apps_api_package",
-      "target": "apps_api_package_dependencies",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies",
       "confidence_score": 1.0
     },
     {
@@ -4271,8 +4419,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L2",
       "weight": 1.0,
-      "source": "apps_api_package",
-      "target": "apps_api_package_name",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_name",
       "confidence_score": 1.0
     },
     {
@@ -4281,8 +4429,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L4",
       "weight": 1.0,
-      "source": "apps_api_package",
-      "target": "apps_api_package_private",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_private",
       "confidence_score": 1.0
     },
     {
@@ -4291,8 +4439,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "apps_api_package",
-      "target": "apps_api_package_scripts",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_scripts",
       "confidence_score": 1.0
     },
     {
@@ -4301,8 +4449,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L5",
       "weight": 1.0,
-      "source": "apps_api_package",
-      "target": "apps_api_package_type",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_type",
       "confidence_score": 1.0
     },
     {
@@ -4311,8 +4459,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "apps_api_package",
-      "target": "apps_api_package_version",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_version",
       "confidence_score": 1.0
     },
     {
@@ -4321,8 +4469,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L7",
       "weight": 1.0,
-      "source": "apps_api_package_scripts",
-      "target": "apps_api_package_scripts_start",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_scripts",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_scripts_start",
       "confidence_score": 1.0
     },
     {
@@ -4331,8 +4479,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_camoburguer_domain",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_camoburguer_domain",
       "confidence_score": 1.0
     },
     {
@@ -4341,8 +4489,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L11",
       "weight": 1.0,
-      "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_camoburguer_finance_core",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_camoburguer_finance_core",
       "confidence_score": 1.0
     },
     {
@@ -4351,8 +4499,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L12",
       "weight": 1.0,
-      "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_camoburguer_shared_types",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_camoburguer_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -4361,8 +4509,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L14",
       "weight": 1.0,
-      "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_dotenv",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_dotenv",
       "confidence_score": 1.0
     },
     {
@@ -4371,8 +4519,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L15",
       "weight": 1.0,
-      "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_fastify",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_fastify",
       "confidence_score": 1.0
     },
     {
@@ -4381,8 +4529,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L13",
       "weight": 1.0,
-      "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_fastify_cors",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_fastify_cors",
       "confidence_score": 1.0
     },
     {
@@ -4391,8 +4539,8 @@
       "source_file": "apps/api/package.json",
       "source_location": "L16",
       "weight": 1.0,
-      "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_pg",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_pg",
       "confidence_score": 1.0
     },
     {
@@ -4402,7 +4550,7 @@
       "source_location": "L10",
       "weight": 1.0,
       "context": "import",
-      "source": "apps_api_package_dependencies_camoburguer_domain",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_camoburguer_domain",
       "target": "camoburguer_domain",
       "confidence_score": 1.0
     },
@@ -4413,7 +4561,7 @@
       "source_location": "L11",
       "weight": 1.0,
       "context": "import",
-      "source": "apps_api_package_dependencies_camoburguer_finance_core",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_camoburguer_finance_core",
       "target": "camoburguer_finance_core",
       "confidence_score": 1.0
     },
@@ -4424,7 +4572,7 @@
       "source_location": "L12",
       "weight": 1.0,
       "context": "import",
-      "source": "apps_api_package_dependencies_camoburguer_shared_types",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_camoburguer_shared_types",
       "target": "apps_api_package_json_camoburguer_shared_types",
       "confidence_score": 1.0
     },
@@ -4435,7 +4583,7 @@
       "source_location": "L13",
       "weight": 1.0,
       "context": "import",
-      "source": "apps_api_package_dependencies_fastify_cors",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_fastify_cors",
       "target": "fastify_cors",
       "confidence_score": 1.0
     },
@@ -4446,7 +4594,7 @@
       "source_location": "L14",
       "weight": 1.0,
       "context": "import",
-      "source": "apps_api_package_dependencies_dotenv",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_dotenv",
       "target": "apps_api_package_json_dotenv",
       "confidence_score": 1.0
     },
@@ -4457,7 +4605,7 @@
       "source_location": "L15",
       "weight": 1.0,
       "context": "import",
-      "source": "apps_api_package_dependencies_fastify",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_fastify",
       "target": "apps_api_package_json_fastify",
       "confidence_score": 1.0
     },
@@ -4468,7 +4616,7 @@
       "source_location": "L16",
       "weight": 1.0,
       "context": "import",
-      "source": "apps_api_package_dependencies_pg",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_api_package_dependencies_pg",
       "target": "pg",
       "confidence_score": 1.0
     },
@@ -5593,8 +5741,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L2",
       "weight": 1.0,
-      "source": "apps_event_simulator_package",
-      "target": "apps_event_simulator_package_name",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_name",
       "confidence_score": 1.0
     },
     {
@@ -5603,8 +5751,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L4",
       "weight": 1.0,
-      "source": "apps_event_simulator_package",
-      "target": "apps_event_simulator_package_private",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_private",
       "confidence_score": 1.0
     },
     {
@@ -5613,8 +5761,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "apps_event_simulator_package",
-      "target": "apps_event_simulator_package_scripts",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_scripts",
       "confidence_score": 1.0
     },
     {
@@ -5623,8 +5771,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L5",
       "weight": 1.0,
-      "source": "apps_event_simulator_package",
-      "target": "apps_event_simulator_package_type",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_type",
       "confidence_score": 1.0
     },
     {
@@ -5633,8 +5781,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "apps_event_simulator_package",
-      "target": "apps_event_simulator_package_version",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_version",
       "confidence_score": 1.0
     },
     {
@@ -5643,8 +5791,8 @@
       "source_file": "apps/event-simulator/package.json",
       "source_location": "L7",
       "weight": 1.0,
-      "source": "apps_event_simulator_package_scripts",
-      "target": "apps_event_simulator_package_scripts_start",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_scripts",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_event_simulator_package_scripts_start",
       "confidence_score": 1.0
     },
     {
@@ -6084,7 +6232,7 @@
       "source_location": "L66",
       "weight": 1.0,
       "source": "apps_ops_web_main",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6106,7 +6254,7 @@
       "source_location": "L151",
       "weight": 1.0,
       "source": "apps_ops_web_main_notify",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6117,7 +6265,7 @@
       "source_location": "L461",
       "weight": 1.0,
       "source": "apps_ops_web_main_refreshall",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6128,7 +6276,7 @@
       "source_location": "L470",
       "weight": 1.0,
       "source": "apps_ops_web_main_refreshsafe",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6139,7 +6287,7 @@
       "source_location": "L264",
       "weight": 1.0,
       "source": "apps_ops_web_main_renderactivetab",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6150,7 +6298,7 @@
       "source_location": "L186",
       "weight": 1.0,
       "source": "apps_ops_web_main_renderaddons",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6161,7 +6309,7 @@
       "source_location": "L158",
       "weight": 1.0,
       "source": "apps_ops_web_main_rendercatalog",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6172,7 +6320,7 @@
       "source_location": "L356",
       "weight": 1.0,
       "source": "apps_ops_web_main_renderentries",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6183,7 +6331,7 @@
       "source_location": "L341",
       "weight": 1.0,
       "source": "apps_ops_web_main_renderfinancesummary",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6194,7 +6342,7 @@
       "source_location": "L177",
       "weight": 1.0,
       "source": "apps_ops_web_main_renderinventory",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6205,7 +6353,7 @@
       "source_location": "L312",
       "weight": 1.0,
       "source": "apps_ops_web_main_renderkitchen",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6216,7 +6364,7 @@
       "source_location": "L195",
       "weight": 1.0,
       "source": "apps_ops_web_main_renderorderitems",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6227,7 +6375,7 @@
       "source_location": "L282",
       "weight": 1.0,
       "source": "apps_ops_web_main_renderorders",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6238,7 +6386,7 @@
       "source_location": "L383",
       "weight": 1.0,
       "source": "apps_ops_web_main_rendershifts",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6249,7 +6397,7 @@
       "source_location": "L232",
       "weight": 1.0,
       "source": "apps_ops_web_main_rendertabs",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6260,7 +6408,7 @@
       "source_location": "L479",
       "weight": 1.0,
       "source": "apps_ops_web_main_syncdeliveryaddress",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6271,7 +6419,7 @@
       "source_location": "L147",
       "weight": 1.0,
       "source": "apps_ops_web_main_syncstamp",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6282,7 +6430,7 @@
       "source_location": "L499",
       "weight": 1.0,
       "source": "apps_ops_web_main_wirecart",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6293,7 +6441,7 @@
       "source_location": "L632",
       "weight": 1.0,
       "source": "apps_ops_web_main_wireforms",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -6304,7 +6452,7 @@
       "source_location": "L887",
       "weight": 1.0,
       "source": "apps_ops_web_main_wiresse",
-      "target": "home_millennium_camoburguer_graph_rebuild_20260716_apps_ops_web_main",
+      "target": "home_millennium_cache_camoburguer_demo_graphify_worktree_apps_ops_web_main",
       "confidence_score": 1.0
     },
     {
@@ -7072,8 +7220,8 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L9",
       "weight": 1.0,
-      "source": "apps_print_bridge_package",
-      "target": "apps_print_bridge_package_dependencies",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies",
       "confidence_score": 1.0
     },
     {
@@ -7082,8 +7230,8 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L2",
       "weight": 1.0,
-      "source": "apps_print_bridge_package",
-      "target": "apps_print_bridge_package_name",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_name",
       "confidence_score": 1.0
     },
     {
@@ -7092,8 +7240,8 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L4",
       "weight": 1.0,
-      "source": "apps_print_bridge_package",
-      "target": "apps_print_bridge_package_private",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_private",
       "confidence_score": 1.0
     },
     {
@@ -7102,8 +7250,8 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "apps_print_bridge_package",
-      "target": "apps_print_bridge_package_scripts",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_scripts",
       "confidence_score": 1.0
     },
     {
@@ -7112,8 +7260,8 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L5",
       "weight": 1.0,
-      "source": "apps_print_bridge_package",
-      "target": "apps_print_bridge_package_type",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_type",
       "confidence_score": 1.0
     },
     {
@@ -7122,8 +7270,8 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "apps_print_bridge_package",
-      "target": "apps_print_bridge_package_version",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_version",
       "confidence_score": 1.0
     },
     {
@@ -7132,8 +7280,8 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L7",
       "weight": 1.0,
-      "source": "apps_print_bridge_package_scripts",
-      "target": "apps_print_bridge_package_scripts_start",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_scripts",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_scripts_start",
       "confidence_score": 1.0
     },
     {
@@ -7142,8 +7290,8 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "apps_print_bridge_package_dependencies",
-      "target": "apps_print_bridge_package_dependencies_dotenv",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies_dotenv",
       "confidence_score": 1.0
     },
     {
@@ -7152,8 +7300,8 @@
       "source_file": "apps/print-bridge/package.json",
       "source_location": "L11",
       "weight": 1.0,
-      "source": "apps_print_bridge_package_dependencies",
-      "target": "apps_print_bridge_package_dependencies_fastify",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies_fastify",
       "confidence_score": 1.0
     },
     {
@@ -7163,7 +7311,7 @@
       "source_location": "L10",
       "weight": 1.0,
       "context": "import",
-      "source": "apps_print_bridge_package_dependencies_dotenv",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies_dotenv",
       "target": "apps_print_bridge_package_json_dotenv",
       "confidence_score": 1.0
     },
@@ -7174,7 +7322,7 @@
       "source_location": "L11",
       "weight": 1.0,
       "context": "import",
-      "source": "apps_print_bridge_package_dependencies_fastify",
+      "source": "mnt_d_milla_documents_camoburguer_demo_apps_print_bridge_package_dependencies_fastify",
       "target": "apps_print_bridge_package_json_fastify",
       "confidence_score": 1.0
     },
@@ -7946,8 +8094,8 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L7",
       "weight": 1.0,
-      "source": "packages_domain_package",
-      "target": "packages_domain_package_dependencies",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_dependencies",
       "confidence_score": 1.0
     },
     {
@@ -7956,8 +8104,8 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "packages_domain_package",
-      "target": "packages_domain_package_main",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_main",
       "confidence_score": 1.0
     },
     {
@@ -7966,8 +8114,8 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L2",
       "weight": 1.0,
-      "source": "packages_domain_package",
-      "target": "packages_domain_package_name",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_name",
       "confidence_score": 1.0
     },
     {
@@ -7976,8 +8124,8 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L4",
       "weight": 1.0,
-      "source": "packages_domain_package",
-      "target": "packages_domain_package_private",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_private",
       "confidence_score": 1.0
     },
     {
@@ -7986,8 +8134,8 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L5",
       "weight": 1.0,
-      "source": "packages_domain_package",
-      "target": "packages_domain_package_type",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_type",
       "confidence_score": 1.0
     },
     {
@@ -7996,8 +8144,8 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "packages_domain_package",
-      "target": "packages_domain_package_version",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_version",
       "confidence_score": 1.0
     },
     {
@@ -8006,8 +8154,8 @@
       "source_file": "packages/domain/package.json",
       "source_location": "L8",
       "weight": 1.0,
-      "source": "packages_domain_package_dependencies",
-      "target": "packages_domain_package_dependencies_camoburguer_shared_types",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_dependencies_camoburguer_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -8017,7 +8165,7 @@
       "source_location": "L8",
       "weight": 1.0,
       "context": "import",
-      "source": "packages_domain_package_dependencies_camoburguer_shared_types",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_domain_package_dependencies_camoburguer_shared_types",
       "target": "packages_domain_package_json_camoburguer_shared_types",
       "confidence_score": 1.0
     },
@@ -8241,8 +8389,8 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L7",
       "weight": 1.0,
-      "source": "packages_finance_core_package",
-      "target": "packages_finance_core_package_dependencies",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_dependencies",
       "confidence_score": 1.0
     },
     {
@@ -8251,8 +8399,8 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "packages_finance_core_package",
-      "target": "packages_finance_core_package_main",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_main",
       "confidence_score": 1.0
     },
     {
@@ -8261,8 +8409,8 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L2",
       "weight": 1.0,
-      "source": "packages_finance_core_package",
-      "target": "packages_finance_core_package_name",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_name",
       "confidence_score": 1.0
     },
     {
@@ -8271,8 +8419,8 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L4",
       "weight": 1.0,
-      "source": "packages_finance_core_package",
-      "target": "packages_finance_core_package_private",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_private",
       "confidence_score": 1.0
     },
     {
@@ -8281,8 +8429,8 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L5",
       "weight": 1.0,
-      "source": "packages_finance_core_package",
-      "target": "packages_finance_core_package_type",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_type",
       "confidence_score": 1.0
     },
     {
@@ -8291,8 +8439,8 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "packages_finance_core_package",
-      "target": "packages_finance_core_package_version",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_version",
       "confidence_score": 1.0
     },
     {
@@ -8301,8 +8449,8 @@
       "source_file": "packages/finance-core/package.json",
       "source_location": "L8",
       "weight": 1.0,
-      "source": "packages_finance_core_package_dependencies",
-      "target": "packages_finance_core_package_dependencies_camoburguer_shared_types",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_dependencies",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_dependencies_camoburguer_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -8312,7 +8460,7 @@
       "source_location": "L8",
       "weight": 1.0,
       "context": "import",
-      "source": "packages_finance_core_package_dependencies_camoburguer_shared_types",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_finance_core_package_dependencies_camoburguer_shared_types",
       "target": "packages_finance_core_package_json_camoburguer_shared_types",
       "confidence_score": 1.0
     },
@@ -8402,8 +8550,8 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "packages_shared_types_package",
-      "target": "packages_shared_types_package_main",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_main",
       "confidence_score": 1.0
     },
     {
@@ -8412,8 +8560,8 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L2",
       "weight": 1.0,
-      "source": "packages_shared_types_package",
-      "target": "packages_shared_types_package_name",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_name",
       "confidence_score": 1.0
     },
     {
@@ -8422,8 +8570,8 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L4",
       "weight": 1.0,
-      "source": "packages_shared_types_package",
-      "target": "packages_shared_types_package_private",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_private",
       "confidence_score": 1.0
     },
     {
@@ -8432,8 +8580,8 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L5",
       "weight": 1.0,
-      "source": "packages_shared_types_package",
-      "target": "packages_shared_types_package_type",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_type",
       "confidence_score": 1.0
     },
     {
@@ -8442,8 +8590,18 @@
       "source_file": "packages/shared-types/package.json",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "packages_shared_types_package",
-      "target": "packages_shared_types_package_version",
+      "source": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_json",
+      "target": "mnt_d_milla_documents_camoburguer_demo_packages_shared_types_package_version",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts/graphify-update-wsl.sh",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "scripts_graphify_update_wsl",
+      "target": "scripts_graphify_update_wsl_sh__entry",
       "confidence_score": 1.0
     },
     {
@@ -8564,8 +8722,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L1",
       "weight": 1.0,
-      "source": "agents",
-      "target": "agents_camoburguer_demo_agents",
+      "source": "mnt_d_milla_documents_camoburguer_demo_agents_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_agents_camoburguer_demo_agents",
       "confidence_score": 1.0
     },
     {
@@ -8574,8 +8732,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L15",
       "weight": 1.0,
-      "source": "agents_camoburguer_demo_agents",
-      "target": "agents_graphify",
+      "source": "mnt_d_milla_documents_camoburguer_demo_agents_camoburguer_demo_agents",
+      "target": "mnt_d_milla_documents_camoburguer_demo_agents_graphify",
       "confidence_score": 1.0
     },
     {
@@ -8584,8 +8742,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L28",
       "weight": 1.0,
-      "source": "agents_camoburguer_demo_agents",
-      "target": "agents_implementation_boundaries",
+      "source": "mnt_d_milla_documents_camoburguer_demo_agents_camoburguer_demo_agents",
+      "target": "mnt_d_milla_documents_camoburguer_demo_agents_implementation_boundaries",
       "confidence_score": 1.0
     },
     {
@@ -8594,8 +8752,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "agents_camoburguer_demo_agents",
-      "target": "agents_operating_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_agents_camoburguer_demo_agents",
+      "target": "mnt_d_milla_documents_camoburguer_demo_agents_operating_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -8604,8 +8762,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L35",
       "weight": 1.0,
-      "source": "agents_camoburguer_demo_agents",
-      "target": "agents_required_seed_artifacts",
+      "source": "mnt_d_milla_documents_camoburguer_demo_agents_camoburguer_demo_agents",
+      "target": "mnt_d_milla_documents_camoburguer_demo_agents_required_seed_artifacts",
       "confidence_score": 1.0
     },
     {
@@ -8614,8 +8772,8 @@
       "source_file": "AGENTS.md",
       "source_location": "L50",
       "weight": 1.0,
-      "source": "agents_camoburguer_demo_agents",
-      "target": "agents_review_standard",
+      "source": "mnt_d_milla_documents_camoburguer_demo_agents_camoburguer_demo_agents",
+      "target": "mnt_d_milla_documents_camoburguer_demo_agents_review_standard",
       "confidence_score": 1.0
     },
     {
@@ -8624,15 +8782,15 @@
       "source_file": "AGENTS.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "agents_camoburguer_demo_agents",
-      "target": "agents_speeds",
+      "source": "mnt_d_milla_documents_camoburguer_demo_agents_camoburguer_demo_agents",
+      "target": "mnt_d_milla_documents_camoburguer_demo_agents_speeds",
       "confidence_score": 1.0
     },
     {
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L43",
+      "source_location": "L67",
       "weight": 1.0,
       "source": "readme",
       "target": "docs_5w2h_evolucao",
@@ -8642,7 +8800,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L43",
+      "source_location": "L67",
       "weight": 1.0,
       "source": "readme",
       "target": "docs_guia_de_desenvolvimento",
@@ -8662,7 +8820,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L45",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "readme_camoburguer_demo",
+      "target": "readme_contratos_http_principais",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L69",
       "weight": 1.0,
       "source": "readme_camoburguer_demo",
       "target": "readme_doutrina_de_desenvolvimento",
@@ -8672,7 +8840,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L28",
+      "source_location": "L5",
+      "weight": 1.0,
+      "source": "readme_camoburguer_demo",
+      "target": "readme_escopo_entregue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L51",
       "weight": 1.0,
       "source": "readme_camoburguer_demo",
       "target": "readme_estrutura",
@@ -8682,7 +8860,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L5",
+      "source_location": "L15",
       "weight": 1.0,
       "source": "readme_camoburguer_demo",
       "target": "readme_executar_a_demo",
@@ -8692,7 +8870,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L52",
+      "source_location": "L76",
       "weight": 1.0,
       "source": "readme_camoburguer_demo",
       "target": "readme_limites_da_v1",
@@ -8702,7 +8880,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L17",
+      "source_location": "L27",
       "weight": 1.0,
       "source": "readme_camoburguer_demo",
       "target": "readme_validar",
@@ -8714,8 +8892,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L1",
       "weight": 1.0,
-      "source": "subagentes",
-      "target": "subagentes_camoburguer_demo_subagentes",
+      "source": "mnt_d_milla_documents_camoburguer_demo_subagentes_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_subagentes_camoburguer_demo_subagentes",
       "confidence_score": 1.0
     },
     {
@@ -8724,8 +8902,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L39",
       "weight": 1.0,
-      "source": "subagentes_camoburguer_demo_subagentes",
-      "target": "subagentes_doutrina_comum",
+      "source": "mnt_d_milla_documents_camoburguer_demo_subagentes_camoburguer_demo_subagentes",
+      "target": "mnt_d_milla_documents_camoburguer_demo_subagentes_doutrina_comum",
       "confidence_score": 1.0
     },
     {
@@ -8734,8 +8912,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L46",
       "weight": 1.0,
-      "source": "subagentes_camoburguer_demo_subagentes",
-      "target": "subagentes_entrega_obrigat\u00f3ria_de_cada_subagente",
+      "source": "mnt_d_milla_documents_camoburguer_demo_subagentes_camoburguer_demo_subagentes",
+      "target": "mnt_d_milla_documents_camoburguer_demo_subagentes_entrega_obrigat\u00f3ria_de_cada_subagente",
       "confidence_score": 1.0
     },
     {
@@ -8744,8 +8922,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L65",
       "weight": 1.0,
-      "source": "subagentes_camoburguer_demo_subagentes",
-      "target": "subagentes_foco_por_etapa",
+      "source": "mnt_d_milla_documents_camoburguer_demo_subagentes_camoburguer_demo_subagentes",
+      "target": "mnt_d_milla_documents_camoburguer_demo_subagentes_foco_por_etapa",
       "confidence_score": 1.0
     },
     {
@@ -8754,8 +8932,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L55",
       "weight": 1.0,
-      "source": "subagentes_camoburguer_demo_subagentes",
-      "target": "subagentes_poder_do_revisor",
+      "source": "mnt_d_milla_documents_camoburguer_demo_subagentes_camoburguer_demo_subagentes",
+      "target": "mnt_d_milla_documents_camoburguer_demo_subagentes_poder_do_revisor",
       "confidence_score": 1.0
     },
     {
@@ -8764,8 +8942,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "subagentes_camoburguer_demo_subagentes",
-      "target": "subagentes_sequ\u00eancia_obrigat\u00f3ria",
+      "source": "mnt_d_milla_documents_camoburguer_demo_subagentes_camoburguer_demo_subagentes",
+      "target": "mnt_d_milla_documents_camoburguer_demo_subagentes_sequ\u00eancia_obrigat\u00f3ria",
       "confidence_score": 1.0
     },
     {
@@ -8774,8 +8952,8 @@
       "source_file": "SUBAGENTES.md",
       "source_location": "L20",
       "weight": 1.0,
-      "source": "subagentes_camoburguer_demo_subagentes",
-      "target": "subagentes_skill_obrigat\u00f3ria_por_subagente",
+      "source": "mnt_d_milla_documents_camoburguer_demo_subagentes_camoburguer_demo_subagentes",
+      "target": "mnt_d_milla_documents_camoburguer_demo_subagentes_skill_obrigat\u00f3ria_por_subagente",
       "confidence_score": 1.0
     },
     {
@@ -8882,6 +9060,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/5w2h-evolucao.md",
+      "source_location": "L189",
+      "weight": 1.0,
+      "source": "docs_5w2h_evolucao_registro_5w2h_da_evolu\u00e7\u00e3o_operacional",
+      "target": "docs_5w2h_evolucao_pr_9_qa_documenta\u00e7\u00e3o_e_release",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/5w2h-evolucao.md",
       "source_location": "L45",
       "weight": 1.0,
       "source": "docs_5w2h_evolucao_registro_5w2h_da_evolu\u00e7\u00e3o_operacional",
@@ -8912,7 +9100,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/arquitetura-do-sistema.md",
-      "source_location": "L56",
+      "source_location": "L76",
       "weight": 1.0,
       "source": "docs_arquitetura_do_sistema_arquitetura_do_sistema",
       "target": "docs_arquitetura_do_sistema_caixa",
@@ -8932,7 +9120,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/arquitetura-do-sistema.md",
-      "source_location": "L71",
+      "source_location": "L91",
       "weight": 1.0,
       "source": "docs_arquitetura_do_sistema_arquitetura_do_sistema",
       "target": "docs_arquitetura_do_sistema_eventos_internos",
@@ -8952,7 +9140,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/arquitetura-do-sistema.md",
-      "source_location": "L62",
+      "source_location": "L82",
       "weight": 1.0,
       "source": "docs_arquitetura_do_sistema_arquitetura_do_sistema",
       "target": "docs_arquitetura_do_sistema_fronteiras_e_seams",
@@ -8972,6 +9160,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/arquitetura-do-sistema.md",
+      "source_location": "L64",
+      "weight": 1.0,
+      "source": "docs_arquitetura_do_sistema_arquitetura_do_sistema",
+      "target": "docs_arquitetura_do_sistema_modelo_de_persist\u00eancia_consolidado",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/arquitetura-do-sistema.md",
       "source_location": "L16",
       "weight": 1.0,
       "source": "docs_arquitetura_do_sistema_arquitetura_do_sistema",
@@ -8982,7 +9180,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/arquitetura-do-sistema.md",
-      "source_location": "L78",
+      "source_location": "L98",
       "weight": 1.0,
       "source": "docs_arquitetura_do_sistema_arquitetura_do_sistema",
       "target": "docs_arquitetura_do_sistema_riscos_arquiteturais",
@@ -8996,6 +9194,16 @@
       "weight": 1.0,
       "source": "docs_automacoes_por_cenario",
       "target": "docs_automacoes_por_cenario_automa\u00e7\u00f5es_por_cen\u00e1rio",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/automacoes-por-cenario.md",
+      "source_location": "L15",
+      "weight": 1.0,
+      "source": "docs_automacoes_por_cenario_automa\u00e7\u00f5es_por_cen\u00e1rio",
+      "target": "docs_automacoes_por_cenario_automa\u00e7\u00f5es_operacionais_implementadas",
       "confidence_score": 1.0
     },
     {
@@ -9022,7 +9230,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/automacoes-por-cenario.md",
-      "source_location": "L15",
+      "source_location": "L30",
       "weight": 1.0,
       "source": "docs_automacoes_por_cenario_automa\u00e7\u00f5es_por_cen\u00e1rio",
       "target": "docs_automacoes_por_cenario_estrutura_esperada_de_regra",
@@ -9034,8 +9242,8 @@
       "source_file": "docs/canais-e-captura.md",
       "source_location": "L1",
       "weight": 1.0,
-      "source": "docs_canais_e_captura",
-      "target": "docs_canais_e_captura_canais_e_captura",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_canais_e_captura",
       "confidence_score": 1.0
     },
     {
@@ -9044,8 +9252,8 @@
       "source_file": "docs/canais-e-captura.md",
       "source_location": "L17",
       "weight": 1.0,
-      "source": "docs_canais_e_captura_canais_e_captura",
-      "target": "docs_canais_e_captura_campos_m\u00ednimos_por_captura",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_canais_e_captura",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_campos_m\u00ednimos_por_captura",
       "confidence_score": 1.0
     },
     {
@@ -9054,8 +9262,8 @@
       "source_file": "docs/canais-e-captura.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "docs_canais_e_captura_canais_e_captura",
-      "target": "docs_canais_e_captura_estrat\u00e9gia_v1",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_canais_e_captura",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_estrat\u00e9gia_v1",
       "confidence_score": 1.0
     },
     {
@@ -9064,8 +9272,8 @@
       "source_file": "docs/canais-e-captura.md",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "docs_canais_e_captura_canais_e_captura",
-      "target": "docs_canais_e_captura_fontes_de_pedido",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_canais_e_captura",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_canais_e_captura_fontes_de_pedido",
       "confidence_score": 1.0
     },
     {
@@ -9182,6 +9390,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/contexto-operacional.md",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "docs_contexto_operacional_contexto_operacional",
+      "target": "docs_contexto_operacional_consumo_local",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/contexto-operacional.md",
       "source_location": "L22",
       "weight": 1.0,
       "source": "docs_contexto_operacional_contexto_operacional",
@@ -9212,6 +9430,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/contexto-operacional.md",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "docs_contexto_operacional_contexto_operacional",
+      "target": "docs_contexto_operacional_responsabilidades_adicionais_da_v1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/contexto-operacional.md",
       "source_location": "L5",
       "weight": 1.0,
       "source": "docs_contexto_operacional_contexto_operacional",
@@ -9224,8 +9452,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L1",
       "weight": 1.0,
-      "source": "docs_estoque",
-      "target": "docs_estoque_estoque_por_categoria",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_estoque_por_categoria",
       "confidence_score": 1.0
     },
     {
@@ -9234,8 +9462,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L21",
       "weight": 1.0,
-      "source": "docs_estoque_estoque_por_categoria",
-      "target": "docs_estoque_auditoria_e_limites",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_estoque_por_categoria",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_auditoria_e_limites",
       "confidence_score": 1.0
     },
     {
@@ -9244,8 +9472,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L17",
       "weight": 1.0,
-      "source": "docs_estoque_estoque_por_categoria",
-      "target": "docs_estoque_corte_de_migra\u00e7\u00e3o",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_estoque_por_categoria",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_corte_de_migra\u00e7\u00e3o",
       "confidence_score": 1.0
     },
     {
@@ -9254,8 +9482,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "docs_estoque_estoque_por_categoria",
-      "target": "docs_estoque_escopo",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_estoque_por_categoria",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_escopo",
       "confidence_score": 1.0
     },
     {
@@ -9264,8 +9492,8 @@
       "source_file": "docs/estoque.md",
       "source_location": "L7",
       "weight": 1.0,
-      "source": "docs_estoque_estoque_por_categoria",
-      "target": "docs_estoque_fluxo",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_estoque_por_categoria",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_estoque_fluxo",
       "confidence_score": 1.0
     },
     {
@@ -9322,7 +9550,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/guia-de-desenvolvimento.md",
-      "source_location": "L69",
+      "source_location": "L95",
+      "weight": 1.0,
+      "source": "docs_guia_de_desenvolvimento_guia_de_desenvolvimento",
+      "target": "docs_guia_de_desenvolvimento_publica\u00e7\u00e3o_e_promo\u00e7\u00e3o",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/guia-de-desenvolvimento.md",
+      "source_location": "L80",
       "weight": 1.0,
       "source": "docs_guia_de_desenvolvimento_guia_de_desenvolvimento",
       "target": "docs_guia_de_desenvolvimento_revis\u00e3o_e_aceite",
@@ -9332,7 +9570,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/guia-de-desenvolvimento.md",
-      "source_location": "L82",
+      "source_location": "L104",
       "weight": 1.0,
       "source": "docs_guia_de_desenvolvimento_guia_de_desenvolvimento",
       "target": "docs_guia_de_desenvolvimento_rollback_e_solu\u00e7\u00e3o_de_problemas",
@@ -9342,7 +9580,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/guia-de-desenvolvimento.md",
-      "source_location": "L41",
+      "source_location": "L49",
       "weight": 1.0,
       "source": "docs_guia_de_desenvolvimento_guia_de_desenvolvimento",
       "target": "docs_guia_de_desenvolvimento_valida\u00e7\u00e3o",
@@ -9351,11 +9589,21 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "docs/guia-de-desenvolvimento.md",
+      "source_location": "L41",
+      "weight": 1.0,
+      "source": "docs_guia_de_desenvolvimento_implementa\u00e7\u00e3o",
+      "target": "docs_guia_de_desenvolvimento_migra\u00e7\u00f5es_e_compatibilidade",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "docs/padrao-ticket-cozinha.md",
       "source_location": "L1",
       "weight": 1.0,
-      "source": "docs_padrao_ticket_cozinha",
-      "target": "docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
       "confidence_score": 1.0
     },
     {
@@ -9364,8 +9612,8 @@
       "source_file": "docs/padrao-ticket-cozinha.md",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
-      "target": "docs_padrao_ticket_cozinha_campos_obrigat\u00f3rios",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_campos_obrigat\u00f3rios",
       "confidence_score": 1.0
     },
     {
@@ -9374,8 +9622,8 @@
       "source_file": "docs/padrao-ticket-cozinha.md",
       "source_location": "L17",
       "weight": 1.0,
-      "source": "docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
-      "target": "docs_padrao_ticket_cozinha_regras_de_legibilidade",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_regras_de_legibilidade",
       "confidence_score": 1.0
     },
     {
@@ -9384,8 +9632,8 @@
       "source_file": "docs/padrao-ticket-cozinha.md",
       "source_location": "L26",
       "weight": 1.0,
-      "source": "docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
-      "target": "docs_padrao_ticket_cozinha_ticket_corretivo",
+      "source": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_padr\u00e3o_de_ticket_de_cozinha",
+      "target": "mnt_d_milla_documents_camoburguer_demo_docs_padrao_ticket_cozinha_ticket_corretivo",
       "confidence_score": 1.0
     },
     {
@@ -9472,6 +9720,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/relatorio-validacao.md",
+      "source_location": "L114",
+      "weight": 1.0,
+      "source": "docs_relatorio_validacao_relat\u00f3rio_de_valida\u00e7\u00e3o",
+      "target": "docs_relatorio_validacao_decis\u00e3o_de_release",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/relatorio-validacao.md",
       "source_location": "L17",
       "weight": 1.0,
       "source": "docs_relatorio_validacao_relat\u00f3rio_de_valida\u00e7\u00e3o",
@@ -9512,6 +9770,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/relatorio-validacao.md",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "docs_relatorio_validacao_relat\u00f3rio_de_valida\u00e7\u00e3o",
+      "target": "docs_relatorio_validacao_incremento_qa_documenta\u00e7\u00e3o_e_release",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/relatorio-validacao.md",
       "source_location": "L64",
       "weight": 1.0,
       "source": "docs_relatorio_validacao_relat\u00f3rio_de_valida\u00e7\u00e3o",
@@ -9522,10 +9790,20 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/relatorio-validacao.md",
-      "source_location": "L75",
+      "source_location": "L89",
       "weight": 1.0,
-      "source": "docs_relatorio_validacao_relat\u00f3rio_de_valida\u00e7\u00e3o",
-      "target": "docs_relatorio_validacao_risco_residual_aceito",
+      "source": "docs_relatorio_validacao_incremento_qa_documenta\u00e7\u00e3o_e_release",
+      "target": "docs_relatorio_validacao_incidente_de_valida\u00e7\u00e3o_resolvido",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/relatorio-validacao.md",
+      "source_location": "L95",
+      "weight": 1.0,
+      "source": "docs_relatorio_validacao_incremento_qa_documenta\u00e7\u00e3o_e_release",
+      "target": "docs_relatorio_validacao_sequ\u00eancia_maker_reviewer_desta_pr",
       "confidence_score": 1.0
     },
     {
@@ -9534,8 +9812,8 @@
       "source_file": "skills/architecture-gate-review/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_architecture_gate_review_skill",
-      "target": "skills_architecture_gate_review_skill_architecture_gate_review",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_architecture_gate_review",
       "confidence_score": 1.0
     },
     {
@@ -9544,8 +9822,8 @@
       "source_file": "skills/architecture-gate-review/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_architecture_gate_review_skill_architecture_gate_review",
-      "target": "skills_architecture_gate_review_skill_checklist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_architecture_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_checklist",
       "confidence_score": 1.0
     },
     {
@@ -9554,8 +9832,8 @@
       "source_file": "skills/architecture-gate-review/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_architecture_gate_review_skill_architecture_gate_review",
-      "target": "skills_architecture_gate_review_skill_decision_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_architecture_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_decision_output",
       "confidence_score": 1.0
     },
     {
@@ -9564,8 +9842,8 @@
       "source_file": "skills/architecture-gate-review/SKILL.md",
       "source_location": "L23",
       "weight": 1.0,
-      "source": "skills_architecture_gate_review_skill_architecture_gate_review",
-      "target": "skills_architecture_gate_review_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_architecture_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_architecture_gate_review_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9574,8 +9852,8 @@
       "source_file": "skills/backend-gate-review/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_backend_gate_review_skill",
-      "target": "skills_backend_gate_review_skill_backend_gate_review",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_backend_gate_review",
       "confidence_score": 1.0
     },
     {
@@ -9584,8 +9862,8 @@
       "source_file": "skills/backend-gate-review/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_backend_gate_review_skill_backend_gate_review",
-      "target": "skills_backend_gate_review_skill_checklist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_backend_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_checklist",
       "confidence_score": 1.0
     },
     {
@@ -9594,8 +9872,8 @@
       "source_file": "skills/backend-gate-review/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_backend_gate_review_skill_backend_gate_review",
-      "target": "skills_backend_gate_review_skill_decision_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_backend_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_decision_output",
       "confidence_score": 1.0
     },
     {
@@ -9604,8 +9882,8 @@
       "source_file": "skills/backend-gate-review/SKILL.md",
       "source_location": "L23",
       "weight": 1.0,
-      "source": "skills_backend_gate_review_skill_backend_gate_review",
-      "target": "skills_backend_gate_review_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_backend_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_backend_gate_review_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9614,8 +9892,8 @@
       "source_file": "skills/domain-db-gate-review/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_domain_db_gate_review_skill",
-      "target": "skills_domain_db_gate_review_skill_domain_db_gate_review",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_domain_db_gate_review",
       "confidence_score": 1.0
     },
     {
@@ -9624,8 +9902,8 @@
       "source_file": "skills/domain-db-gate-review/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_domain_db_gate_review_skill_domain_db_gate_review",
-      "target": "skills_domain_db_gate_review_skill_checklist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_domain_db_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_checklist",
       "confidence_score": 1.0
     },
     {
@@ -9634,8 +9912,8 @@
       "source_file": "skills/domain-db-gate-review/SKILL.md",
       "source_location": "L18",
       "weight": 1.0,
-      "source": "skills_domain_db_gate_review_skill_domain_db_gate_review",
-      "target": "skills_domain_db_gate_review_skill_decision_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_domain_db_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_decision_output",
       "confidence_score": 1.0
     },
     {
@@ -9644,8 +9922,8 @@
       "source_file": "skills/domain-db-gate-review/SKILL.md",
       "source_location": "L22",
       "weight": 1.0,
-      "source": "skills_domain_db_gate_review_skill_domain_db_gate_review",
-      "target": "skills_domain_db_gate_review_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_domain_db_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_domain_db_gate_review_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9654,8 +9932,8 @@
       "source_file": "skills/finance-insight-curator/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_finance_insight_curator_skill",
-      "target": "skills_finance_insight_curator_skill_finance_insight_curator",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_finance_insight_curator",
       "confidence_score": 1.0
     },
     {
@@ -9664,8 +9942,8 @@
       "source_file": "skills/finance-insight-curator/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_finance_insight_curator_skill_finance_insight_curator",
-      "target": "skills_finance_insight_curator_skill_focus",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_finance_insight_curator",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_focus",
       "confidence_score": 1.0
     },
     {
@@ -9674,8 +9952,8 @@
       "source_file": "skills/finance-insight-curator/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_finance_insight_curator_skill_finance_insight_curator",
-      "target": "skills_finance_insight_curator_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_finance_insight_curator",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_finance_insight_curator_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9684,8 +9962,8 @@
       "source_file": "skills/frontend-gate-review/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_frontend_gate_review_skill",
-      "target": "skills_frontend_gate_review_skill_frontend_gate_review",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_frontend_gate_review",
       "confidence_score": 1.0
     },
     {
@@ -9694,8 +9972,8 @@
       "source_file": "skills/frontend-gate-review/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_frontend_gate_review_skill_frontend_gate_review",
-      "target": "skills_frontend_gate_review_skill_checklist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_frontend_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_checklist",
       "confidence_score": 1.0
     },
     {
@@ -9704,8 +9982,8 @@
       "source_file": "skills/frontend-gate-review/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_frontend_gate_review_skill_frontend_gate_review",
-      "target": "skills_frontend_gate_review_skill_decision_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_frontend_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_decision_output",
       "confidence_score": 1.0
     },
     {
@@ -9714,8 +9992,8 @@
       "source_file": "skills/frontend-gate-review/SKILL.md",
       "source_location": "L23",
       "weight": 1.0,
-      "source": "skills_frontend_gate_review_skill_frontend_gate_review",
-      "target": "skills_frontend_gate_review_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_frontend_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_frontend_gate_review_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9724,8 +10002,8 @@
       "source_file": "skills/infra-gate-review/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_infra_gate_review_skill",
-      "target": "skills_infra_gate_review_skill_infra_gate_review",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_infra_gate_review",
       "confidence_score": 1.0
     },
     {
@@ -9734,8 +10012,8 @@
       "source_file": "skills/infra-gate-review/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_infra_gate_review_skill_infra_gate_review",
-      "target": "skills_infra_gate_review_skill_checklist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_infra_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_checklist",
       "confidence_score": 1.0
     },
     {
@@ -9744,8 +10022,8 @@
       "source_file": "skills/infra-gate-review/SKILL.md",
       "source_location": "L18",
       "weight": 1.0,
-      "source": "skills_infra_gate_review_skill_infra_gate_review",
-      "target": "skills_infra_gate_review_skill_decision_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_infra_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_decision_output",
       "confidence_score": 1.0
     },
     {
@@ -9754,8 +10032,8 @@
       "source_file": "skills/infra-gate-review/SKILL.md",
       "source_location": "L22",
       "weight": 1.0,
-      "source": "skills_infra_gate_review_skill_infra_gate_review",
-      "target": "skills_infra_gate_review_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_infra_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_infra_gate_review_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9764,8 +10042,8 @@
       "source_file": "skills/kitchen-ticket-ergonomics-review/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_kitchen_ticket_ergonomics_review_skill",
-      "target": "skills_kitchen_ticket_ergonomics_review_skill_kitchen_ticket_ergonomics_review",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_kitchen_ticket_ergonomics_review",
       "confidence_score": 1.0
     },
     {
@@ -9774,8 +10052,8 @@
       "source_file": "skills/kitchen-ticket-ergonomics-review/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_kitchen_ticket_ergonomics_review_skill_kitchen_ticket_ergonomics_review",
-      "target": "skills_kitchen_ticket_ergonomics_review_skill_checklist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_kitchen_ticket_ergonomics_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_checklist",
       "confidence_score": 1.0
     },
     {
@@ -9784,8 +10062,8 @@
       "source_file": "skills/kitchen-ticket-ergonomics-review/SKILL.md",
       "source_location": "L18",
       "weight": 1.0,
-      "source": "skills_kitchen_ticket_ergonomics_review_skill_kitchen_ticket_ergonomics_review",
-      "target": "skills_kitchen_ticket_ergonomics_review_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_kitchen_ticket_ergonomics_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_kitchen_ticket_ergonomics_review_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9794,8 +10072,8 @@
       "source_file": "skills/operator-friction-audit/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_operator_friction_audit_skill",
-      "target": "skills_operator_friction_audit_skill_operator_friction_audit",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_operator_friction_audit",
       "confidence_score": 1.0
     },
     {
@@ -9804,8 +10082,8 @@
       "source_file": "skills/operator-friction-audit/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_operator_friction_audit_skill_operator_friction_audit",
-      "target": "skills_operator_friction_audit_skill_checklist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_operator_friction_audit",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_checklist",
       "confidence_score": 1.0
     },
     {
@@ -9814,8 +10092,8 @@
       "source_file": "skills/operator-friction-audit/SKILL.md",
       "source_location": "L18",
       "weight": 1.0,
-      "source": "skills_operator_friction_audit_skill_operator_friction_audit",
-      "target": "skills_operator_friction_audit_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_operator_friction_audit",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_operator_friction_audit_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9824,8 +10102,8 @@
       "source_file": "skills/operator-ui-builder/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_operator_ui_builder_skill",
-      "target": "skills_operator_ui_builder_skill_operator_ui_builder",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_operator_ui_builder",
       "confidence_score": 1.0
     },
     {
@@ -9834,8 +10112,8 @@
       "source_file": "skills/operator-ui-builder/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_operator_ui_builder_skill_operator_ui_builder",
-      "target": "skills_operator_ui_builder_skill_focus",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_operator_ui_builder",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_focus",
       "confidence_score": 1.0
     },
     {
@@ -9844,8 +10122,8 @@
       "source_file": "skills/operator-ui-builder/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_operator_ui_builder_skill_operator_ui_builder",
-      "target": "skills_operator_ui_builder_skill_mandatory_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_operator_ui_builder",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_mandatory_output",
       "confidence_score": 1.0
     },
     {
@@ -9854,8 +10132,8 @@
       "source_file": "skills/operator-ui-builder/SKILL.md",
       "source_location": "L26",
       "weight": 1.0,
-      "source": "skills_operator_ui_builder_skill_operator_ui_builder",
-      "target": "skills_operator_ui_builder_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_operator_ui_builder",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_operator_ui_builder_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9864,8 +10142,8 @@
       "source_file": "skills/order-finance-domain-modeler/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_order_finance_domain_modeler_skill",
-      "target": "skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
       "confidence_score": 1.0
     },
     {
@@ -9874,8 +10152,8 @@
       "source_file": "skills/order-finance-domain-modeler/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
-      "target": "skills_order_finance_domain_modeler_skill_focus",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_focus",
       "confidence_score": 1.0
     },
     {
@@ -9884,8 +10162,8 @@
       "source_file": "skills/order-finance-domain-modeler/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
-      "target": "skills_order_finance_domain_modeler_skill_mandatory_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_mandatory_output",
       "confidence_score": 1.0
     },
     {
@@ -9894,8 +10172,8 @@
       "source_file": "skills/order-finance-domain-modeler/SKILL.md",
       "source_location": "L26",
       "weight": 1.0,
-      "source": "skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
-      "target": "skills_order_finance_domain_modeler_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_order_finance_domain_modeler",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_order_finance_domain_modeler_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9904,8 +10182,8 @@
       "source_file": "skills/print-infra-specialist/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_print_infra_specialist_skill",
-      "target": "skills_print_infra_specialist_skill_print_infra_specialist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_print_infra_specialist",
       "confidence_score": 1.0
     },
     {
@@ -9914,8 +10192,8 @@
       "source_file": "skills/print-infra-specialist/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_print_infra_specialist_skill_print_infra_specialist",
-      "target": "skills_print_infra_specialist_skill_focus",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_print_infra_specialist",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_focus",
       "confidence_score": 1.0
     },
     {
@@ -9924,8 +10202,8 @@
       "source_file": "skills/print-infra-specialist/SKILL.md",
       "source_location": "L18",
       "weight": 1.0,
-      "source": "skills_print_infra_specialist_skill_print_infra_specialist",
-      "target": "skills_print_infra_specialist_skill_mandatory_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_print_infra_specialist",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_mandatory_output",
       "confidence_score": 1.0
     },
     {
@@ -9934,8 +10212,8 @@
       "source_file": "skills/print-infra-specialist/SKILL.md",
       "source_location": "L25",
       "weight": 1.0,
-      "source": "skills_print_infra_specialist_skill_print_infra_specialist",
-      "target": "skills_print_infra_specialist_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_print_infra_specialist",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_print_infra_specialist_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9944,8 +10222,8 @@
       "source_file": "skills/process-gate-review/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_process_gate_review_skill",
-      "target": "skills_process_gate_review_skill_process_gate_review",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_process_gate_review",
       "confidence_score": 1.0
     },
     {
@@ -9954,8 +10232,8 @@
       "source_file": "skills/process-gate-review/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_process_gate_review_skill_process_gate_review",
-      "target": "skills_process_gate_review_skill_checklist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_process_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_checklist",
       "confidence_score": 1.0
     },
     {
@@ -9964,8 +10242,8 @@
       "source_file": "skills/process-gate-review/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_process_gate_review_skill_process_gate_review",
-      "target": "skills_process_gate_review_skill_decision_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_process_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_decision_output",
       "confidence_score": 1.0
     },
     {
@@ -9974,8 +10252,8 @@
       "source_file": "skills/process-gate-review/SKILL.md",
       "source_location": "L29",
       "weight": 1.0,
-      "source": "skills_process_gate_review_skill_process_gate_review",
-      "target": "skills_process_gate_review_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_process_gate_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_process_gate_review_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -9984,8 +10262,8 @@
       "source_file": "skills/release-readiness-review/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_release_readiness_review_skill",
-      "target": "skills_release_readiness_review_skill_release_readiness_review",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_release_readiness_review",
       "confidence_score": 1.0
     },
     {
@@ -9994,8 +10272,8 @@
       "source_file": "skills/release-readiness-review/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_release_readiness_review_skill_release_readiness_review",
-      "target": "skills_release_readiness_review_skill_mandatory_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_release_readiness_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_mandatory_output",
       "confidence_score": 1.0
     },
     {
@@ -10004,8 +10282,8 @@
       "source_file": "skills/release-readiness-review/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_release_readiness_review_skill_release_readiness_review",
-      "target": "skills_release_readiness_review_skill_required_inputs",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_release_readiness_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_required_inputs",
       "confidence_score": 1.0
     },
     {
@@ -10014,8 +10292,8 @@
       "source_file": "skills/release-readiness-review/SKILL.md",
       "source_location": "L26",
       "weight": 1.0,
-      "source": "skills_release_readiness_review_skill_release_readiness_review",
-      "target": "skills_release_readiness_review_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_release_readiness_review",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_release_readiness_review_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -10024,8 +10302,8 @@
       "source_file": "skills/restaurant-architecture-designer/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_restaurant_architecture_designer_skill",
-      "target": "skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
       "confidence_score": 1.0
     },
     {
@@ -10034,8 +10312,8 @@
       "source_file": "skills/restaurant-architecture-designer/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
-      "target": "skills_restaurant_architecture_designer_skill_focus",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_focus",
       "confidence_score": 1.0
     },
     {
@@ -10044,8 +10322,8 @@
       "source_file": "skills/restaurant-architecture-designer/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
-      "target": "skills_restaurant_architecture_designer_skill_mandatory_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_mandatory_output",
       "confidence_score": 1.0
     },
     {
@@ -10054,8 +10332,8 @@
       "source_file": "skills/restaurant-architecture-designer/SKILL.md",
       "source_location": "L27",
       "weight": 1.0,
-      "source": "skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
-      "target": "skills_restaurant_architecture_designer_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_restaurant_architecture_designer",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_architecture_designer_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -10064,8 +10342,8 @@
       "source_file": "skills/restaurant-backend-builder/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_restaurant_backend_builder_skill",
-      "target": "skills_restaurant_backend_builder_skill_restaurant_backend_builder",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_restaurant_backend_builder",
       "confidence_score": 1.0
     },
     {
@@ -10074,8 +10352,8 @@
       "source_file": "skills/restaurant-backend-builder/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_restaurant_backend_builder_skill_restaurant_backend_builder",
-      "target": "skills_restaurant_backend_builder_skill_focus",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_restaurant_backend_builder",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_focus",
       "confidence_score": 1.0
     },
     {
@@ -10084,8 +10362,8 @@
       "source_file": "skills/restaurant-backend-builder/SKILL.md",
       "source_location": "L19",
       "weight": 1.0,
-      "source": "skills_restaurant_backend_builder_skill_restaurant_backend_builder",
-      "target": "skills_restaurant_backend_builder_skill_mandatory_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_restaurant_backend_builder",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_mandatory_output",
       "confidence_score": 1.0
     },
     {
@@ -10094,8 +10372,8 @@
       "source_file": "skills/restaurant-backend-builder/SKILL.md",
       "source_location": "L26",
       "weight": 1.0,
-      "source": "skills_restaurant_backend_builder_skill_restaurant_backend_builder",
-      "target": "skills_restaurant_backend_builder_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_restaurant_backend_builder",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_backend_builder_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -10104,8 +10382,8 @@
       "source_file": "skills/restaurant-demo-qa/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_restaurant_demo_qa_skill",
-      "target": "skills_restaurant_demo_qa_skill_restaurant_demo_qa",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_restaurant_demo_qa",
       "confidence_score": 1.0
     },
     {
@@ -10114,8 +10392,8 @@
       "source_file": "skills/restaurant-demo-qa/SKILL.md",
       "source_location": "L20",
       "weight": 1.0,
-      "source": "skills_restaurant_demo_qa_skill_restaurant_demo_qa",
-      "target": "skills_restaurant_demo_qa_skill_mandatory_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_restaurant_demo_qa",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_mandatory_output",
       "confidence_score": 1.0
     },
     {
@@ -10124,8 +10402,8 @@
       "source_file": "skills/restaurant-demo-qa/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_restaurant_demo_qa_skill_restaurant_demo_qa",
-      "target": "skills_restaurant_demo_qa_skill_test_scope",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_restaurant_demo_qa",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_test_scope",
       "confidence_score": 1.0
     },
     {
@@ -10134,8 +10412,8 @@
       "source_file": "skills/restaurant-demo-qa/SKILL.md",
       "source_location": "L28",
       "weight": 1.0,
-      "source": "skills_restaurant_demo_qa_skill_restaurant_demo_qa",
-      "target": "skills_restaurant_demo_qa_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_restaurant_demo_qa",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_demo_qa_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -10144,8 +10422,8 @@
       "source_file": "skills/restaurant-process-orchestrator/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_restaurant_process_orchestrator_skill",
-      "target": "skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
       "confidence_score": 1.0
     },
     {
@@ -10154,8 +10432,8 @@
       "source_file": "skills/restaurant-process-orchestrator/SKILL.md",
       "source_location": "L17",
       "weight": 1.0,
-      "source": "skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
-      "target": "skills_restaurant_process_orchestrator_skill_mandatory_output",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_mandatory_output",
       "confidence_score": 1.0
     },
     {
@@ -10164,8 +10442,8 @@
       "source_file": "skills/restaurant-process-orchestrator/SKILL.md",
       "source_location": "L25",
       "weight": 1.0,
-      "source": "skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
-      "target": "skills_restaurant_process_orchestrator_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -10174,8 +10452,8 @@
       "source_file": "skills/restaurant-process-orchestrator/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
-      "target": "skills_restaurant_process_orchestrator_skill_workflow",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_restaurant_process_orchestrator",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_restaurant_process_orchestrator_skill_workflow",
       "confidence_score": 1.0
     },
     {
@@ -10184,8 +10462,8 @@
       "source_file": "skills/scenario-automation-planner/SKILL.md",
       "source_location": "L6",
       "weight": 1.0,
-      "source": "skills_scenario_automation_planner_skill",
-      "target": "skills_scenario_automation_planner_skill_scenario_automation_planner",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_scenario_automation_planner",
       "confidence_score": 1.0
     },
     {
@@ -10194,8 +10472,8 @@
       "source_file": "skills/scenario-automation-planner/SKILL.md",
       "source_location": "L10",
       "weight": 1.0,
-      "source": "skills_scenario_automation_planner_skill_scenario_automation_planner",
-      "target": "skills_scenario_automation_planner_skill_focus",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_scenario_automation_planner",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_focus",
       "confidence_score": 1.0
     },
     {
@@ -10204,8 +10482,8 @@
       "source_file": "skills/scenario-automation-planner/SKILL.md",
       "source_location": "L18",
       "weight": 1.0,
-      "source": "skills_scenario_automation_planner_skill_scenario_automation_planner",
-      "target": "skills_scenario_automation_planner_skill_tool_doctrine",
+      "source": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_scenario_automation_planner",
+      "target": "mnt_d_milla_documents_camoburguer_demo_skills_scenario_automation_planner_skill_tool_doctrine",
       "confidence_score": 1.0
     },
     {
@@ -10214,8 +10492,8 @@
       "source_file": "workflows/camoburguer-implementation-flow.md",
       "source_location": "L1",
       "weight": 1.0,
-      "source": "workflows_camoburguer_implementation_flow",
-      "target": "workflows_camoburguer_implementation_flow_workflow_de_implementa\u00e7\u00e3o",
+      "source": "mnt_d_milla_documents_camoburguer_demo_workflows_camoburguer_implementation_flow_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_workflows_camoburguer_implementation_flow_workflow_de_implementa\u00e7\u00e3o",
       "confidence_score": 1.0
     },
     {
@@ -10224,8 +10502,8 @@
       "source_file": "workflows/review-template.md",
       "source_location": "L1",
       "weight": 1.0,
-      "source": "workflows_review_template",
-      "target": "workflows_review_template_template_de_revis\u00e3o",
+      "source": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_md",
+      "target": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_template_de_revis\u00e3o",
       "confidence_score": 1.0
     },
     {
@@ -10234,8 +10512,8 @@
       "source_file": "workflows/review-template.md",
       "source_location": "L9",
       "weight": 1.0,
-      "source": "workflows_review_template_template_de_revis\u00e3o",
-      "target": "workflows_review_template_checklist",
+      "source": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_template_de_revis\u00e3o",
+      "target": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_checklist",
       "confidence_score": 1.0
     },
     {
@@ -10244,8 +10522,8 @@
       "source_file": "workflows/review-template.md",
       "source_location": "L3",
       "weight": 1.0,
-      "source": "workflows_review_template_template_de_revis\u00e3o",
-      "target": "workflows_review_template_estado",
+      "source": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_template_de_revis\u00e3o",
+      "target": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_estado",
       "confidence_score": 1.0
     },
     {
@@ -10254,10 +10532,11 @@
       "source_file": "workflows/review-template.md",
       "source_location": "L17",
       "weight": 1.0,
-      "source": "workflows_review_template_template_de_revis\u00e3o",
-      "target": "workflows_review_template_sa\u00edda_obrigat\u00f3ria",
+      "source": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_template_de_revis\u00e3o",
+      "target": "mnt_d_milla_documents_camoburguer_demo_workflows_review_template_sa\u00edda_obrigat\u00f3ria",
       "confidence_score": 1.0
     }
   ],
-  "hyperedges": []
+  "hyperedges": [],
+  "built_at_commit": "82019fcd8c62ee5a3a3dc443cf12acea562de5fd"
 }
