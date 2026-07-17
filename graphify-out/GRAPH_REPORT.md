@@ -1,16 +1,16 @@
 # Graph Report - Camoburguer Demo  (2026-07-16)
 
 ## Corpus Check
-- 55 files · ~18,621 words
+- 55 files · ~20,014 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 390 nodes · 522 edges · 43 communities (41 shown, 2 thin omitted)
+- 393 nodes · 529 edges · 43 communities (41 shown, 2 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.67)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `439cfc71`
+- Built from commit: `558ac728`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -59,12 +59,12 @@
 - Relatório de Validação
 
 ## God Nodes (most connected - your core abstractions)
-1. `$()` - 19 edges
-2. `toMoney()` - 19 edges
+1. `toMoney()` - 20 edges
+2. `$()` - 19 edges
 3. `refreshAll()` - 15 edges
 4. `wireCart()` - 12 edges
 5. `wireForms()` - 11 edges
-6. `createOrder()` - 10 edges
+6. `createOrder()` - 11 edges
 7. `Arquitetura do Sistema` - 10 edges
 8. `mapOrder()` - 9 edges
 9. `escapeHtml()` - 9 edges
@@ -89,7 +89,7 @@
 
 ### Community 0 - "server.js"
 Cohesion: 0.07
-Nodes (55): config, createDb(), mapFinanceEntry(), mapOrder(), mapShift(), mapTab(), app, db (+47 more)
+Nodes (56): config, createDb(), mapFinanceEntry(), mapOrder(), mapShift(), mapTab(), app, db (+48 more)
 
 ### Community 1 - "dependencies"
 Cohesion: 0.09
@@ -216,8 +216,8 @@ Cohesion: 0.40
 Nodes (4): Checklist, Estado, Saída obrigatória, Template de Revisão
 
 ### Community 33 - "Padrão de Ticket de Cozinha"
-Cohesion: 0.50
-Nodes (3): Campos obrigatórios, Padrão de Ticket de Cozinha, Regras de legibilidade
+Cohesion: 0.40
+Nodes (4): Campos obrigatórios, Padrão de Ticket de Cozinha, Regras de legibilidade, Ticket corretivo
 
 ### Community 34 - "Finance Insight Curator"
 Cohesion: 0.50
@@ -241,14 +241,14 @@ Nodes (8): api(), bridgePayload, createOrder(), currentShift, orders, previousOp
 
 ### Community 41 - "Camoburguer Demo"
 Cohesion: 0.08
-Nodes (21): PR 0 — Descontos por item e pedido, PR 1 — Guia de desenvolvimento, 5W2H e Graphify, PR 2 — Cardápio OlaClick, PR 3 — Adicionais do cardápio, PR 4 — Comandas livres, Próximos incrementos, Registro 5W2H da Evolução Operacional, Fluxo Git empilhado (+13 more)
+Nodes (22): PR 0 — Descontos por item e pedido, PR 1 — Guia de desenvolvimento, 5W2H e Graphify, PR 2 — Cardápio OlaClick, PR 3 — Adicionais do cardápio, PR 4 — Comandas livres, PR 5 — Rodadas e tickets corretivos, Próximos incrementos, Registro 5W2H da Evolução Operacional (+14 more)
 
 ### Community 42 - "Relatório de Validação"
 Cohesion: 0.40
 Nodes (4): Evidência reproduzível, Gates executados, Relatório de Validação, Risco residual aceito
 
 ## Knowledge Gaps
-- **195 isolated node(s):** `name`, `version`, `private`, `type`, `start` (+190 more)
+- **197 isolated node(s):** `name`, `version`, `private`, `type`, `start` (+192 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -258,9 +258,9 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 2 inferred relationships involving `wireCart()` (e.g. with `renderAddOns()` and `renderOrderItems()`) actually correct?**
   _`wireCart()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `version`, `private` to the rest of the system?**
-  _195 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _197 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `server.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.0710085933966531 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07111501316944688 - nodes in this community are weakly interconnected._
 - **Should `dependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._
 - **Should `main.js` be split into smaller, more focused modules?**
@@ -268,4 +268,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `scripts` be split into smaller, more focused modules?**
   _Cohesion score 0.10526315789473684 - nodes in this community are weakly interconnected._
 - **Should `Camoburguer Demo` be split into smaller, more focused modules?**
-  _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08 - nodes in this community are weakly interconnected._

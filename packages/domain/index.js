@@ -73,6 +73,7 @@ export function createOrder(input) {
     if (!Number.isFinite(price) || price < 0) throw new Error("Preço de item inválido");
     return {
       id: item.id || randomUUID(),
+      reversesItemId: item.reversesItemId || null,
       sku: item.sku || null,
       name: String(item.name).trim(),
       category: item.category || "custom",
@@ -99,6 +100,8 @@ export function createOrder(input) {
     idempotencyKey: String(input.idempotencyKey || "").trim() || null,
     tabId: input.tabId || null,
     roundNumber: input.roundNumber == null ? null : Number(input.roundNumber),
+    roundKind: input.roundKind || "production",
+    reversesOrderId: input.reversesOrderId || null,
     source,
     status: "received",
     customerName: input.customerName || "Cliente",
@@ -120,6 +123,12 @@ export function createOrder(input) {
   };
 }
 
+export function createCancellationOrder(input) {
+  if (!input.tabId || !input.reversesOrderId) throw new Error("Cancelamento exige comanda e rodada original");
+  const order = createOrder({ ...input, roundKind: "cancellation" });
+  return { ...order, total: toMoney(-Math.abs(order.total)) };
+}
+
 export function transitionOrder(order, nextStatus) {
   assertEnum(nextStatus, ORDER_STATUSES, "status");
   const allowed = ALLOWED_TRANSITIONS[order.status] || [];
@@ -135,7 +144,9 @@ export function transitionOrder(order, nextStatus) {
 
 export function buildKitchenTicket(order) {
   const header = [
+    ...(order.roundKind === "cancellation" ? ["*** CANCELAMENTO / RETIRAR ***"] : []),
     `Pedido ${order.id.slice(0, 8).toUpperCase()}`,
+    ...(order.reversesOrderId ? [`Corrige pedido: ${order.reversesOrderId.slice(0, 8).toUpperCase()}`] : []),
     ...(order.tabId ? [`Comanda: ${order.metadata?.tabLabel || order.tabId}`, `Rodada: ${order.roundNumber}`] : []),
     `Horário: ${new Date(order.createdAt).toLocaleString("pt-BR", {
       timeZone: "America/Sao_Paulo",

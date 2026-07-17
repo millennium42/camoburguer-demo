@@ -10,6 +10,7 @@ import {
   buildKitchenTicket,
   closeCashShift,
   createCashShift,
+  createCancellationOrder,
   createOrder,
   transitionOrder
 } from "@camoburguer/domain";
@@ -41,16 +42,18 @@ app.setErrorHandler((error, request, reply) => {
 async function insertOrder(order, executor = db) {
   const { rows } = await executor.query(
     `INSERT INTO orders (
-      id, idempotency_key, tab_id, round_number, source, status, customer_name, fulfillment_mode, delivery_address,
+      id, idempotency_key, tab_id, round_number, round_kind, reverses_order_id, source, status, customer_name, fulfillment_mode, delivery_address,
       promised_at, notes, payment_method, total, discount_percent, items, metadata, created_at, updated_at
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb,$17,$18
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18::jsonb,$19,$20
     ) RETURNING *`,
     [
       order.id,
       order.idempotencyKey,
       order.tabId,
       order.roundNumber,
+      order.roundKind,
+      order.reversesOrderId,
       order.source,
       order.status,
       order.customerName,
@@ -108,7 +111,7 @@ async function tabView(tab, executor = db) {
   return {
     ...tab,
     rounds,
-    total: toMoney(tab.finalTotal ?? rounds.reduce((sum, order) => sum + Number(order.total), 0))
+    total: toMoney(tab.finalTotal ?? rounds.filter((order) => order.status !== "cancelled").reduce((sum, order) => sum + Number(order.total), 0))
   };
 }
 
@@ -292,9 +295,9 @@ async function reservePrintJob(order, reason = "confirmed", executor = db) {
   return rows[0] ? mapPrintJob(rows[0]) : null;
 }
 
-async function getConfirmationPrintJob(orderId) {
+async function getPrimaryPrintJob(orderId) {
   const { rows } = await db.query(
-    "SELECT * FROM print_jobs WHERE order_id = $1 AND reason = 'confirmed' LIMIT 1",
+    "SELECT * FROM print_jobs WHERE order_id = $1 AND reason IN ('confirmed', 'cancellation') ORDER BY created_at LIMIT 1",
     [orderId]
   );
   return rows[0] ? mapPrintJob(rows[0]) : null;
@@ -488,6 +491,90 @@ app.post("/tabs/:tabId/rounds", async (request, reply) => {
   return reply.code(201).send(result.saved);
 });
 
+app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) => {
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
+  const existing = await getOrderByIdempotencyKey(idempotencyKey);
+  if (existing) return existing.tabId === request.params.tabId && existing.reversesOrderId === request.params.orderId
+    ? existing
+    : reply.code(409).send({ message: "Chave idempotente já usada em outra operação" });
+
+  let result;
+  try {
+    result = await db.transaction(async (client) => {
+      const tab = await getTab(request.params.tabId, client, true);
+      if (!tab) return { notFound: true };
+      if (tab.status !== "open") return { conflict: "Comanda não está aberta" };
+      const original = await getOrder(request.params.orderId, client, true);
+      if (!original || original.tabId !== tab.id || original.roundKind !== "production") {
+        return { conflict: "Rodada original inválida" };
+      }
+      const { rows: cancellationRows } = await client.query(
+        "SELECT items FROM orders WHERE reverses_order_id = $1 AND round_kind = 'cancellation'",
+        [original.id]
+      );
+      const previouslyCancelled = cancellationRows.flatMap((row) => row.items || []);
+      const requested = request.body?.items;
+      if (!Array.isArray(requested) || !requested.length) return { invalid: "Informe ao menos um item para cancelar" };
+      if (new Set(requested.map((item) => item.itemId)).size !== requested.length) {
+        return { invalid: "Item de cancelamento duplicado" };
+      }
+      const items = [];
+      for (const requestedItem of requested) {
+        const originalItem = original.items.find((item) => item.id === requestedItem.itemId);
+        const quantity = Number(requestedItem.quantity);
+        const cancelledQuantity = previouslyCancelled
+          .filter((item) => item.reversesItemId === requestedItem.itemId)
+          .reduce((sum, item) => sum + Number(item.quantity), 0);
+        if (!originalItem || !Number.isInteger(quantity) || quantity <= 0 || quantity > originalItem.quantity - cancelledQuantity) {
+          return { invalid: "Quantidade de cancelamento inválida" };
+        }
+        items.push({
+          ...originalItem,
+          id: undefined,
+          quantity,
+          reversesItemId: originalItem.id
+        });
+      }
+      const { rows } = await client.query(
+        "SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM orders WHERE tab_id = $1",
+        [tab.id]
+      );
+      const cancellation = transitionOrder(createCancellationOrder({
+        idempotencyKey,
+        tabId: tab.id,
+        roundNumber: Number(rows[0].next_round),
+        reversesOrderId: original.id,
+        source: "counter",
+        fulfillmentMode: "local",
+        paymentMethod: null,
+        customerName: original.customerName,
+        discountPercent: original.discountPercent,
+        items,
+        notes: String(request.body?.reason || "").trim(),
+        metadata: {
+          tabLabel: tab.label,
+          originalStatusAtCancellation: original.status
+        }
+      }), "confirmed");
+      const saved = await insertOrder(cancellation, client);
+      return { saved, printJob: await reservePrintJob(saved, "cancellation", client) };
+    });
+  } catch (error) {
+    if (error.code === "23505") {
+      const duplicate = await getOrderByIdempotencyKey(idempotencyKey);
+      if (duplicate && duplicate.tabId === request.params.tabId && duplicate.reversesOrderId === request.params.orderId) return duplicate;
+    }
+    throw error;
+  }
+  if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
+  if (result.conflict) return reply.code(409).send({ message: result.conflict });
+  if (result.invalid) return reply.code(400).send({ message: result.invalid });
+  emitOrderEvent("tab.round.cancelled", result.saved);
+  if (result.printJob) await dispatchPrintJob(result.printJob);
+  return reply.code(201).send(result.saved);
+});
+
 app.post("/tabs/:tabId/close", async (request, reply) => {
   const result = await db.transaction(async (client) => {
     const tab = await getTab(request.params.tabId, client, true);
@@ -523,7 +610,7 @@ app.post("/orders", async (request, reply) => {
   }
   const existing = await getOrderByIdempotencyKey(idempotencyKey);
   if (existing) {
-    const pendingPrintJob = await getConfirmationPrintJob(existing.id);
+    const pendingPrintJob = await getPrimaryPrintJob(existing.id);
     if (pendingPrintJob?.status === "pending") await dispatchPrintJob(pendingPrintJob);
     return existing;
   }
@@ -565,6 +652,7 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
   const result = await db.transaction(async (client) => {
     const order = await getOrder(request.params.orderId, client, true);
     if (!order) return { notFound: true };
+    if (order.tabId && nextStatus === "cancelled") return { tabCancellationForbidden: true };
     if (order.status === nextStatus) {
       return { saved: order, previousStatus: order.status, entries: [], printJob: null, repeated: true };
     }
@@ -597,6 +685,7 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
   });
 
   if (result.notFound) return reply.code(404).send({ message: "Pedido não encontrado" });
+  if (result.tabCancellationForbidden) return reply.code(409).send({ message: "Use um ticket corretivo para cancelar itens da comanda" });
   if (result.conflict) return reply.code(409).send({ message: "Pedido foi alterado; atualize a tela" });
   if (result.repeated) return result.saved;
 

@@ -199,6 +199,20 @@
       </form>
     </dialog>
 
+    <dialog id="cancellation-dialog" aria-labelledby="cancellation-title">
+      <form id="cancellation-form" class="stack">
+        <div class="section-heading">
+          <h2 id="cancellation-title">Cancelar item enviado</h2>
+          <button type="button" id="close-cancellation-dialog" class="icon-button" aria-label="Fechar">×</button>
+        </div>
+        <p id="cancellation-item" class="lede"></p>
+        <input type="hidden" name="tabId" /><input type="hidden" name="orderId" /><input type="hidden" name="itemId" />
+        <label>Quantidade<input name="quantity" type="number" min="1" step="1" required /></label>
+        <label>Motivo<input name="reason" required placeholder="Erro de lançamento, cliente desistiu..." /></label>
+        <button type="submit" class="danger">Emitir ticket de cancelamento</button>
+      </form>
+    </dialog>
+
     <script type="module" src="./main.js"></script>
   </body>
 </html>

@@ -3,6 +3,7 @@ const state = {
   addOns: [],
   orderItems: [],
   orderAttempt: null,
+  cancellationAttempt: null,
   tabs: [],
   activeTabId: null,
   orders: [],
@@ -212,6 +213,17 @@ function renderTabs() {
     ? state.tabs.map((tab) => `<article class="order-card">
         <div class="section-heading"><strong>${escapeHtml(tab.kind === "table" ? `Mesa ${tab.label}` : `Comanda ${tab.label}`)}</strong><span>${money(tab.total)}</span></div>
         <div class="mini-meta"><span>${escapeHtml(tab.customerName || "Sem cliente")}</span><span>${tab.rounds.length} rodada(s)</span><span>${formatWhen(tab.openedAt)}</span></div>
+        <div class="tab-rounds">${tab.rounds.map((round) => `<div class="round-row ${round.roundKind === "cancellation" ? "cancellation" : ""}">
+          <strong>${round.roundKind === "cancellation" ? "Cancelamento" : `Rodada ${round.roundNumber}`}</strong>
+          ${(round.items || []).map((item) => {
+            const cancelled = tab.rounds.filter((candidate) => candidate.reversesOrderId === round.id)
+              .flatMap((candidate) => candidate.items || [])
+              .filter((candidate) => candidate.reversesItemId === item.id)
+              .reduce((sum, candidate) => sum + Number(candidate.quantity), 0);
+            const remaining = Number(item.quantity) - cancelled;
+            return `<div>${item.quantity}x ${escapeHtml(item.name)}${round.roundKind === "production" && remaining > 0 ? ` <button type="button" data-cancel-item="${escapeHtml(item.id)}" data-cancel-tab="${escapeHtml(tab.id)}" data-cancel-order="${escapeHtml(round.id)}" data-cancel-max="${remaining}" data-cancel-name="${escapeHtml(item.name)}">Cancelar</button>` : ""}</div>`;
+          }).join("")}
+        </div>`).join("")}</div>
         <div class="actions"><button type="button" data-use-tab="${escapeHtml(tab.id)}" class="primary">Lançar itens</button></div>
       </article>`).join("")
     : '<p class="empty-state">Nenhuma comanda aberta.</p>';
@@ -235,7 +247,7 @@ function orderActions(order) {
   if (order.status === "confirmed") actions.push(["in_preparation", "Em preparo"]);
   if (order.status === "in_preparation") actions.push(["ready", "Pronto"]);
   if (order.status === "ready") actions.push(["completed", "Concluir"]);
-  if (!['completed', 'cancelled'].includes(order.status)) actions.push(["cancelled", "Cancelar"]);
+  if (!order.tabId && !['completed', 'cancelled'].includes(order.status)) actions.push(["cancelled", "Cancelar"]);
   return actions;
 }
 
@@ -277,9 +289,11 @@ function renderKitchen() {
   }
   list.innerHTML = state.kitchen
     .map((order) => `
-      <div class="order-card kitchen-card">
+      <div class="order-card kitchen-card ${order.roundKind === "cancellation" ? "cancellation" : ""}">
         <div class="order-meta">
           <span class="pill">${escapeHtml(statusLabels[order.status] || order.status)}</span>
+          ${order.roundKind === "cancellation" ? '<span class="pill">CANCELAMENTO</span>' : ""}
+          ${order.tabId ? `<span>Comanda ${escapeHtml(order.metadata?.tabLabel || order.tabId)} · rodada ${order.roundNumber}</span>` : ""}
           <span>${escapeHtml(sourceLabels[order.source] || order.source)}</span>
           <span>${escapeHtml(fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode)}</span>
           <strong>${escapeHtml(order.customerName || "Cliente")}</strong>
@@ -287,7 +301,7 @@ function renderKitchen() {
         </div>
         ${order.deliveryAddress ? `<p><strong>Endereço:</strong> ${escapeHtml(order.deliveryAddress)}</p>` : ""}
         <ul class="kitchen-items">
-          ${(order.items || []).map((item) => `<li><strong>${item.quantity}x ${escapeHtml(item.name)}</strong>${item.notes ? ` — ${escapeHtml(item.notes)}` : ""}</li>`).join("")}
+          ${(order.items || []).map((item) => `<li><strong>${item.quantity}x ${escapeHtml(item.name)}</strong>${(item.addons || []).map((addon) => `<div>+ ${escapeHtml(addon.name)}</div>`).join("")}${item.notes ? ` — ${escapeHtml(item.notes)}` : ""}</li>`).join("")}
         </ul>
       </div>
     `)
@@ -469,6 +483,18 @@ function wireCart() {
   document.body.addEventListener("click", async (event) => {
     const button = event.target.closest?.("button");
     if (!button) return;
+    if (button.dataset.cancelItem) {
+      const form = $("#cancellation-form");
+      form.elements.tabId.value = button.dataset.cancelTab;
+      form.elements.orderId.value = button.dataset.cancelOrder;
+      form.elements.itemId.value = button.dataset.cancelItem;
+      form.elements.quantity.max = button.dataset.cancelMax;
+      form.elements.quantity.value = button.dataset.cancelMax;
+      $("#cancellation-item").textContent = `${button.dataset.cancelName} · máximo ${button.dataset.cancelMax}`;
+      state.cancellationAttempt = null;
+      $("#cancellation-dialog").showModal();
+      return;
+    }
     if (button.dataset.useTab) {
       state.activeTabId = button.dataset.useTab;
       renderActiveTab();
@@ -536,6 +562,32 @@ function wireForms() {
   $("#clear-active-tab").addEventListener("click", () => {
     state.activeTabId = null;
     renderActiveTab();
+  });
+  $("#close-cancellation-dialog").addEventListener("click", () => $("#cancellation-dialog").close());
+  $("#cancellation-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    const payload = {
+      items: [{ itemId: data.get("itemId"), quantity: Number(data.get("quantity")) }],
+      reason: data.get("reason")
+    };
+    state.cancellationAttempt = nextOrderAttempt(state.cancellationAttempt, payload);
+    try {
+      await api(`/tabs/${data.get("tabId")}/rounds/${data.get("orderId")}/cancellations`, {
+        method: "POST",
+        headers: { "Idempotency-Key": state.cancellationAttempt.key },
+        body: JSON.stringify(payload)
+      });
+      state.cancellationAttempt = null;
+      form.reset();
+      $("#cancellation-dialog").close();
+      await refreshAll();
+      notify("Ticket de cancelamento enviado à cozinha.");
+    } catch (error) {
+      notify(error.message, "error");
+    }
   });
 
   $("#tab-form").addEventListener("submit", async (event) => {

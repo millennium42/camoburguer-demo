@@ -20,13 +20,13 @@
     "semantic_hash": ""
   },
   "apps/api/src/db.js": {
-    "mtime": 1784251038.998427,
-    "ast_hash": "f0558f688750c0adbae602e54476c1a2",
+    "mtime": 1784252686.1708968,
+    "ast_hash": "803e32755d993f6d12e62e09a982c5cb",
     "semantic_hash": ""
   },
   "apps/api/src/server.js": {
-    "mtime": 1784251038.998427,
-    "ast_hash": "199ad622e4f6dea2e98be96efb4d8115",
+    "mtime": 1784252699.5172985,
+    "ast_hash": "c2a41f3c5c39dbc116f565f62e17b515",
     "semantic_hash": ""
   },
   "apps/api/src/sse.js": {
@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "apps/ops-web/main.js": {
-    "mtime": 1784250073.5369399,
-    "ast_hash": "54455e132e6b754e61ac96c66bdedf31",
+    "mtime": 1784252699.5172985,
+    "ast_hash": "3adfd46fecf360ceb4aef2ab9b46433c",
     "semantic_hash": ""
   },
   "apps/print-bridge/package.json": {
@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "packages/domain/index.js": {
-    "mtime": 1784251038.998427,
-    "ast_hash": "16120e3481c3e5fe1d39b5db7b5ce287",
+    "mtime": 1784251650.4308157,
+    "ast_hash": "f551c71e8c42824586a3ac9faea94a55",
     "semantic_hash": ""
   },
   "packages/domain/package.json": {
@@ -100,8 +100,8 @@
     "semantic_hash": ""
   },
   "tests/domain.test.js": {
-    "mtime": 1784250119.2628684,
-    "ast_hash": "9fce043dab58b025800f9938fc867089",
+    "mtime": 1784251848.4962904,
+    "ast_hash": "ae92832f210b283e1623ffed28a08a4b",
     "semantic_hash": ""
   },
   "tests/finance.test.js": {
@@ -120,8 +120,8 @@
     "semantic_hash": ""
   },
   "apps/ops-web/index.html": {
-    "mtime": 1784250045.5005796,
-    "ast_hash": "40b740f7d37457cc3c27ef14de431197",
+    "mtime": 1784251806.223845,
+    "ast_hash": "80083da3c7c844a27ee87d31ba6cded1",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -145,8 +145,8 @@
     "semantic_hash": ""
   },
   "docs/ciclo-do-pedido.md": {
-    "mtime": 1784251039.0140524,
-    "ast_hash": "d87b658b447960b966c3561c879480a9",
+    "mtime": 1784251848.4962904,
+    "ast_hash": "8816b8abcc971a93c060e8be464feb10",
     "semantic_hash": ""
   },
   "docs/ciclo-financeiro.md": {
@@ -160,8 +160,8 @@
     "semantic_hash": ""
   },
   "docs/padrao-ticket-cozinha.md": {
-    "mtime": 1784250119.2628684,
-    "ast_hash": "0d3020c753e838faf21c36d51297a2f3",
+    "mtime": 1784251848.4962904,
+    "ast_hash": "a277f5fd9a62c38be56bc4bd022ad2fc",
     "semantic_hash": ""
   },
   "skills/architecture-gate-review/SKILL.md": {
@@ -355,13 +355,13 @@
     "semantic_hash": ""
   },
   "tests/ops-web.test.js": {
-    "mtime": 1784250119.2628684,
-    "ast_hash": "e68bb52057a1e986967505a453700193",
+    "mtime": 1784251848.4962904,
+    "ast_hash": "6a5dcbcde43f6a945b39c9d00d7e648f",
     "semantic_hash": ""
   },
   "tests/smoke.mjs": {
-    "mtime": 1784250119.2628684,
-    "ast_hash": "398b543fb05dce8c63b77cb83653374e",
+    "mtime": 1784252699.5172985,
+    "ast_hash": "4b0d97199f4255b38065974603d42f9a",
     "semantic_hash": ""
   },
   "README.md": {
@@ -375,8 +375,8 @@
     "semantic_hash": ""
   },
   "docs/5w2h-evolucao.md": {
-    "mtime": 1784250119.2785003,
-    "ast_hash": "ee148f29a822047c9c79477d0678563d",
+    "mtime": 1784251848.5119176,
+    "ast_hash": "58a60d0a147e5558c29052c5ae6f68a9",
     "semantic_hash": ""
   },
   "docs/guia-de-desenvolvimento.md": {

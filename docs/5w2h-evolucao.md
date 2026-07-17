@@ -105,3 +105,23 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 **Riscos:** dois terminais criarem a mesma rodada. Mitigação: lock da comanda, índice `(tab_id, round_number)` e chave idempotente.
 
 **Rollback:** desabilitar rotas/tela; pedidos já vinculados continuam pedidos válidos e o vínculo aditivo pode permanecer.
+
+## PR 5 — Rodadas e tickets corretivos
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Cancelamento parcial/total de itens enviados por nova rodada negativa e ticket corretivo. |
+| Why | Permitir editar uma comanda em andamento sem reescrever a informação já recebida pela cozinha. |
+| Where | `orders`, domínio, endpoint de cancelamento, telas Comandas/Cozinha, ticket e testes. |
+| When | Após o envio; antes do envio a edição continua ocorrendo no carrinho. |
+| Who | Operador solicita; API valida saldo cancelável; cozinha executa o ticket corretivo. |
+| How | IDs estáveis por linha, referência à rodada original, lock, Idempotency-Key e total negativo. |
+| How much | Duas colunas em `orders`, uma rota, um diálogo e nenhuma tabela/serviço adicional. |
+
+**Critérios de aceite:** original imutável, parcial limitado ao restante, retry sem duplicar, total da comanda compensado e cozinha destacada.
+
+**Evidências:** testes de domínio/UI, smoke de criar/repetir/consultar/fechar, spool e Graphify.
+
+**Riscos:** cancelamento exceder quantidade original. Mitigação: soma transacional dos corretivos existentes sob lock da comanda.
+
+**Rollback:** desabilitar nova rota; corretivos existentes continuam pedidos auditáveis e seus totais permanecem no agregado.

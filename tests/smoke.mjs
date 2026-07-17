@@ -43,6 +43,7 @@ const tabRound = await api(`/tabs/${tab.id}/rounds`, {
 });
 assert.equal(tabRound.tabId, tab.id);
 assert.equal(tabRound.roundNumber, 1);
+await api(`/orders/${tabRound.id}/status`, { method: "PATCH", body: { status: "cancelled" }, expected: [409] });
 assert.equal((await api(`/tabs/${tab.id}/rounds`, {
   method: "POST",
   headers: { "Idempotency-Key": tabRoundKey },
@@ -51,7 +52,25 @@ assert.equal((await api(`/tabs/${tab.id}/rounds`, {
 const tabView = await api(`/tabs/${tab.id}`);
 assert.equal(tabView.rounds.length, 1);
 assert.equal(tabView.total, 24);
-await api(`/tabs/${tab.id}/close`, { method: "POST", body: {}, expected: [409] });
+const cancellationKey = `smoke-tab-cancel-${runId}`;
+const cancellation = await api(`/tabs/${tab.id}/rounds/${tabRound.id}/cancellations`, {
+  method: "POST",
+  headers: { "Idempotency-Key": cancellationKey },
+  body: { items: [{ itemId: tabRound.items[0].id, quantity: 1 }], reason: "Smoke corretivo" },
+  expected: [201]
+});
+assert.equal(cancellation.roundKind, "cancellation");
+assert.equal(cancellation.reversesOrderId, tabRound.id);
+assert.equal(cancellation.total, -24);
+assert.equal((await api(`/tabs/${tab.id}/rounds/${tabRound.id}/cancellations`, {
+  method: "POST",
+  headers: { "Idempotency-Key": cancellationKey },
+  body: { items: [{ itemId: tabRound.items[0].id, quantity: 1 }], reason: "Smoke corretivo" }
+})).id, cancellation.id);
+const cancelledTab = await api(`/tabs/${tab.id}`);
+assert.equal(cancelledTab.total, 0);
+assert.equal(cancelledTab.rounds[0].items[0].quantity, 1);
+await api(`/tabs/${tab.id}/close`, { method: "POST", body: {} });
 
 const initialShifts = (await api("/cash-shifts")).items;
 const previousOpenShift = initialShifts.find((shift) => shift.status === "open");

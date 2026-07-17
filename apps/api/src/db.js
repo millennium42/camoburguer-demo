@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS orders (
   idempotency_key TEXT NULL UNIQUE,
   tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL,
   round_number INTEGER NULL,
+  round_kind TEXT NOT NULL DEFAULT 'production',
+  reverses_order_id TEXT NULL REFERENCES orders(id) ON DELETE SET NULL,
   source TEXT NOT NULL,
   status TEXT NOT NULL,
   customer_name TEXT NOT NULL,
@@ -43,6 +45,11 @@ CREATE TABLE IF NOT EXISTS orders (
   CONSTRAINT orders_discount_percent_check CHECK (discount_percent BETWEEN 0 AND 100),
   CONSTRAINT orders_tab_round_check CHECK (
     (tab_id IS NULL AND round_number IS NULL) OR (tab_id IS NOT NULL AND round_number > 0)
+  ),
+  CONSTRAINT orders_round_kind_check CHECK (round_kind IN ('production', 'cancellation')),
+  CONSTRAINT orders_reversal_check CHECK (
+    (round_kind = 'production' AND reverses_order_id IS NULL) OR
+    (round_kind = 'cancellation' AND tab_id IS NOT NULL AND reverses_order_id IS NOT NULL)
   ),
   CONSTRAINT orders_delivery_address_check CHECK (
     fulfillment_mode <> 'delivery' OR NULLIF(BTRIM(delivery_address), '') IS NOT NULL
@@ -91,6 +98,8 @@ CREATE TABLE IF NOT EXISTS finance_entries (
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key TEXT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS round_number INTEGER NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS round_kind TEXT NOT NULL DEFAULT 'production';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS reverses_order_id TEXT NULL REFERENCES orders(id) ON DELETE SET NULL;
 ALTER TABLE orders ALTER COLUMN payment_method DROP NOT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_percent NUMERIC(5,2) NOT NULL DEFAULT 0;
@@ -152,6 +161,14 @@ BEGIN
     ALTER TABLE orders ADD CONSTRAINT orders_tab_round_check
       CHECK ((tab_id IS NULL AND round_number IS NULL) OR (tab_id IS NOT NULL AND round_number > 0)) NOT VALID;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_round_kind_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_round_kind_check
+      CHECK (round_kind IN ('production', 'cancellation')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_reversal_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_reversal_check
+      CHECK ((round_kind = 'production' AND reverses_order_id IS NULL) OR (round_kind = 'cancellation' AND tab_id IS NOT NULL AND reverses_order_id IS NOT NULL)) NOT VALID;
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cash_shifts_status_check') THEN
     ALTER TABLE cash_shifts ADD CONSTRAINT cash_shifts_status_check
       CHECK (status IN ('open', 'closed')) NOT VALID;
@@ -162,6 +179,8 @@ ALTER TABLE orders VALIDATE CONSTRAINT orders_fulfillment_mode_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_delivery_address_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_discount_percent_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_tab_round_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_round_kind_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_reversal_check;
 ALTER TABLE cash_shifts VALIDATE CONSTRAINT cash_shifts_status_check;
 `;
 
@@ -200,6 +219,8 @@ export function mapOrder(row) {
     idempotencyKey: row.idempotency_key,
     tabId: row.tab_id,
     roundNumber: row.round_number,
+    roundKind: row.round_kind || "production",
+    reversesOrderId: row.reverses_order_id,
     source: row.source,
     status: row.status,
     customerName: row.customer_name,

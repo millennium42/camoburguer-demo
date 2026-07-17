@@ -8,6 +8,7 @@ import {
   CATALOG_SOURCE_URL,
   buildKitchenTicket,
   closeCashShift,
+  createCancellationOrder,
   createCashShift,
   createOrder,
   transitionOrder
@@ -87,6 +88,21 @@ test("pedido vinculado à comanda preserva rodada e IDs das linhas", () => {
   assert.equal(order.roundNumber, 2);
   assert.ok(order.items[0].id);
   assert.match(buildKitchenTicket(order), /Comanda: Mesa 4[\s\S]*Rodada: 2/);
+});
+
+test("cancelamento cria rodada negativa e ticket corretivo sem alterar o original", () => {
+  const originalItem = { id: "line-1", sku: "x-simples", name: "X-SIMPLES", quantity: 2, price: 24 };
+  const cancellation = createCancellationOrder({
+    tabId: "tab-1",
+    roundNumber: 2,
+    reversesOrderId: "order-original",
+    items: [{ ...originalItem, id: undefined, reversesItemId: originalItem.id, quantity: 1 }]
+  });
+  assert.equal(cancellation.roundKind, "cancellation");
+  assert.equal(cancellation.total, -24);
+  assert.equal(cancellation.items[0].reversesItemId, "line-1");
+  assert.equal(originalItem.quantity, 2);
+  assert.match(buildKitchenTicket(cancellation), /CANCELAMENTO \/ RETIRAR[\s\S]*Corrige pedido/);
 });
 
 test("pedido aplica desconto por item antes do desconto geral e valida os limites", () => {
