@@ -25,8 +25,8 @@
     "semantic_hash": ""
   },
   "apps/api/src/server.js": {
-    "mtime": 1784158672.6785817,
-    "ast_hash": "f9e7e224ea27e9433e092b93ac8446d0",
+    "mtime": 1784248447.086924,
+    "ast_hash": "f9f6fc213151c735cef207c57774e240",
     "semantic_hash": ""
   },
   "apps/api/src/sse.js": {
@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "apps/ops-web/main.js": {
-    "mtime": 1784160926.3396626,
-    "ast_hash": "8525c243ba8c82f1a05fcfd055aa3e70",
+    "mtime": 1784248447.086924,
+    "ast_hash": "6a2da4c8440dcb9fd5e05b14e1e3b629",
     "semantic_hash": ""
   },
   "apps/print-bridge/package.json": {
@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "packages/domain/index.js": {
-    "mtime": 1784159479.0360107,
-    "ast_hash": "0ff6d030c8985cf7fbcc4797f8ba137f",
+    "mtime": 1784248726.8380196,
+    "ast_hash": "bff4a00cf44f014ba80900bfd4edf31c",
     "semantic_hash": ""
   },
   "packages/domain/package.json": {
@@ -100,8 +100,8 @@
     "semantic_hash": ""
   },
   "tests/domain.test.js": {
-    "mtime": 1784158672.6942055,
-    "ast_hash": "b9fe9bb1fd77400da704e8a3aac9a383",
+    "mtime": 1784248742.841547,
+    "ast_hash": "b561d031ab8a116228c2330b0a376230",
     "semantic_hash": ""
   },
   "tests/finance.test.js": {
@@ -155,8 +155,8 @@
     "semantic_hash": ""
   },
   "docs/contexto-operacional.md": {
-    "mtime": 1784054222.7313035,
-    "ast_hash": "aaf29db2614cecddf04bce97cff35791",
+    "mtime": 1784248447.1025498,
+    "ast_hash": "9e0bc48a0a82ba601884898c6b217b02",
     "semantic_hash": ""
   },
   "docs/padrao-ticket-cozinha.md": {
@@ -355,13 +355,13 @@
     "semantic_hash": ""
   },
   "tests/ops-web.test.js": {
-    "mtime": 1784160926.3709154,
-    "ast_hash": "6ec91c96398acc131663d52a85b064fc",
+    "mtime": 1784248726.8380196,
+    "ast_hash": "6e2220278d659f27d52c8356f7a7a119",
     "semantic_hash": ""
   },
   "tests/smoke.mjs": {
-    "mtime": 1784158672.6942055,
-    "ast_hash": "3f8efefced394570df6050cc4b81fd83",
+    "mtime": 1784248726.8380196,
+    "ast_hash": "0d654aba200b570ceeb55b24208ce167",
     "semantic_hash": ""
   },
   "README.md": {
@@ -375,13 +375,18 @@
     "semantic_hash": ""
   },
   "docs/5w2h-evolucao.md": {
-    "mtime": 1784248015.215391,
-    "ast_hash": "3851b89d664f3bb3a72bb31d69ba1595",
+    "mtime": 1784248726.8380196,
+    "ast_hash": "876309ed8ea5dbd9ae5a96a2b2fd28b8",
     "semantic_hash": ""
   },
   "docs/guia-de-desenvolvimento.md": {
     "mtime": 1784248015.199761,
     "ast_hash": "73b7a5681f37c2ab532d629d3f864d36",
+    "semantic_hash": ""
+  },
+  "packages/domain/catalog.js": {
+    "mtime": 1784248726.822401,
+    "ast_hash": "7ea54ac5088cfffbec4968a6217a84e2",
     "semantic_hash": ""
   }
 }

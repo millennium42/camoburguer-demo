@@ -56,3 +56,10 @@ test("UI expõe somente as modalidades válidas e não identifica operador", asy
   assert.doesNotMatch(`${html}\n${script}`, /operatorName|Operador|Admin/i);
   assert.equal(escapeHtml('<b class="x">'), "&lt;b class=&quot;x&quot;&gt;");
 });
+
+test("UI agrupa o catálogo e sinaliza produto esgotado", async () => {
+  const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
+  assert.match(script, /<optgroup label=/);
+  assert.match(script, /item\.available \? "" : "disabled"/);
+  assert.match(script, /"Esgotado"/);
+});
