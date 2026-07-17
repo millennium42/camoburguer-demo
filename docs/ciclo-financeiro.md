@@ -12,6 +12,8 @@ Financeiro gerencial automático, sem fiscal pesado e sem CMV detalhado.
 - `cash.adjustment.created` registra reforço ou sangria
 - `cash.shift.closed` registra fechamento e diferença
 
+O lançamento de venda usa o total final do pedido, já considerando os descontos por item e o desconto geral.
+
 ## Regras do caixa
 
 - O caixa possui apenas os estados `open` e `closed`; a tela deve mostrar o estado atual.

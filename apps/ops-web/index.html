@@ -72,6 +72,7 @@
                   <label>Item do cardápio<select id="catalog-select"></select></label>
                   <div class="inline">
                     <label>Quantidade<input type="number" id="catalog-qty" min="1" step="1" value="1" inputmode="numeric" /></label>
+                    <label>Desconto do item (%)<input type="number" id="catalog-discount" min="0" max="100" step="0.01" value="0" inputmode="decimal" /></label>
                     <label>Observação do item<input id="catalog-notes" placeholder="Detalhe do item" /></label>
                     <button type="button" id="add-item">Adicionar</button>
                   </div>
@@ -83,6 +84,12 @@
                   </div>
                   <ul id="order-items" class="item-list" aria-live="polite"></ul>
                 </div>
+                <fieldset class="discount-panel">
+                  <legend>Desconto do pedido</legend>
+                  <label>Percentual (0 a 100%)
+                    <input id="order-discount" name="discountPercent" type="number" min="0" max="100" step="0.01" value="0" inputmode="decimal" />
+                  </label>
+                </fieldset>
                 <button type="submit" class="primary">Finalizar pedido</button>
               </form>
             </article>

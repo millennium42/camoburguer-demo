@@ -81,16 +81,29 @@ async function createOrder(source, fulfillmentMode, paymentMethod, extra = {}) {
 }
 
 const orders = {
-  counter: await createOrder("counter", "local", "cash"),
+  counter: await createOrder("counter", "local", "cash", {
+    discountPercent: 20,
+    items: [{ sku: "smoke-burger", name: "Burger smoke", quantity: 2, price: 10, discountPercent: 10 },
+      { sku: "smoke-batata", name: "Batata smoke", quantity: 1, price: 5 }]
+  }),
   whatsapp: await createOrder("whatsapp", "pickup", "pix"),
   ifood: await createOrder("ifood", "delivery", "app_paid", { deliveryAddress: "Rua Smoke, 123" }),
   olaclick: await createOrder("olaclick", "local", "credit_card")
 };
+assert.equal(orders.counter.total, 18.4);
+assert.equal(orders.counter.discountPercent, 20);
+assert.equal(orders.counter.items[0].discountPercent, 10);
 
 await api("/orders", {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-${runId}-delivery-sem-endereco` },
   body: { source: "counter", fulfillmentMode: "delivery", items: [{ name: "Burger", price: 10 }] },
+  expected: [400]
+});
+await api("/orders", {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-${runId}-desconto-invalido` },
+  body: { source: "counter", discountPercent: 101, items: [{ name: "Burger", price: 10 }] },
   expected: [400]
 });
 
@@ -110,15 +123,15 @@ assert.equal(reprint.ok, true);
 const entries = (await api("/finance/entries")).items;
 assert.equal(entries.filter((entry) => entry.orderId === orders.counter.id && entry.type === "sale").length, 1);
 const currentShift = (await api("/cash-shifts")).items.find((item) => item.id === shift.id);
-assert.equal(currentShift.expectedAmount, 140);
+assert.equal(currentShift.expectedAmount, 133.4);
 
 const closed = await api(`/cash-shifts/${shift.id}/close`, {
   method: "POST",
-  body: { declaredAmount: 140 }
+  body: { declaredAmount: 133.4 }
 });
 assert.equal(closed.status, "closed");
 assert.equal(closed.differenceAmount, 0);
-await api(`/cash-shifts/${shift.id}/close`, { method: "POST", body: { declaredAmount: 140 }, expected: [409] });
+await api(`/cash-shifts/${shift.id}/close`, { method: "POST", body: { declaredAmount: 133.4 }, expected: [409] });
 await api(`/cash-shifts/${shift.id}/adjustments`, {
   method: "POST",
   body: { kind: "withdrawal", amount: 1, reason: "Inválido" },

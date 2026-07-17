@@ -18,11 +18,13 @@ CREATE TABLE IF NOT EXISTS orders (
   notes TEXT NOT NULL DEFAULT '',
   payment_method TEXT NOT NULL,
   total NUMERIC(12,2) NOT NULL DEFAULT 0,
+  discount_percent NUMERIC(5,2) NOT NULL DEFAULT 0,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT orders_fulfillment_mode_check CHECK (fulfillment_mode IN ('delivery', 'pickup', 'local')),
+  CONSTRAINT orders_discount_percent_check CHECK (discount_percent BETWEEN 0 AND 100),
   CONSTRAINT orders_delivery_address_check CHECK (
     fulfillment_mode <> 'delivery' OR NULLIF(BTRIM(delivery_address), '') IS NOT NULL
   )
@@ -69,6 +71,7 @@ CREATE TABLE IF NOT EXISTS finance_entries (
 
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key TEXT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_percent NUMERIC(5,2) NOT NULL DEFAULT 0;
 ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS reason TEXT NOT NULL DEFAULT 'confirmed';
 UPDATE print_jobs
 SET reason = COALESCE(NULLIF(metadata->>'reason', ''), reason);
@@ -115,6 +118,10 @@ BEGIN
     ALTER TABLE orders ADD CONSTRAINT orders_delivery_address_check
       CHECK (fulfillment_mode <> 'delivery' OR NULLIF(BTRIM(delivery_address), '') IS NOT NULL) NOT VALID;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_discount_percent_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_discount_percent_check
+      CHECK (discount_percent BETWEEN 0 AND 100) NOT VALID;
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cash_shifts_status_check') THEN
     ALTER TABLE cash_shifts ADD CONSTRAINT cash_shifts_status_check
       CHECK (status IN ('open', 'closed')) NOT VALID;
@@ -123,6 +130,7 @@ END $migration$;
 
 ALTER TABLE orders VALIDATE CONSTRAINT orders_fulfillment_mode_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_delivery_address_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_discount_percent_check;
 ALTER TABLE cash_shifts VALIDATE CONSTRAINT cash_shifts_status_check;
 `;
 
@@ -168,6 +176,7 @@ export function mapOrder(row) {
     notes: row.notes,
     paymentMethod: row.payment_method,
     total: toMoney(row.total),
+    discountPercent: Number(row.discount_percent || 0),
     items: row.items || [],
     metadata: row.metadata || {},
     createdAt: new Date(row.created_at).toISOString(),

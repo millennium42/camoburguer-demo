@@ -33,7 +33,7 @@ body { margin: 0; background: linear-gradient(180deg, #fcf7ef, var(--bg)); color
 .grid.two { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
 .card { padding: 20px; margin-bottom: 20px; }
 .stack { display: flex; flex-direction: column; gap: 14px; }
-.inline { display: grid; gap: 12px; grid-template-columns: 140px 1fr auto; align-items: end; }
+.inline { display: grid; gap: 12px; grid-template-columns: 100px 120px minmax(120px, 1fr) auto; align-items: end; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .section-heading h2, .section-heading h3 { margin: 0; }
 label { display: flex; flex-direction: column; gap: 8px; font-size: .95rem; }
@@ -49,10 +49,12 @@ button.danger { color: var(--danger); border-color: #e6beb7; }
 .link-danger { padding: 6px; border: 0; color: var(--danger); background: transparent; }
 .item-list, .kitchen-items { list-style: none; padding: 0; margin: 0; }
 .order-card, .entry-card, .shift-card { border: 1px solid var(--line); border-radius: 16px; padding: 16px; background: #fff; }
-.cart-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto auto; gap: 14px; align-items: center; }
+.cart-row { display: grid; grid-template-columns: minmax(180px, 1fr) auto 110px auto auto; gap: 14px; align-items: center; }
 .quantity-control { display: inline-grid; grid-template-columns: 42px 64px 42px; gap: 6px; }
 .quantity-control input { width: 64px; text-align: center; padding-inline: 6px; }
 .quantity-control button { padding-inline: 8px; }
+.discount-control input { width: 100%; padding-inline: 8px; }
+.discount-panel { background: #fff8f3; border-color: var(--accent-soft); }
 .order-meta, .mini-meta { color: var(--muted); font-size: .88rem; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .kitchen-card { border-left: 6px solid var(--accent); }

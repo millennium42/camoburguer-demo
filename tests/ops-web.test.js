@@ -3,21 +3,28 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   addOrAccumulateItem,
+  calculateOrderPreviewTotal,
   escapeHtml,
   nextOrderAttempt,
+  setItemDiscount,
   setItemQuantity
 } from "../apps/ops-web/main.js";
 
 test("carrinho acumula itens e permite alterar quantidade", () => {
   const items = [];
   const burger = { sku: "burger", name: "Burger", price: 20 };
-  addOrAccumulateItem(items, burger, 1, "sem cebola");
-  addOrAccumulateItem(items, burger, 2, "sem cebola");
+  addOrAccumulateItem(items, burger, 1, "sem cebola", 10);
+  addOrAccumulateItem(items, burger, 2, "sem cebola", 10);
   addOrAccumulateItem(items, burger, 1, "bem passado");
   assert.equal(items.length, 2);
   assert.equal(items[0].quantity, 3);
+  assert.equal(items[0].discountPercent, 10);
   setItemQuantity(items, 0, 5);
   assert.equal(items[0].quantity, 5);
+  setItemDiscount(items, 0, 10);
+  setItemDiscount(items, 0, 101);
+  assert.equal(items[0].discountPercent, 10);
+  assert.equal(calculateOrderPreviewTotal(items, 20), 88);
 });
 
 test("tentativa idempotente mantém a chave até o pedido mudar", () => {
@@ -42,6 +49,9 @@ test("UI expõe somente as modalidades válidas e não identifica operador", asy
     [["delivery", "Delivery"], ["pickup", "Retirada"], ["local", "Local"]]
   );
   assert.match(html, /id="delivery-address-field" hidden/);
+  assert.match(html, /id="catalog-discount"[^>]*min="0"[^>]*max="100"/);
+  assert.match(html, /name="discountPercent"[^>]*min="0"[^>]*max="100"/);
+  assert.match(script, /<input type=\"number\" min=\"0\" max=\"100\"[^>]*data-item-discount=/);
   assert.match(html, /<dialog id="adjustment-dialog"/);
   assert.doesNotMatch(`${html}\n${script}`, /operatorName|Operador|Admin/i);
   assert.equal(escapeHtml('<b class="x">'), "&lt;b class=&quot;x&quot;&gt;");

@@ -38,9 +38,9 @@ async function insertOrder(order, executor = db) {
   const { rows } = await executor.query(
     `INSERT INTO orders (
       id, idempotency_key, source, status, customer_name, fulfillment_mode, delivery_address,
-      promised_at, notes, payment_method, total, items, metadata, created_at, updated_at
+      promised_at, notes, payment_method, total, discount_percent, items, metadata, created_at, updated_at
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14,$15
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14::jsonb,$15,$16
     ) RETURNING *`,
     [
       order.id,
@@ -54,6 +54,7 @@ async function insertOrder(order, executor = db) {
       order.notes,
       order.paymentMethod,
       order.total,
+      order.discountPercent,
       JSON.stringify(order.items),
       JSON.stringify(order.metadata),
       order.createdAt,
@@ -96,10 +97,11 @@ async function updateOrder(order, expectedStatus, executor = db) {
       notes = $8,
       payment_method = $9,
       total = $10,
-      items = $11::jsonb,
-      metadata = $12::jsonb,
-      updated_at = $13
-    WHERE id = $1 AND status = $14
+      discount_percent = $11,
+      items = $12::jsonb,
+      metadata = $13::jsonb,
+      updated_at = $14
+    WHERE id = $1 AND status = $15
     RETURNING *`,
     [
       order.id,
@@ -112,6 +114,7 @@ async function updateOrder(order, expectedStatus, executor = db) {
       order.notes,
       order.paymentMethod,
       order.total,
+      order.discountPercent,
       JSON.stringify(order.items),
       JSON.stringify(order.metadata),
       order.updatedAt,

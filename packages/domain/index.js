@@ -24,11 +24,21 @@ const ALLOWED_TRANSITIONS = {
   cancelled: []
 };
 
-export function calculateOrderTotal(items = []) {
+function normalizeDiscountPercent(value, label) {
+  const discountPercent = Number(value ?? 0);
+  if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+    throw new Error(`${label} inválido: informe um valor entre 0 e 100`);
+  }
+  return toMoney(discountPercent);
+}
+
+export function calculateOrderTotal(items = [], discountPercent = 0) {
+  const subtotal = items.reduce((sum, item) => {
+    const itemDiscount = normalizeDiscountPercent(item.discountPercent, "Desconto do item");
+    return sum + Number(item.quantity || 0) * Number(item.price || 0) * (1 - itemDiscount / 100);
+  }, 0);
   return toMoney(
-    items.reduce((sum, item) => {
-      return sum + Number(item.quantity || 0) * Number(item.price || 0);
-    }, 0)
+    subtotal * (1 - normalizeDiscountPercent(discountPercent, "Desconto do pedido") / 100)
   );
 }
 
@@ -47,6 +57,7 @@ export function createOrder(input) {
   const items = (input.items || []).map((item) => {
     const quantity = Number(item.quantity ?? 1);
     const price = Number(item.price ?? 0);
+    const discountPercent = normalizeDiscountPercent(item.discountPercent, "Desconto do item");
     if (!String(item.name || "").trim() || !Number.isFinite(quantity) || quantity <= 0) {
       throw new Error("Item de pedido inválido");
     }
@@ -57,10 +68,12 @@ export function createOrder(input) {
       category: item.category || "custom",
       quantity,
       price: toMoney(price),
+      discountPercent,
       notes: item.notes || ""
     };
   });
   if (!items.length) throw new Error("O pedido deve ter ao menos um item");
+  const discountPercent = normalizeDiscountPercent(input.discountPercent, "Desconto do pedido");
 
   const deliveryAddress = String(input.deliveryAddress || "").trim();
   if (fulfillmentMode === "delivery" && !deliveryAddress) {
@@ -82,7 +95,8 @@ export function createOrder(input) {
     notes: input.notes || "",
     paymentMethod,
     items,
-    total: calculateOrderTotal(items),
+    discountPercent,
+    total: calculateOrderTotal(items, discountPercent),
     metadata: {
       priority: input.priority || "normal",
       channelLabel: input.channelLabel || source

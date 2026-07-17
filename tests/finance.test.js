@@ -13,7 +13,8 @@ test("financeiro lança venda ao concluir pedido", () => {
   const order = createOrder({
     source: "ifood",
     paymentMethod: "credit_card",
-    items: [{ name: "Burger", quantity: 1, price: 32 }]
+    discountPercent: 10,
+    items: [{ name: "Burger", quantity: 1, price: 32, discountPercent: 25 }]
   });
   const entries = buildEntriesFromOrder({
     order,
@@ -23,7 +24,7 @@ test("financeiro lança venda ao concluir pedido", () => {
 
   assert.equal(entries.length, 1);
   assert.equal(entries[0].type, "sale");
-  assert.equal(entries[0].amount, 32);
+  assert.equal(entries[0].amount, 21.6);
 });
 
 test("sumário financeiro agrega entradas", () => {

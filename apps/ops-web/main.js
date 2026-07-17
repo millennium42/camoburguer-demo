@@ -60,15 +60,46 @@ export function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => htmlEscapes[character]);
 }
 
-export function addOrAccumulateItem(items, selected, quantity, notes = "") {
+export function addOrAccumulateItem(items, selected, quantity, notes = "", discountPercent = 0) {
   const normalizedQuantity = Math.max(1, Math.trunc(Number(quantity) || 1));
   const normalizedNotes = String(notes).trim();
+  const normalizedDiscount = validDiscountPercent(discountPercent);
   const existing = items.find(
-    (item) => item.sku === selected.sku && String(item.notes || "").trim() === normalizedNotes
+    (item) => item.sku === selected.sku
+      && String(item.notes || "").trim() === normalizedNotes
+      && validDiscountPercent(item.discountPercent) === normalizedDiscount
   );
   if (existing) existing.quantity += normalizedQuantity;
-  else items.push({ ...selected, quantity: normalizedQuantity, notes: normalizedNotes });
+  else items.push({ ...selected, quantity: normalizedQuantity, discountPercent: normalizedDiscount, notes: normalizedNotes });
   return items;
+}
+
+export function setItemDiscount(items, index, discountPercent) {
+  const normalizedDiscount = Number(discountPercent);
+  if (
+    items[index]
+    && Number.isFinite(normalizedDiscount)
+    && normalizedDiscount >= 0
+    && normalizedDiscount <= 100
+  ) {
+    items[index].discountPercent = normalizedDiscount;
+  }
+  return items;
+}
+
+function validDiscountPercent(value) {
+  const discountPercent = Number(value ?? 0);
+  return Number.isFinite(discountPercent) && discountPercent >= 0 && discountPercent <= 100
+    ? discountPercent
+    : 0;
+}
+
+export function calculateOrderPreviewTotal(items = [], discountPercent = 0) {
+  const subtotal = items.reduce((total, item) => {
+    return total + Number(item.price || 0) * Number(item.quantity || 0)
+      * (1 - validDiscountPercent(item.discountPercent) / 100);
+  }, 0);
+  return Math.round(subtotal * (1 - validDiscountPercent(discountPercent) / 100) * 100) / 100;
 }
 
 export function setItemQuantity(items, index, quantity) {
@@ -142,13 +173,16 @@ function renderOrderItems() {
           <input type="number" min="1" step="1" value="${item.quantity}" data-item-quantity="${index}" aria-label="Quantidade de ${escapeHtml(item.name)}" />
           <button type="button" data-increase-item="${index}" aria-label="Aumentar ${escapeHtml(item.name)}">+</button>
         </div>
-        <strong>${money(item.price * item.quantity)}</strong>
+        <label class="discount-control">Desconto (%)
+          <input type="number" min="0" max="100" step="0.01" value="${item.discountPercent || 0}" data-item-discount="${index}" inputmode="decimal" aria-label="Desconto de ${escapeHtml(item.name)} em porcentagem" />
+        </label>
+        <strong>${money(calculateOrderPreviewTotal([item]))}</strong>
         <button type="button" data-remove-item="${index}" class="link-danger">Remover</button>
       </li>
     `)
     .join("");
   $("#order-total").textContent = money(
-    state.orderItems.reduce((total, item) => total + item.price * item.quantity, 0)
+    calculateOrderPreviewTotal(state.orderItems, $("#order-discount").value)
   );
 }
 
@@ -177,9 +211,10 @@ function renderOrders() {
           <span>${escapeHtml(order.customerName || "Cliente")}</span>
           <span>${escapeHtml(statusLabels[order.status] || order.status)}</span>
           <span>${formatWhen(order.createdAt)}</span>
+          ${order.discountPercent ? `<span>Desconto ${order.discountPercent}%</span>` : ""}
           <strong>${money(order.total)}</strong>
         </div>
-        <p>${(order.items || []).map((item) => `${item.quantity}x ${escapeHtml(item.name)}`).join(" · ")}</p>
+        <p>${(order.items || []).map((item) => `${item.quantity}x ${escapeHtml(item.name)}${item.discountPercent ? ` (-${item.discountPercent}%)` : ""}`).join(" · ")}</p>
         <div class="actions">
           ${orderActions(order)
             .map(([status, label]) => `<button type="button" data-order-status="${escapeHtml(order.id)}" data-status="${status}">${label}</button>`)
@@ -362,11 +397,19 @@ function wireTabs() {
 }
 
 function wireCart() {
+  $("#order-discount").addEventListener("input", renderOrderItems);
   $("#add-item").addEventListener("click", () => {
     const selected = state.catalog.find((item) => item.sku === $("#catalog-select").value);
     if (!selected) return;
-    addOrAccumulateItem(state.orderItems, selected, $("#catalog-qty").value, $("#catalog-notes").value);
+    addOrAccumulateItem(
+      state.orderItems,
+      selected,
+      $("#catalog-qty").value,
+      $("#catalog-notes").value,
+      $("#catalog-discount").value
+    );
     $("#catalog-qty").value = "1";
+    $("#catalog-discount").value = "0";
     $("#catalog-notes").value = "";
     renderOrderItems();
   });
@@ -418,8 +461,14 @@ function wireCart() {
   });
 
   document.body.addEventListener("change", (event) => {
-    if (event.target.dataset.itemQuantity == null) return;
-    setItemQuantity(state.orderItems, Number(event.target.dataset.itemQuantity), event.target.value);
+    const quantityIndex = event.target.dataset.itemQuantity;
+    const discountIndex = event.target.dataset.itemDiscount;
+    if (quantityIndex == null && discountIndex == null) return;
+    if (quantityIndex != null) {
+      setItemQuantity(state.orderItems, Number(quantityIndex), event.target.value);
+    } else {
+      setItemDiscount(state.orderItems, Number(discountIndex), event.target.value);
+    }
     renderOrderItems();
   });
 }
@@ -444,6 +493,7 @@ function wireForms() {
       customerName: formData.get("customerName"),
       paymentMethod: formData.get("paymentMethod"),
       notes: formData.get("notes"),
+      discountPercent: Number(formData.get("discountPercent") || 0),
       items: state.orderItems
     };
     state.orderAttempt = nextOrderAttempt(state.orderAttempt, payload);
