@@ -8,6 +8,7 @@ import {
   CATALOG_CAPTURED_AT,
   CATALOG_SOURCE_URL,
   buildKitchenTicket,
+  calculateStockRequirements,
   closeCashShift,
   createCashShift,
   createCancellationOrder,
@@ -33,10 +34,11 @@ await app.register(cors, { origin: true });
 
 app.setErrorHandler((error, request, reply) => {
   const clientError = Boolean(error.validation) || (!error.code && /inválid|obrigatóri|deve ter|transição|item|preço|valor/i.test(error.message));
-  if (!clientError) request.log.error(error);
+  const publicError = clientError || Number(error.statusCode) < 500;
+  if (!publicError) request.log.error(error);
   return reply
     .code(clientError ? 400 : (error.statusCode || 500))
-    .send({ message: clientError ? error.message : "Erro interno do servidor" });
+    .send({ message: publicError ? error.message : "Erro interno do servidor" });
 });
 
 async function insertOrder(order, executor = db) {
@@ -122,6 +124,62 @@ async function listTabs(status = null) {
     values
   );
   return Promise.all(rows.map((row) => tabView(mapTab(row))));
+}
+
+async function changeStock(order, multiplier, reason, executor, sourceOrderId = order.id) {
+  const requirements = calculateStockRequirements(order.items);
+  const movements = [];
+  for (const category of Object.keys(requirements).sort()) {
+    const delta = Number(requirements[category]) * multiplier;
+    if (reason === "cancellation") {
+      const sale = await executor.query(
+        "SELECT 1 FROM stock_movements WHERE order_id = $1 AND category = $2 AND reason = 'sale'",
+        [sourceOrderId, category]
+      );
+      if (!sale.rows[0]) continue;
+    }
+    const { rows } = await executor.query(
+      "SELECT * FROM stock_balances WHERE category = $1 FOR UPDATE",
+      [category]
+    );
+    const inserted = await executor.query(
+      `INSERT INTO stock_movements (id, category, delta, reason, order_id, metadata, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7) ON CONFLICT DO NOTHING RETURNING *`,
+      [randomUUID(), category, delta, reason, order.id, JSON.stringify({ roundKind: order.roundKind }), new Date().toISOString()]
+    );
+    if (!inserted.rows[0]) continue;
+    const nextQuantity = Number(rows[0].quantity) + delta;
+    if (nextQuantity < 0) {
+      const error = new Error(`Estoque insuficiente para ${category}`);
+      error.statusCode = 409;
+      throw error;
+    }
+    await executor.query(
+      "UPDATE stock_balances SET quantity = $2, updated_at = NOW() WHERE category = $1",
+      [category, nextQuantity]
+    );
+    movements.push(inserted.rows[0]);
+  }
+  return movements;
+}
+
+async function inventoryView() {
+  const [balances, movements] = await Promise.all([
+    db.query("SELECT * FROM stock_balances ORDER BY category"),
+    db.query("SELECT * FROM stock_movements ORDER BY created_at DESC LIMIT 100")
+  ]);
+  return {
+    balances: balances.rows.map((row) => ({ category: row.category, quantity: Number(row.quantity), updatedAt: new Date(row.updated_at).toISOString() })),
+    movements: movements.rows.map((row) => ({
+      id: row.id,
+      category: row.category,
+      delta: Number(row.delta),
+      reason: row.reason,
+      orderId: row.order_id,
+      metadata: row.metadata || {},
+      createdAt: new Date(row.created_at).toISOString()
+    }))
+  };
 }
 
 async function updateOrder(order, expectedStatus, executor = db) {
@@ -412,6 +470,71 @@ app.get("/scenario-rules", async () => ({
   ]
 }));
 
+app.get("/inventory", async () => inventoryView());
+
+app.post("/inventory/:category/adjustments", async (request, reply) => {
+  const category = request.params.category;
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  const delta = Number(request.body?.delta);
+  const note = String(request.body?.reason || "").trim();
+  if (!["xis", "dog", "hamburguer"].includes(category)) return reply.code(400).send({ message: "Categoria de estoque inválida" });
+  if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
+  if (!Number.isInteger(delta) || delta === 0) return reply.code(400).send({ message: "Ajuste deve ser um inteiro diferente de zero" });
+  if (!note) return reply.code(400).send({ message: "Motivo do ajuste é obrigatório" });
+
+  const result = await db.transaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [idempotencyKey]);
+    const { rows: repeatedRows } = await client.query(
+      "SELECT * FROM stock_movements WHERE idempotency_key = $1",
+      [idempotencyKey]
+    );
+    if (repeatedRows[0]) {
+      const original = repeatedRows[0];
+      const samePayload = original.category === category
+        && Number(original.delta) === delta
+        && String(original.metadata?.note || "") === note;
+      if (!samePayload) {
+        const error = new Error("Idempotency-Key já usada com outro ajuste de estoque");
+        error.statusCode = 409;
+        throw error;
+      }
+      return { movement: original, repeated: true };
+    }
+    const { rows: balanceRows } = await client.query(
+      "SELECT * FROM stock_balances WHERE category = $1 FOR UPDATE",
+      [category]
+    );
+    const nextQuantity = Number(balanceRows[0].quantity) + delta;
+    if (nextQuantity < 0) {
+      const error = new Error("Ajuste deixaria o estoque negativo");
+      error.statusCode = 409;
+      throw error;
+    }
+    await client.query(
+      "UPDATE stock_balances SET quantity = $2, updated_at = NOW() WHERE category = $1",
+      [category, nextQuantity]
+    );
+    const { rows } = await client.query(
+      `INSERT INTO stock_movements (id, category, delta, reason, idempotency_key, metadata, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7) RETURNING *`,
+      [
+        randomUUID(),
+        category,
+        delta,
+        delta > 0 ? "manual_entry" : "manual_withdrawal",
+        idempotencyKey,
+        JSON.stringify({ note }),
+        new Date().toISOString()
+      ]
+    );
+    return { movement: rows[0], repeated: false };
+  });
+  return reply.code(result.repeated ? 200 : 201).send({
+    ...(await inventoryView()),
+    repeated: result.repeated
+  });
+});
+
 app.get("/tabs", async (request, reply) => {
   const status = request.query?.status || null;
   if (status && !["open", "closed", "cancelled"].includes(status)) {
@@ -473,6 +596,7 @@ app.post("/tabs/:tabId/rounds", async (request, reply) => {
         metadata: { ...(request.body?.metadata || {}), tabLabel: tab.label }
       }), "confirmed");
       const saved = await insertOrder(order, client);
+      await changeStock(saved, -1, "sale", client);
       return { saved, printJob: await reservePrintJob(saved, "confirmed", client) };
     });
   } catch (error) {
@@ -558,6 +682,7 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
         }
       }), "confirmed");
       const saved = await insertOrder(cancellation, client);
+      if (original.status === "confirmed") await changeStock(saved, 1, "cancellation", client, original.id);
       return { saved, printJob: await reservePrintJob(saved, "cancellation", client) };
     });
   } catch (error) {
@@ -623,6 +748,7 @@ app.post("/orders", async (request, reply) => {
   try {
     result = await db.transaction(async (client) => {
       const saved = await insertOrder(order, client);
+      await changeStock(saved, -1, "sale", client);
       const printJob = await reservePrintJob(saved, "confirmed", client);
       return { saved, printJob };
     });
@@ -661,6 +787,9 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
     const updated = transitionOrder(order, nextStatus);
     const saved = await updateOrder(updated, previousStatus, client);
     if (!saved) return { conflict: true };
+    if (!saved.tabId && previousStatus === "confirmed" && nextStatus === "cancelled") {
+      await changeStock(saved, 1, "cancellation", client, saved.id);
+    }
 
     const printJob = nextStatus === "confirmed"
       ? await reservePrintJob(saved, "confirmed", client)

@@ -125,3 +125,23 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 **Riscos:** cancelamento exceder quantidade original. Mitigação: soma transacional dos corretivos existentes sob lock da comanda.
 
 **Rollback:** desabilitar nova rota; corretivos existentes continuam pedidos auditáveis e seus totais permanecem no agregado.
+
+## PR 6 — Estoque por categoria
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Saldos e movimentações auditáveis de Xis, Dog e Hambúrguer. |
+| Why | Baixar automaticamente o que foi enviado à cozinha e impedir venda sem unidade disponível. |
+| Where | PostgreSQL, domínio, criação/cancelamento de pedidos, `/inventory`, frontend e smoke. |
+| When | Baixa na confirmação; restituição só em cancelamento anterior ao preparo; ajuste manual a qualquer momento autorizado. |
+| Who | Operador inicializa/ajusta; API bloqueia e movimenta; domínio agrega categorias. |
+| How | Locks por categoria, transação única, constraints e efeitos idempotentes append-only. |
+| How much | Duas tabelas, uma tela/rota de ajuste e nenhuma gestão de ingredientes ou dependência nova. |
+
+**Critérios de aceite:** zero inicial, `5-2=3` uma vez, insuficiência 409, reversão antes do preparo, ausência de reversão depois e motivo obrigatório.
+
+**Evidências:** testes de agregação/UI, smoke com carga/retry/baixa/insuficiência/reversões, Docker WSL e Graphify.
+
+**Riscos:** deadlock entre categorias e dupla baixa. Mitigação: ordem alfabética de locks e unicidade por efeito.
+
+**Rollback:** bloquear novos itens controlados ou desabilitar a baixa; saldos/movimentos existentes permanecem para auditoria.
