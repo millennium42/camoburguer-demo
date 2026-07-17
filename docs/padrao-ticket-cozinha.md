@@ -3,6 +3,7 @@
 ## Campos obrigatórios
 
 - identificador curto do pedido
+- identificador da comanda/mesa e número da rodada, quando o pedido for consumo local em comanda
 - horário de criação do pedido no fuso `America/Sao_Paulo`
 - canal
 - cliente

@@ -6,9 +6,25 @@ const { Pool, types } = pg;
 types.setTypeParser(1700, (value) => Number(value));
 
 const schemaSql = `
+CREATE TABLE IF NOT EXISTS service_tabs (
+  id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  label TEXT NOT NULL,
+  customer_name TEXT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  final_total NUMERIC(12,2) NULL,
+  opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  closed_at TIMESTAMPTZ NULL,
+  CONSTRAINT service_tabs_kind_check CHECK (kind IN ('tab', 'table')),
+  CONSTRAINT service_tabs_status_check CHECK (status IN ('open', 'closed', 'cancelled')),
+  CONSTRAINT service_tabs_label_check CHECK (NULLIF(BTRIM(label), '') IS NOT NULL)
+);
+
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
   idempotency_key TEXT NULL UNIQUE,
+  tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL,
+  round_number INTEGER NULL,
   source TEXT NOT NULL,
   status TEXT NOT NULL,
   customer_name TEXT NOT NULL,
@@ -16,7 +32,7 @@ CREATE TABLE IF NOT EXISTS orders (
   delivery_address TEXT NULL,
   promised_at TIMESTAMPTZ NULL,
   notes TEXT NOT NULL DEFAULT '',
-  payment_method TEXT NOT NULL,
+  payment_method TEXT NULL,
   total NUMERIC(12,2) NOT NULL DEFAULT 0,
   discount_percent NUMERIC(5,2) NOT NULL DEFAULT 0,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
@@ -25,6 +41,9 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT orders_fulfillment_mode_check CHECK (fulfillment_mode IN ('delivery', 'pickup', 'local')),
   CONSTRAINT orders_discount_percent_check CHECK (discount_percent BETWEEN 0 AND 100),
+  CONSTRAINT orders_tab_round_check CHECK (
+    (tab_id IS NULL AND round_number IS NULL) OR (tab_id IS NOT NULL AND round_number > 0)
+  ),
   CONSTRAINT orders_delivery_address_check CHECK (
     fulfillment_mode <> 'delivery' OR NULLIF(BTRIM(delivery_address), '') IS NOT NULL
   )
@@ -70,6 +89,9 @@ CREATE TABLE IF NOT EXISTS finance_entries (
 );
 
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key TEXT NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS round_number INTEGER NULL;
+ALTER TABLE orders ALTER COLUMN payment_method DROP NOT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_percent NUMERIC(5,2) NOT NULL DEFAULT 0;
 ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS reason TEXT NOT NULL DEFAULT 'confirmed';
@@ -101,6 +123,10 @@ WHERE id IN (SELECT id FROM duplicate_open_shifts WHERE position > 1);
 
 CREATE UNIQUE INDEX IF NOT EXISTS orders_idempotency_key_unique
   ON orders (idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS service_tabs_one_open_label
+  ON service_tabs (LOWER(BTRIM(label))) WHERE status = 'open';
+CREATE UNIQUE INDEX IF NOT EXISTS orders_one_round_number_per_tab
+  ON orders (tab_id, round_number) WHERE tab_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS cash_shifts_one_open
   ON cash_shifts ((status)) WHERE status = 'open';
 CREATE UNIQUE INDEX IF NOT EXISTS print_jobs_one_confirmation_per_order
@@ -122,6 +148,10 @@ BEGIN
     ALTER TABLE orders ADD CONSTRAINT orders_discount_percent_check
       CHECK (discount_percent BETWEEN 0 AND 100) NOT VALID;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_tab_round_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_tab_round_check
+      CHECK ((tab_id IS NULL AND round_number IS NULL) OR (tab_id IS NOT NULL AND round_number > 0)) NOT VALID;
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cash_shifts_status_check') THEN
     ALTER TABLE cash_shifts ADD CONSTRAINT cash_shifts_status_check
       CHECK (status IN ('open', 'closed')) NOT VALID;
@@ -131,6 +161,7 @@ END $migration$;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_fulfillment_mode_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_delivery_address_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_discount_percent_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_tab_round_check;
 ALTER TABLE cash_shifts VALIDATE CONSTRAINT cash_shifts_status_check;
 `;
 
@@ -167,6 +198,8 @@ export function mapOrder(row) {
   return {
     id: row.id,
     idempotencyKey: row.idempotency_key,
+    tabId: row.tab_id,
+    roundNumber: row.round_number,
     source: row.source,
     status: row.status,
     customerName: row.customer_name,
@@ -181,6 +214,19 @@ export function mapOrder(row) {
     metadata: row.metadata || {},
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString()
+  };
+}
+
+export function mapTab(row) {
+  return {
+    id: row.id,
+    kind: row.kind,
+    label: row.label,
+    customerName: row.customer_name,
+    status: row.status,
+    finalTotal: row.final_total == null ? null : toMoney(row.final_total),
+    openedAt: new Date(row.opened_at).toISOString(),
+    closedAt: row.closed_at ? new Date(row.closed_at).toISOString() : null
   };
 }
 

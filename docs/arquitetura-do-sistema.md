@@ -1,5 +1,7 @@
 # Arquitetura do Sistema
 
+`service_tabs` é o agregado comercial de consumo local. `orders` permanece o núcleo operacional e representa cada rodada enviada à cozinha; o vínculo é opcional para preservar os quatro canais externos. O frontend reutiliza o mesmo carrinho e apenas troca o endpoint de confirmação quando existe comanda ativa.
+
 ## Apps
 
 - `apps/api`: núcleo HTTP, domínio, persistência, SSE e automações

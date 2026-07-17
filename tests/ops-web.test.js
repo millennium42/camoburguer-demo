@@ -83,3 +83,15 @@ test("UI contém o painel e os controles nativos de adicionais", async () => {
   assert.match(script, /type=\"checkbox\" name=\"catalog-addon\"/);
   assert.match(script, /field\.hidden = !selected\?\.allowsAddons/);
 });
+
+test("UI expõe comandas e reutiliza o formulário de pedidos", async () => {
+  const [html, script] = await Promise.all([
+    readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8")
+  ]);
+  assert.match(html, /data-tab="comandas"/);
+  assert.match(html, /id="tab-form"/);
+  assert.match(html, /id="active-tab-banner"/);
+  assert.match(script, /\/tabs\?status=open/);
+  assert.match(script, /`\/tabs\/\$\{state\.activeTabId\}\/rounds`/);
+});

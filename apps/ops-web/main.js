@@ -3,6 +3,8 @@ const state = {
   addOns: [],
   orderItems: [],
   orderAttempt: null,
+  tabs: [],
+  activeTabId: null,
   orders: [],
   kitchen: [],
   financeSummary: null,
@@ -204,6 +206,29 @@ function renderOrderItems() {
   );
 }
 
+function renderTabs() {
+  $("#tabs-count").textContent = String(state.tabs.length);
+  $("#tabs-list").innerHTML = state.tabs.length
+    ? state.tabs.map((tab) => `<article class="order-card">
+        <div class="section-heading"><strong>${escapeHtml(tab.kind === "table" ? `Mesa ${tab.label}` : `Comanda ${tab.label}`)}</strong><span>${money(tab.total)}</span></div>
+        <div class="mini-meta"><span>${escapeHtml(tab.customerName || "Sem cliente")}</span><span>${tab.rounds.length} rodada(s)</span><span>${formatWhen(tab.openedAt)}</span></div>
+        <div class="actions"><button type="button" data-use-tab="${escapeHtml(tab.id)}" class="primary">Lançar itens</button></div>
+      </article>`).join("")
+    : '<p class="empty-state">Nenhuma comanda aberta.</p>';
+  renderActiveTab();
+}
+
+function renderActiveTab() {
+  const tab = state.tabs.find((item) => item.id === state.activeTabId);
+  if (state.activeTabId && !tab) state.activeTabId = null;
+  const active = Boolean(tab);
+  $("#active-tab-banner").hidden = !active;
+  $("#order-payment-field").hidden = active;
+  $("#active-tab-label").textContent = active
+    ? `${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label} · rodada ${tab.rounds.length + 1}`
+    : "";
+}
+
 function orderActions(order) {
   const actions = [];
   if (order.status === "received") actions.push(["confirmed", "Confirmar"]);
@@ -354,8 +379,9 @@ async function api(path, options = {}) {
 }
 
 async function refreshAll() {
-  const [catalog, orders, kitchen, summary, entries, shifts] = await Promise.all([
+  const [catalog, tabs, orders, kitchen, summary, entries, shifts] = await Promise.all([
     api("/catalog"),
+    api("/tabs?status=open"),
     api("/orders"),
     api("/kitchen/queue"),
     api("/finance/summary"),
@@ -365,6 +391,7 @@ async function refreshAll() {
 
   state.catalog = catalog.items;
   state.addOns = catalog.addOns || [];
+  state.tabs = tabs.items;
   state.orders = orders.items;
   state.kitchen = kitchen.items;
   state.financeSummary = summary;
@@ -372,6 +399,7 @@ async function refreshAll() {
   state.shifts = shifts.items;
 
   renderCatalog();
+  renderTabs();
   renderOrderItems();
   renderOrders();
   renderKitchen();
@@ -404,14 +432,14 @@ function syncDeliveryAddress() {
   if (!delivery) input.value = "";
 }
 
+function showPanel(name) {
+  document.querySelectorAll(".tab-button").forEach((item) => item.classList.toggle("active", item.dataset.tab === name));
+  document.querySelectorAll(".tab-panel").forEach((item) => item.classList.toggle("active", item.id === `tab-${name}`));
+}
+
 function wireTabs() {
   document.querySelectorAll(".tab-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      document.querySelectorAll(".tab-button").forEach((item) => item.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      $(`#tab-${button.dataset.tab}`).classList.add("active");
-    });
+    button.addEventListener("click", () => showPanel(button.dataset.tab));
   });
 }
 
@@ -441,6 +469,12 @@ function wireCart() {
   document.body.addEventListener("click", async (event) => {
     const button = event.target.closest?.("button");
     if (!button) return;
+    if (button.dataset.useTab) {
+      state.activeTabId = button.dataset.useTab;
+      renderActiveTab();
+      showPanel("pedidos");
+      return;
+    }
     const removeIndex = button.dataset.removeItem;
     const decreaseIndex = button.dataset.decreaseItem;
     const increaseIndex = button.dataset.increaseItem;
@@ -499,6 +533,30 @@ function wireCart() {
 
 function wireForms() {
   $("#fulfillment-mode").addEventListener("change", syncDeliveryAddress);
+  $("#clear-active-tab").addEventListener("click", () => {
+    state.activeTabId = null;
+    renderActiveTab();
+  });
+
+  $("#tab-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    try {
+      const tab = await api("/tabs", {
+        method: "POST",
+        body: JSON.stringify({ kind: data.get("kind"), label: data.get("label"), customerName: data.get("customerName") })
+      });
+      state.activeTabId = tab.id;
+      form.reset();
+      await refreshAll();
+      showPanel("pedidos");
+      notify("Comanda aberta. Adicione os itens da primeira rodada.");
+    } catch (error) {
+      notify(error.message, "error");
+    }
+  });
 
   $("#order-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -526,7 +584,7 @@ function wireForms() {
     submit.disabled = true;
     submit.textContent = "Enviando...";
     try {
-      await api("/orders", {
+      await api(state.activeTabId ? `/tabs/${state.activeTabId}/rounds` : "/orders", {
         method: "POST",
         headers: { "Idempotency-Key": state.orderAttempt.key },
         body: JSON.stringify(payload)

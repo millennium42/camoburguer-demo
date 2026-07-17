@@ -85,3 +85,23 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 **Riscos:** combinações visualmente iguais acumuladas de forma indevida. Mitigação: chave do carrinho inclui SKUs dos adicionais.
 
 **Rollback:** ocultar checkboxes e rejeitar arrays novos; pedidos existentes preservam snapshots e totais já calculados.
+
+## PR 4 — Comandas livres
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Comandas ou mesas abertas por identificador livre, com rodadas vinculadas ao núcleo de pedidos. |
+| Why | Atender consumo local sem misturar rascunho comercial com canais externos ou exigir mapa fixo. |
+| Where | PostgreSQL, API `/tabs`, carrinho existente, tela Comandas, ticket e testes. |
+| When | Comanda abre antes do consumo; cada envio cria a próxima rodada sequencial. |
+| Who | Operador abre/seleciona; API serializa; domínio cria pedido; cozinha recebe ticket. |
+| How | `service_tabs`, vínculo opcional em `orders`, índice de identificador aberto e Idempotency-Key. |
+| How much | Uma tabela, duas colunas em pedidos e reaproveitamento integral do formulário atual. |
+
+**Critérios de aceite:** identificador livre único entre abertas, tab/mesa, rodada idempotente, total agregado e canais externos inalterados.
+
+**Evidências:** testes de domínio/UI, smoke de abrir/lançar/repetir/consultar, Graphify e suíte completa.
+
+**Riscos:** dois terminais criarem a mesma rodada. Mitigação: lock da comanda, índice `(tab_id, round_number)` e chave idempotente.
+
+**Rollback:** desabilitar rotas/tela; pedidos já vinculados continuam pedidos válidos e o vínculo aditivo pode permanecer.

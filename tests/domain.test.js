@@ -76,6 +76,19 @@ test("pedido calcula total e gera ticket simples", () => {
   assert.match(ticket, /Horário: \d{2}:\d{2}/);
 });
 
+test("pedido vinculado à comanda preserva rodada e IDs das linhas", () => {
+  const order = createOrder({
+    tabId: "tab-1",
+    roundNumber: 2,
+    metadata: { tabLabel: "Mesa 4" },
+    items: [{ name: "X", quantity: 1, price: 20 }]
+  });
+  assert.equal(order.tabId, "tab-1");
+  assert.equal(order.roundNumber, 2);
+  assert.ok(order.items[0].id);
+  assert.match(buildKitchenTicket(order), /Comanda: Mesa 4[\s\S]*Rodada: 2/);
+});
+
 test("pedido aplica desconto por item antes do desconto geral e valida os limites", () => {
   const order = createOrder({
     discountPercent: 20,

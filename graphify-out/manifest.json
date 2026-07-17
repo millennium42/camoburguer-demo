@@ -20,13 +20,13 @@
     "semantic_hash": ""
   },
   "apps/api/src/db.js": {
-    "mtime": 1784158672.6785817,
-    "ast_hash": "5a6dd6d96c8cf04104480aa761a7d43b",
+    "mtime": 1784251038.998427,
+    "ast_hash": "f0558f688750c0adbae602e54476c1a2",
     "semantic_hash": ""
   },
   "apps/api/src/server.js": {
-    "mtime": 1784249081.179724,
-    "ast_hash": "4a9aa01863327ddd331991eb2b423498",
+    "mtime": 1784251038.998427,
+    "ast_hash": "199ad622e4f6dea2e98be96efb4d8115",
     "semantic_hash": ""
   },
   "apps/api/src/sse.js": {
@@ -45,8 +45,8 @@
     "semantic_hash": ""
   },
   "apps/ops-web/main.js": {
-    "mtime": 1784249178.7277973,
-    "ast_hash": "d4fe705ce57fda02613a6652ce5308a0",
+    "mtime": 1784250073.5369399,
+    "ast_hash": "54455e132e6b754e61ac96c66bdedf31",
     "semantic_hash": ""
   },
   "apps/print-bridge/package.json": {
@@ -70,8 +70,8 @@
     "semantic_hash": ""
   },
   "packages/domain/index.js": {
-    "mtime": 1784249081.179724,
-    "ast_hash": "e891f3f891bf0f11c20994619a685864",
+    "mtime": 1784251038.998427,
+    "ast_hash": "16120e3481c3e5fe1d39b5db7b5ce287",
     "semantic_hash": ""
   },
   "packages/domain/package.json": {
@@ -100,8 +100,8 @@
     "semantic_hash": ""
   },
   "tests/domain.test.js": {
-    "mtime": 1784249613.2550125,
-    "ast_hash": "be5575dea394d4ce5a86a574955c3dd9",
+    "mtime": 1784250119.2628684,
+    "ast_hash": "9fce043dab58b025800f9938fc867089",
     "semantic_hash": ""
   },
   "tests/finance.test.js": {
@@ -120,8 +120,8 @@
     "semantic_hash": ""
   },
   "apps/ops-web/index.html": {
-    "mtime": 1784249121.4203503,
-    "ast_hash": "8d39790caa17f3fba4b8b2c21357ae7b",
+    "mtime": 1784250045.5005796,
+    "ast_hash": "40b740f7d37457cc3c27ef14de431197",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -130,8 +130,8 @@
     "semantic_hash": ""
   },
   "docs/arquitetura-do-sistema.md": {
-    "mtime": 1784059368.866554,
-    "ast_hash": "5ac255c9aa978f9e774e84f040083290",
+    "mtime": 1784250119.2785003,
+    "ast_hash": "c4fe4d738e1ab18843f0baf880df8bc5",
     "semantic_hash": ""
   },
   "docs/automacoes-por-cenario.md": {
@@ -145,8 +145,8 @@
     "semantic_hash": ""
   },
   "docs/ciclo-do-pedido.md": {
-    "mtime": 1784158672.6942055,
-    "ast_hash": "e72f7724825afd431ceb3f5bb6f96214",
+    "mtime": 1784251039.0140524,
+    "ast_hash": "d87b658b447960b966c3561c879480a9",
     "semantic_hash": ""
   },
   "docs/ciclo-financeiro.md": {
@@ -160,8 +160,8 @@
     "semantic_hash": ""
   },
   "docs/padrao-ticket-cozinha.md": {
-    "mtime": 1784249178.7277973,
-    "ast_hash": "57f7822ff5b7351dd53eacdcb4c4fbf6",
+    "mtime": 1784250119.2628684,
+    "ast_hash": "0d3020c753e838faf21c36d51297a2f3",
     "semantic_hash": ""
   },
   "skills/architecture-gate-review/SKILL.md": {
@@ -355,13 +355,13 @@
     "semantic_hash": ""
   },
   "tests/ops-web.test.js": {
-    "mtime": 1784249613.2550125,
-    "ast_hash": "c31e9e6e01bc4af0c58e4045d2831361",
+    "mtime": 1784250119.2628684,
+    "ast_hash": "e68bb52057a1e986967505a453700193",
     "semantic_hash": ""
   },
   "tests/smoke.mjs": {
-    "mtime": 1784249178.7277973,
-    "ast_hash": "271afeed93436e105ba6f18d1b75fd29",
+    "mtime": 1784250119.2628684,
+    "ast_hash": "398b543fb05dce8c63b77cb83653374e",
     "semantic_hash": ""
   },
   "README.md": {
@@ -375,8 +375,8 @@
     "semantic_hash": ""
   },
   "docs/5w2h-evolucao.md": {
-    "mtime": 1784249613.2550125,
-    "ast_hash": "b945cfad79ff58caca6bd35a8717e4e5",
+    "mtime": 1784250119.2785003,
+    "ast_hash": "ee148f29a822047c9c79477d0678563d",
     "semantic_hash": ""
   },
   "docs/guia-de-desenvolvimento.md": {

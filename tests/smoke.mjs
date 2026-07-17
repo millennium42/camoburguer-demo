@@ -29,6 +29,30 @@ assert.equal(catalog.items.length, 51);
 assert.equal(catalog.items.filter((item) => item.available).length, 50);
 assert.equal(catalog.addOns.length, 17);
 
+const tab = await api("/tabs", {
+  method: "POST",
+  body: { kind: "table", label: `Mesa-${runId}`, customerName: "Cliente local" },
+  expected: [201]
+});
+const tabRoundKey = `smoke-tab-round-${runId}`;
+const tabRound = await api(`/tabs/${tab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": tabRoundKey },
+  body: { items: [{ sku: "x-simples", name: "X-SIMPLES", quantity: 1, price: 24 }] },
+  expected: [201]
+});
+assert.equal(tabRound.tabId, tab.id);
+assert.equal(tabRound.roundNumber, 1);
+assert.equal((await api(`/tabs/${tab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": tabRoundKey },
+  body: { items: [{ sku: "x-simples", name: "X-SIMPLES", quantity: 1, price: 24 }] }
+})).id, tabRound.id);
+const tabView = await api(`/tabs/${tab.id}`);
+assert.equal(tabView.rounds.length, 1);
+assert.equal(tabView.total, 24);
+await api(`/tabs/${tab.id}/close`, { method: "POST", body: {}, expected: [409] });
+
 const initialShifts = (await api("/cash-shifts")).items;
 const previousOpenShift = initialShifts.find((shift) => shift.status === "open");
 if (previousOpenShift) {

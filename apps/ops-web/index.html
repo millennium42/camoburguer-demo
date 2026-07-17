@@ -22,6 +22,7 @@
 
       <nav class="tab-bar" aria-label="Áreas do sistema">
         <button type="button" class="tab-button active" data-tab="pedidos">Pedidos</button>
+        <button type="button" class="tab-button" data-tab="comandas">Comandas</button>
         <button type="button" class="tab-button" data-tab="cozinha">Cozinha</button>
         <button type="button" class="tab-button" data-tab="financeiro">Financeiro</button>
       </nav>
@@ -34,6 +35,10 @@
             <article class="card">
               <h2>Novo pedido</h2>
               <form id="order-form" class="stack">
+                <div id="active-tab-banner" class="active-tab-banner" hidden>
+                  <strong id="active-tab-label"></strong>
+                  <button type="button" id="clear-active-tab">Sair da comanda</button>
+                </div>
                 <div class="grid two">
                   <label>Canal
                     <select name="source" required>
@@ -56,7 +61,7 @@
                 </label>
                 <div class="grid two">
                   <label>Cliente<input name="customerName" placeholder="Nome do cliente" /></label>
-                  <label>Pagamento
+                  <label id="order-payment-field">Pagamento
                     <select name="paymentMethod" required>
                       <option value="cash">Dinheiro</option>
                       <option value="pix">Pix</option>
@@ -101,6 +106,26 @@
             <article class="card">
               <h2>Fila de atendimento</h2>
               <div id="orders-list" class="stack"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-comandas">
+          <div class="grid two">
+            <article class="card">
+              <h2>Abrir comanda</h2>
+              <form id="tab-form" class="stack">
+                <label>Tipo
+                  <select name="kind"><option value="tab">Comanda</option><option value="table">Mesa</option></select>
+                </label>
+                <label>Identificador<input name="label" required placeholder="Ex.: 12, Balcão Ana" /></label>
+                <label>Cliente (opcional)<input name="customerName" placeholder="Nome do cliente" /></label>
+                <button type="submit" class="primary">Abrir comanda</button>
+              </form>
+            </article>
+            <article class="card">
+              <div class="section-heading"><h2>Comandas abertas</h2><span id="tabs-count" class="pill">0</span></div>
+              <div id="tabs-list" class="stack"></div>
             </article>
           </div>
         </section>
