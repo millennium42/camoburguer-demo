@@ -18,17 +18,19 @@ import {
 import {
   buildEntriesFromOrder,
   buildEntryFromAdjustment,
+  buildEntryFromTabPayment,
   buildOpeningEntry,
   filterEntries,
   summarizeFinance
 } from "@camoburguer/finance-core";
 import { config } from "./config.js";
-import { createDb, mapFinanceEntry, mapOrder, mapShift, mapTab } from "./db.js";
+import { createDb, mapFinanceEntry, mapOrder, mapShift, mapTab, mapTabPayment } from "./db.js";
 import { createSseHub } from "./sse.js";
 
 const app = Fastify({ logger: true });
 const db = createDb(config.databaseUrl);
 const sse = createSseHub();
+const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_paid"];
 
 await app.register(cors, { origin: true });
 
@@ -105,15 +107,31 @@ async function getTab(tabId, executor = db, forUpdate = false) {
 }
 
 async function tabView(tab, executor = db) {
-  const { rows } = await executor.query(
-    "SELECT * FROM orders WHERE tab_id = $1 ORDER BY round_number, created_at",
-    [tab.id]
-  );
-  const rounds = rows.map(mapOrder);
+  const [ordersResult, paymentsResult] = await Promise.all([
+    executor.query("SELECT * FROM orders WHERE tab_id = $1 ORDER BY round_number, created_at", [tab.id]),
+    executor.query("SELECT * FROM tab_payments WHERE tab_id = $1 ORDER BY created_at, id", [tab.id])
+  ]);
+  const rounds = ordersResult.rows.map(mapOrder);
+  const payments = paymentsResult.rows.map(mapTabPayment);
+  const total = toMoney(tab.finalTotal ?? rounds.filter((order) => order.status !== "cancelled").reduce((sum, order) => sum + Number(order.total), 0));
+  const totalCents = Math.round(total * 100);
+  const paidCents = payments.reduce((sum, payment) => sum + payment.amountCents, 0);
+  const methodBalances = payments.reduce((balances, payment) => {
+    balances[payment.paymentMethod] = (balances[payment.paymentMethod] || 0) + payment.amountCents;
+    return balances;
+  }, {});
+  const activeMethods = Object.entries(methodBalances).filter(([, amount]) => amount > 0).map(([method]) => method);
   return {
     ...tab,
     rounds,
-    total: toMoney(tab.finalTotal ?? rounds.filter((order) => order.status !== "cancelled").reduce((sum, order) => sum + Number(order.total), 0))
+    payments,
+    total,
+    totalCents,
+    paid: toMoney(paidCents / 100),
+    paidCents,
+    balance: toMoney((totalCents - paidCents) / 100),
+    balanceCents: totalCents - paidCents,
+    paymentMethod: activeMethods.length > 1 ? "mixed" : activeMethods[0] || null
   };
 }
 
@@ -124,6 +142,52 @@ async function listTabs(status = null) {
     values
   );
   return Promise.all(rows.map((row) => tabView(mapTab(row))));
+}
+
+async function getTabPayment(paymentId, executor = db, forUpdate = false) {
+  const { rows } = await executor.query(
+    `SELECT * FROM tab_payments WHERE id = $1${forUpdate ? " FOR UPDATE" : ""}`,
+    [paymentId]
+  );
+  return rows[0] ? mapTabPayment(rows[0]) : null;
+}
+
+async function getTabPaymentByIdempotencyKey(idempotencyKey, executor = db) {
+  const { rows } = await executor.query(
+    "SELECT * FROM tab_payments WHERE idempotency_key = $1",
+    [idempotencyKey]
+  );
+  return rows[0] ? mapTabPayment(rows[0]) : null;
+}
+
+async function insertTabPayment(payment, executor = db) {
+  const { rows } = await executor.query(
+    `INSERT INTO tab_payments (
+      id, tab_id, shift_id, kind, reverses_payment_id, payment_method,
+      amount_cents, idempotency_key, metadata, created_at
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10) RETURNING *`,
+    [
+      payment.id,
+      payment.tabId,
+      payment.shiftId,
+      payment.kind,
+      payment.reversesPaymentId,
+      payment.paymentMethod,
+      payment.amountCents,
+      payment.idempotencyKey,
+      JSON.stringify(payment.metadata || {}),
+      payment.createdAt
+    ]
+  );
+  return mapTabPayment(rows[0]);
+}
+
+function sameTabPayment(payment, expected) {
+  return payment.tabId === expected.tabId
+    && payment.kind === expected.kind
+    && payment.paymentMethod === expected.paymentMethod
+    && payment.amountCents === expected.amountCents
+    && payment.reversesPaymentId === (expected.reversesPaymentId || null);
 }
 
 async function changeStock(order, multiplier, reason, executor, sourceOrderId = order.id) {
@@ -231,16 +295,18 @@ async function insertEntries(entries, executor = db) {
   for (const entry of entries) {
     const { rows } = await executor.query(
       `INSERT INTO finance_entries (
-        id, order_id, shift_id, type, amount, payment_method, source,
-        label, metadata, occurred_at
+        id, order_id, tab_id, payment_id, shift_id, type, amount, payment_method,
+        source, label, metadata, occurred_at
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12
       ) ON CONFLICT DO NOTHING
       RETURNING *`,
       [
         entry.id,
-        entry.orderId,
-        entry.shiftId,
+        entry.orderId || null,
+        entry.tabId || null,
+        entry.paymentId || null,
+        entry.shiftId || null,
         entry.type,
         entry.amount,
         entry.paymentMethod,
@@ -700,26 +766,134 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
   return reply.code(201).send(result.saved);
 });
 
+app.post("/tabs/:tabId/payments", async (request, reply) => {
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  const paymentMethod = String(request.body?.paymentMethod || "").trim();
+  const amountCents = Number(request.body?.amountCents);
+  if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
+  if (!TAB_PAYMENT_METHODS.includes(paymentMethod)) return reply.code(400).send({ message: "Forma de pagamento inválida" });
+  if (!Number.isInteger(amountCents) || amountCents <= 0) return reply.code(400).send({ message: "Valor em centavos deve ser um inteiro positivo" });
+
+  const result = await db.transaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [idempotencyKey]);
+    const existing = await getTabPaymentByIdempotencyKey(idempotencyKey, client);
+    const expected = { tabId: request.params.tabId, kind: "payment", paymentMethod, amountCents, reversesPaymentId: null };
+    if (existing) return sameTabPayment(existing, expected)
+      ? { saved: existing, repeated: true, tab: await tabView(await getTab(request.params.tabId, client), client) }
+      : { idempotencyConflict: true };
+
+    const tab = await getTab(request.params.tabId, client, true);
+    if (!tab) return { notFound: true };
+    if (tab.status !== "open") return { closed: true };
+    const view = await tabView(tab, client);
+    if (amountCents > view.balanceCents) return { overpayment: true, balanceCents: view.balanceCents };
+    const shift = await getOpenShift(client);
+    if (!shift) return { noOpenShift: true };
+    const saved = await insertTabPayment({
+      id: randomUUID(),
+      tabId: tab.id,
+      shiftId: shift?.id || null,
+      kind: "payment",
+      reversesPaymentId: null,
+      paymentMethod,
+      amountCents,
+      idempotencyKey,
+      metadata: {},
+      createdAt: new Date().toISOString()
+    }, client);
+    await insertEntries([buildEntryFromTabPayment({ payment: saved, tab })], client);
+    if (shift && paymentMethod === "cash") {
+      await updateShift({ ...shift, expectedAmount: toMoney(shift.expectedAmount + amountCents / 100) }, "open", client);
+    }
+    return { saved, repeated: false, tab: await tabView(tab, client) };
+  });
+  if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
+  if (result.closed) return reply.code(409).send({ message: "Comanda não está aberta" });
+  if (result.noOpenShift) return reply.code(409).send({ message: "Abra o turno de caixa antes de registrar pagamentos" });
+  if (result.idempotencyConflict) return reply.code(409).send({ message: "Idempotency-Key já usada com outro pagamento" });
+  if (result.overpayment) return reply.code(409).send({
+    code: "TAB_PAYMENT_EXCEEDS_BALANCE",
+    message: "Pagamento ultrapassa o saldo restante",
+    balanceCents: result.balanceCents
+  });
+  emitFinanceEvent("tab.payment.recorded", result.saved);
+  return reply.code(result.repeated ? 200 : 201).send(result);
+});
+
+app.post("/tabs/:tabId/payments/:paymentId/reversals", async (request, reply) => {
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
+
+  const result = await db.transaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [idempotencyKey]);
+    const existing = await getTabPaymentByIdempotencyKey(idempotencyKey, client);
+    if (existing) return existing.tabId === request.params.tabId
+      && existing.kind === "reversal"
+      && existing.reversesPaymentId === request.params.paymentId
+      ? { saved: existing, repeated: true, tab: await tabView(await getTab(request.params.tabId, client), client) }
+      : { idempotencyConflict: true };
+
+    const tab = await getTab(request.params.tabId, client, true);
+    if (!tab) return { notFound: true };
+    if (tab.status !== "open") return { closed: true };
+    const original = await getTabPayment(request.params.paymentId, client, true);
+    if (!original || original.tabId !== tab.id || original.kind !== "payment") return { paymentNotFound: true };
+    const reversed = await client.query(
+      "SELECT 1 FROM tab_payments WHERE reverses_payment_id = $1",
+      [original.id]
+    );
+    if (reversed.rows[0]) return { alreadyReversed: true };
+    const shift = await getOpenShift(client);
+    if (!shift) return { noOpenShift: true };
+    const saved = await insertTabPayment({
+      id: randomUUID(),
+      tabId: tab.id,
+      shiftId: shift?.id || null,
+      kind: "reversal",
+      reversesPaymentId: original.id,
+      paymentMethod: original.paymentMethod,
+      amountCents: -original.amountCents,
+      idempotencyKey,
+      metadata: { originalShiftId: original.shiftId },
+      createdAt: new Date().toISOString()
+    }, client);
+    await insertEntries([buildEntryFromTabPayment({ payment: saved, tab })], client);
+    if (original.paymentMethod === "cash" && shift) {
+      await updateShift({ ...shift, expectedAmount: toMoney(shift.expectedAmount - original.amountCents / 100) }, "open", client);
+    }
+    return { saved, repeated: false, tab: await tabView(tab, client) };
+  });
+  if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
+  if (result.paymentNotFound) return reply.code(404).send({ message: "Pagamento não encontrado" });
+  if (result.closed) return reply.code(409).send({ message: "Comanda não está aberta" });
+  if (result.noOpenShift) return reply.code(409).send({ message: "Abra o turno de caixa antes de estornar pagamentos" });
+  if (result.alreadyReversed) return reply.code(409).send({ message: "Pagamento já estornado" });
+  if (result.idempotencyConflict) return reply.code(409).send({ message: "Idempotency-Key já usada com outro estorno" });
+  emitFinanceEvent("tab.payment.reversed", result.saved);
+  return reply.code(result.repeated ? 200 : 201).send(result);
+});
+
 app.post("/tabs/:tabId/close", async (request, reply) => {
   const result = await db.transaction(async (client) => {
     const tab = await getTab(request.params.tabId, client, true);
     if (!tab) return { notFound: true };
     if (tab.status !== "open") return { conflict: true };
     const view = await tabView(tab, client);
-    if (Number(view.total) !== 0) return { balance: view.total };
+    if (view.balanceCents !== 0) return { balance: view.balance, balanceCents: view.balanceCents };
     const { rows } = await client.query(
       `UPDATE service_tabs SET status = 'closed', final_total = $2, closed_at = $3
        WHERE id = $1 AND status = 'open' RETURNING *`,
       [tab.id, view.total, new Date().toISOString()]
     );
-    return { saved: mapTab(rows[0]) };
+    return { saved: await tabView(mapTab(rows[0]), client) };
   });
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: "Comanda já encerrada" });
   if (result.balance != null) return reply.code(409).send({
     code: "TAB_BALANCE_PENDING",
     message: "Registre os pagamentos antes de encerrar a comanda",
-    balance: result.balance
+    balance: result.balance,
+    balanceCents: result.balanceCents
   });
   return result.saved;
 });

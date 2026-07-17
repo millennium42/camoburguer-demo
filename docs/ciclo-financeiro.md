@@ -8,11 +8,15 @@ Financeiro gerencial automático, sem fiscal pesado e sem CMV detalhado.
 
 - `order.completed` gera lançamento de venda
 - `order.cancelled` após conclusão gera reversão
+- `tab.payment.recorded` gera uma venda por parcela, preservando a forma de pagamento
+- `tab.payment.reversed` gera cancelamento compensatório sem apagar a parcela original
 - `cash.shift.opened` registra abertura
 - `cash.adjustment.created` registra reforço ou sangria
 - `cash.shift.closed` registra fechamento e diferença
 
 O lançamento de venda usa o total final do pedido, já considerando os descontos por item e o desconto geral.
+
+Comandas usam centavos inteiros: o consumo soma rodadas, o pago soma parcelas e estornos assinados, e o saldo é a diferença exata. Mais de um método ativo deriva `mixed`, mas cada lançamento mantém seu método real.
 
 ## Regras do caixa
 
@@ -20,6 +24,8 @@ O lançamento de venda usa o total final do pedido, já considerando os desconto
 - Abrir é permitido somente quando estiver `closed`; fechar e adicionar movimentação são permitidos somente quando estiver `open`.
 - Reforço e sangria são criados pelo botão **Adicionar movimentação**, que abre um pop-up para escolher o tipo, informar valor e observação e confirmar.
 - O fechamento exige o valor declarado e registra a diferença sem ocultar movimentos anteriores.
+- Somente parcelas de comanda em dinheiro alteram o caixa esperado; outros métodos alteram faturamento, não numerário.
+- Toda parcela ou estorno de comanda exige turno aberto para manter vínculo temporal; estorno em dinheiro compensa o turno atual e referencia o pagamento/turno original nos metadados.
 
 ## Visões gerenciais
 

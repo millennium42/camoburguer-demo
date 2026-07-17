@@ -23,7 +23,7 @@ rtk wsl.exe -d Ubuntu -- docker compose ps
 rtk npm run graph:update
 ```
 
-O smoke cria pedidos nas quatro origens, valida Delivery/Retirada/Local, cozinha, idempotência, impressão, caixa, movimentações, fechamento e financeiro.
+O smoke cria pedidos nas quatro origens e comandas locais, valida Delivery/Retirada/Local, cozinha, estoque, pagamentos parciais, estornos, idempotência, impressão, caixa, movimentações, fechamento e financeiro.
 
 ## Estrutura
 
@@ -35,6 +35,7 @@ O smoke cria pedidos nas quatro origens, valida Delivery/Retirada/Local, cozinha
 - `packages/finance-core`: lançamentos e resumos financeiros.
 - `packages/shared-types`: enumerações compartilhadas.
 - `docs/estoque.md`: contrato de saldos, baixas e ajustes das três categorias controladas.
+- `docs/pagamentos-comandas.md`: parcelas, estornos, centavos, caixa e encerramento de comandas.
 - `docs/`: contratos operacionais e arquitetura em português.
 - `skills/` e `SUBAGENTES.md`: processo agent-first com revisão entre pares.
 - `graphify-out/`: grafo estrutural navegável do projeto.

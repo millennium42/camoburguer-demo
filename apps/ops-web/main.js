@@ -5,6 +5,8 @@ const state = {
   orderAttempt: null,
   cancellationAttempt: null,
   inventoryAttempt: null,
+  paymentAttempt: null,
+  paymentReversalAttempt: null,
   tabs: [],
   activeTabId: null,
   inventory: { balances: [], movements: [] },
@@ -228,9 +230,12 @@ function renderOrderItems() {
 function renderTabs() {
   $("#tabs-count").textContent = String(state.tabs.length);
   $("#tabs-list").innerHTML = state.tabs.length
-    ? state.tabs.map((tab) => `<article class="order-card">
+    ? state.tabs.map((tab) => {
+      const reversedPayments = new Set(tab.payments.filter((payment) => payment.kind === "reversal").map((payment) => payment.reversesPaymentId));
+      return `<article class="order-card">
         <div class="section-heading"><strong>${escapeHtml(tab.kind === "table" ? `Mesa ${tab.label}` : `Comanda ${tab.label}`)}</strong><span>${money(tab.total)}</span></div>
         <div class="mini-meta"><span>${escapeHtml(tab.customerName || "Sem cliente")}</span><span>${tab.rounds.length} rodada(s)</span><span>${formatWhen(tab.openedAt)}</span></div>
+        <div class="mini-meta"><span>Pago: ${money(tab.paid)}</span><strong>Restante: ${money(tab.balance)}</strong><span>${tab.paymentMethod ? paymentLabels[tab.paymentMethod] : "Não pago"}</span></div>
         <div class="tab-rounds">${tab.rounds.map((round) => `<div class="round-row ${round.roundKind === "cancellation" ? "cancellation" : ""}">
           <strong>${round.roundKind === "cancellation" ? "Cancelamento" : `Rodada ${round.roundNumber}`}</strong>
           ${(round.items || []).map((item) => {
@@ -242,8 +247,11 @@ function renderTabs() {
             return `<div>${item.quantity}x ${escapeHtml(item.name)}${round.roundKind === "production" && remaining > 0 ? ` <button type="button" data-cancel-item="${escapeHtml(item.id)}" data-cancel-tab="${escapeHtml(tab.id)}" data-cancel-order="${escapeHtml(round.id)}" data-cancel-max="${remaining}" data-cancel-name="${escapeHtml(item.name)}">Cancelar</button>` : ""}</div>`;
           }).join("")}
         </div>`).join("")}</div>
-        <div class="actions"><button type="button" data-use-tab="${escapeHtml(tab.id)}" class="primary">Lançar itens</button></div>
-      </article>`).join("")
+        <div class="tab-payments">${tab.payments.map((payment) => `<div class="round-row ${payment.kind === "reversal" ? "cancellation" : ""}"><span>${payment.kind === "reversal" ? "Estorno" : paymentLabels[payment.paymentMethod]} · ${money(payment.amount)}</span>${payment.kind === "payment" && !reversedPayments.has(payment.id) ? `<button type="button" data-reverse-payment="${escapeHtml(payment.id)}" data-payment-tab="${escapeHtml(tab.id)}">Estornar</button>` : ""}</div>`).join("")}</div>
+        ${tab.balanceCents > 0 ? `<form class="payment-form" data-payment-form data-tab-id="${escapeHtml(tab.id)}"><select name="paymentMethod" aria-label="Forma de pagamento"><option value="cash">Dinheiro</option><option value="pix">Pix</option><option value="credit_card">Crédito</option><option value="debit_card">Débito</option><option value="app_paid">Pago no app</option></select><input name="amount" type="number" min="0.01" max="${tab.balance}" step="0.01" value="${tab.balance}" required aria-label="Valor do pagamento" /><button type="submit">Registrar parcela</button></form>` : ""}
+        <div class="actions"><button type="button" data-use-tab="${escapeHtml(tab.id)}" class="primary">Lançar itens</button>${tab.balanceCents === 0 ? `<button type="button" data-close-tab="${escapeHtml(tab.id)}">Encerrar comanda</button>` : ""}</div>
+      </article>`;
+    }).join("")
     : '<p class="empty-state">Nenhuma comanda aberta.</p>';
   renderActiveTab();
 }
@@ -504,6 +512,39 @@ function wireCart() {
   document.body.addEventListener("click", async (event) => {
     const button = event.target.closest?.("button");
     if (!button) return;
+    if (button.dataset.reversePayment) {
+      const payload = { tabId: button.dataset.paymentTab, paymentId: button.dataset.reversePayment };
+      state.paymentReversalAttempt = nextOrderAttempt(state.paymentReversalAttempt, payload);
+      button.disabled = true;
+      try {
+        await api(`/tabs/${payload.tabId}/payments/${payload.paymentId}/reversals`, {
+          method: "POST",
+          headers: { "Idempotency-Key": state.paymentReversalAttempt.key },
+          body: JSON.stringify({})
+        });
+        state.paymentReversalAttempt = null;
+        await refreshAll();
+        notify("Pagamento estornado e lançamento compensatório registrado.");
+      } catch (error) {
+        notify(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+      return;
+    }
+    if (button.dataset.closeTab) {
+      button.disabled = true;
+      try {
+        await api(`/tabs/${button.dataset.closeTab}/close`, { method: "POST", body: JSON.stringify({}) });
+        await refreshAll();
+        notify("Comanda encerrada com saldo zerado.");
+      } catch (error) {
+        notify(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+      return;
+    }
     if (button.dataset.cancelItem) {
       const form = $("#cancellation-form");
       form.elements.tabId.value = button.dataset.cancelTab;
@@ -579,6 +620,35 @@ function wireCart() {
 }
 
 function wireForms() {
+  document.body.addEventListener("submit", async (event) => {
+    const form = event.target.closest?.("[data-payment-form]");
+    if (!form) return;
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    const payload = {
+      tabId: form.dataset.tabId,
+      paymentMethod: data.get("paymentMethod"),
+      amountCents: Math.round(Number(data.get("amount")) * 100)
+    };
+    state.paymentAttempt = nextOrderAttempt(state.paymentAttempt, payload);
+    const submit = form.querySelector('[type="submit"]');
+    submit.disabled = true;
+    try {
+      await api(`/tabs/${payload.tabId}/payments`, {
+        method: "POST",
+        headers: { "Idempotency-Key": state.paymentAttempt.key },
+        body: JSON.stringify({ paymentMethod: payload.paymentMethod, amountCents: payload.amountCents })
+      });
+      state.paymentAttempt = null;
+      await refreshAll();
+      notify("Parcela registrada. O saldo da comanda foi atualizado.");
+    } catch (error) {
+      notify(error.message, "error");
+    } finally {
+      submit.disabled = false;
+    }
+  });
   $("#fulfillment-mode").addEventListener("change", syncDeliveryAddress);
   $("#clear-active-tab").addEventListener("click", () => {
     state.activeTabId = null;

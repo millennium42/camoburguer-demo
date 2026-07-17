@@ -74,6 +74,24 @@ export function buildEntryFromAdjustment({ shift, kind, amount, reason = "" }) {
   };
 }
 
+export function buildEntryFromTabPayment({ payment, tab }) {
+  const reversal = payment.kind === "reversal";
+  return {
+    id: randomUUID(),
+    orderId: null,
+    tabId: tab.id,
+    paymentId: payment.id,
+    shiftId: payment.shiftId,
+    type: reversal ? "cancellation" : "sale",
+    amount: toMoney(payment.amountCents / 100),
+    paymentMethod: payment.paymentMethod,
+    source: "counter",
+    label: `${reversal ? "Estorno" : "Pagamento"} da ${tab.kind === "table" ? "mesa" : "comanda"} ${tab.label}`,
+    occurredAt: payment.createdAt,
+    metadata: { tabLabel: tab.label, paymentKind: payment.kind, reversesPaymentId: payment.reversesPaymentId }
+  };
+}
+
 export function filterEntries(entries, filters = {}) {
   return entries.filter((entry) => {
     if (filters.shiftId && entry.shiftId !== filters.shiftId) return false;
@@ -92,7 +110,7 @@ export function summarizeFinance(entries) {
   const cancellations = entries
     .filter((entry) => entry.type === "cancellation")
     .reduce((sum, entry) => sum + Math.abs(Number(entry.amount)), 0);
-  const totalOrders = new Set(sales.map((entry) => entry.orderId).filter(Boolean)).size;
+  const totalOrders = new Set(sales.map((entry) => entry.orderId || entry.tabId).filter(Boolean)).size;
   const ticketAverage = totalOrders ? toMoney(grossSales / totalOrders) : 0;
 
   const salesBySource = {};

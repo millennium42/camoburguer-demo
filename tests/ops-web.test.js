@@ -119,3 +119,14 @@ test("UI expõe estoque, ajustes e indisponibilidade no cardápio", async () => 
   assert.match(script, /"Sem estoque"/);
   assert.match(script, /\/inventory\/\$\{data\.get\("category"\)\}\/adjustments/);
 });
+
+test("UI permite parcelas, estorno e encerramento somente com saldo zerado", async () => {
+  const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
+  assert.match(script, /data-payment-form/);
+  assert.match(script, /amountCents: Math\.round/);
+  assert.match(script, /\/tabs\/\$\{payload\.tabId\}\/payments/);
+  assert.match(script, /payments\/\$\{payload\.paymentId\}\/reversals/);
+  assert.match(script, /tab\.balanceCents === 0/);
+  assert.match(script, /data-close-tab/);
+  assert.match(script, /paymentLabels\[tab\.paymentMethod\]/);
+});

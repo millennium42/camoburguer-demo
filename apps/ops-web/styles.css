@@ -63,6 +63,9 @@ button.danger { color: var(--danger); border-color: #e6beb7; }
 .tab-rounds { display: grid; gap: 8px; margin-top: 12px; }
 .round-row { padding: 10px; border-left: 4px solid var(--accent); background: #fff8f3; }
 .cancellation { border-color: var(--danger); background: #fae8e4; }
+.tab-payments { display: grid; gap: 6px; margin-top: 12px; }
+.tab-payments .round-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.payment-form { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) auto; gap: 8px; margin-top: 12px; }
 .order-meta, .mini-meta { color: var(--muted); font-size: .88rem; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .kitchen-card { border-left: 6px solid var(--accent); }
@@ -84,7 +87,7 @@ dialog::backdrop { background: rgba(42, 31, 26, .48); }
 @media (max-width: 720px) {
   .app-shell { padding: 14px; }
   .hero { flex-direction: column; }
-  .inline, .cart-row { grid-template-columns: 1fr; }
+  .inline, .cart-row, .payment-form { grid-template-columns: 1fr; }
   .tab-bar { display: flex; width: 100%; overflow-x: auto; }
   .tab-button { flex: 1; }
   .quantity-control { grid-template-columns: 48px 72px 48px; }

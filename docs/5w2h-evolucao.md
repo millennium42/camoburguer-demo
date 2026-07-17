@@ -145,3 +145,23 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 **Riscos:** deadlock entre categorias e dupla baixa. Mitigação: ordem alfabética de locks e unicidade por efeito.
 
 **Rollback:** bloquear novos itens controlados ou desabilitar a baixa; saldos/movimentos existentes permanecem para auditoria.
+
+## PR 7 — Pagamentos múltiplos
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Parcelas com métodos distintos, saldo exato em centavos, estorno append-only e encerramento somente após quitação. |
+| Why | Permitir dividir o consumo real de mesas/comandas sem perder a forma de cada recebimento ou distorcer o caixa. |
+| Where | PostgreSQL, agregado `service_tabs`, API, frontend de comandas, financeiro, testes e documentação. |
+| When | Depois das rodadas/correções e antes do encerramento comercial; cozinha segue ciclo independente. |
+| Who | Operador registra/estorna; API serializa e valida; financeiro recebe um lançamento por parcela. |
+| How | `amount_cents`, lock da comanda, `Idempotency-Key`, `tab_payments` append-only e vínculo em `finance_entries`. |
+| How much | Uma tabela, duas colunas de vínculo financeiro, dois endpoints, UI embutida e nenhuma dependência ou serviço novo. |
+
+**Critérios de aceite:** R$ 100 = Pix R$ 30 + débito R$ 70, excesso 409, R$ 99,99 mantém aberta, métodos preservados, dinheiro altera caixa e estorno não apaga o original.
+
+**Evidências:** testes de domínio/UI, migração PostgreSQL existente, smoke Docker/WSL, lançamentos por parcela e Graphify.
+
+**Riscos:** overpayment concorrente, arredondamento e estorno duplicado. Mitigação: centavos inteiros, lock da comanda e índices únicos.
+
+**Rollback:** bloquear novas parcelas e manter `tab_payments`/`finance_entries` para conciliação; não apagar histórico antes de zerar comandas abertas.

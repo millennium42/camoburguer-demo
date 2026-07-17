@@ -103,9 +103,33 @@ CREATE TABLE IF NOT EXISTS cash_shifts (
   CONSTRAINT cash_shifts_status_check CHECK (status IN ('open', 'closed'))
 );
 
+CREATE TABLE IF NOT EXISTS tab_payments (
+  id TEXT PRIMARY KEY,
+  tab_id TEXT NOT NULL REFERENCES service_tabs(id) ON DELETE RESTRICT,
+  shift_id TEXT NOT NULL REFERENCES cash_shifts(id) ON DELETE RESTRICT,
+  kind TEXT NOT NULL DEFAULT 'payment',
+  reverses_payment_id TEXT NULL REFERENCES tab_payments(id) ON DELETE RESTRICT,
+  payment_method TEXT NOT NULL,
+  amount_cents INTEGER NOT NULL,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT tab_payments_kind_check CHECK (kind IN ('payment', 'reversal')),
+  CONSTRAINT tab_payments_method_check CHECK (payment_method IN ('cash', 'pix', 'credit_card', 'debit_card', 'app_paid')),
+  CONSTRAINT tab_payments_amount_check CHECK (
+    (kind = 'payment' AND amount_cents > 0) OR (kind = 'reversal' AND amount_cents < 0)
+  ),
+  CONSTRAINT tab_payments_reversal_check CHECK (
+    (kind = 'payment' AND reverses_payment_id IS NULL) OR
+    (kind = 'reversal' AND reverses_payment_id IS NOT NULL)
+  )
+);
+
 CREATE TABLE IF NOT EXISTS finance_entries (
   id TEXT PRIMARY KEY,
   order_id TEXT NULL REFERENCES orders(id) ON DELETE SET NULL,
+  tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL,
+  payment_id TEXT NULL REFERENCES tab_payments(id) ON DELETE SET NULL,
   shift_id TEXT NULL REFERENCES cash_shifts(id) ON DELETE SET NULL,
   type TEXT NOT NULL,
   amount NUMERIC(12,2) NOT NULL,
@@ -134,6 +158,9 @@ WHERE fulfillment_mode = 'delivery' AND NULLIF(BTRIM(delivery_address), '') IS N
 ALTER TABLE orders DROP COLUMN IF EXISTS operator_name;
 ALTER TABLE cash_shifts DROP COLUMN IF EXISTS operator_name;
 ALTER TABLE finance_entries DROP COLUMN IF EXISTS operator_name;
+ALTER TABLE tab_payments ALTER COLUMN shift_id SET NOT NULL;
+ALTER TABLE finance_entries ADD COLUMN IF NOT EXISTS tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL;
+ALTER TABLE finance_entries ADD COLUMN IF NOT EXISTS payment_id TEXT NULL REFERENCES tab_payments(id) ON DELETE SET NULL;
 
 UPDATE cash_shifts
 SET status = 'closed', closed_at = COALESCE(closed_at, NOW())
@@ -161,12 +188,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS stock_movements_idempotency_unique
   ON stock_movements (idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS stock_movements_one_order_effect
   ON stock_movements (order_id, category, reason) WHERE order_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS tab_payments_one_reversal
+  ON tab_payments (reverses_payment_id) WHERE kind = 'reversal';
 CREATE UNIQUE INDEX IF NOT EXISTS cash_shifts_one_open
   ON cash_shifts ((status)) WHERE status = 'open';
 CREATE UNIQUE INDEX IF NOT EXISTS print_jobs_one_confirmation_per_order
   ON print_jobs (order_id) WHERE reason = 'confirmed';
 CREATE UNIQUE INDEX IF NOT EXISTS finance_entries_one_order_effect
   ON finance_entries (order_id, type) WHERE type IN ('sale', 'cancellation');
+CREATE UNIQUE INDEX IF NOT EXISTS finance_entries_one_payment_effect
+  ON finance_entries (payment_id) WHERE payment_id IS NOT NULL;
 
 DO $migration$
 BEGIN
@@ -276,10 +307,28 @@ export function mapTab(row) {
   };
 }
 
+export function mapTabPayment(row) {
+  return {
+    id: row.id,
+    tabId: row.tab_id,
+    shiftId: row.shift_id,
+    kind: row.kind,
+    reversesPaymentId: row.reverses_payment_id,
+    paymentMethod: row.payment_method,
+    amountCents: Number(row.amount_cents),
+    amount: toMoney(Number(row.amount_cents) / 100),
+    idempotencyKey: row.idempotency_key,
+    metadata: row.metadata || {},
+    createdAt: new Date(row.created_at).toISOString()
+  };
+}
+
 export function mapFinanceEntry(row) {
   return {
     id: row.id,
     orderId: row.order_id,
+    tabId: row.tab_id,
+    paymentId: row.payment_id,
     shiftId: row.shift_id,
     type: row.type,
     amount: toMoney(row.amount),

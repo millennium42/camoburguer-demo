@@ -234,6 +234,44 @@ if (previousOpenShift) {
   });
 }
 
+const noShiftTab = await api("/tabs", { method: "POST", body: { label: `Sem-turno-${runId}` }, expected: [201] });
+const noShiftRound = await api(`/tabs/${noShiftTab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-no-shift-round-${runId}` },
+  body: { items: [{ sku: `smoke-no-shift-${runId}`, name: "Consumo sem turno", quantity: 1, price: 5 }] },
+  expected: [201]
+});
+await api(`/tabs/${noShiftTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-no-shift-payment-${runId}` },
+  body: { paymentMethod: "pix", amountCents: 500 },
+  expected: [409]
+});
+assert.equal((await api(`/tabs/${noShiftTab.id}`)).payments.length, 0);
+await api(`/tabs/${noShiftTab.id}/rounds/${noShiftRound.id}/cancellations`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-no-shift-cancel-${runId}` },
+  body: { items: [{ itemId: noShiftRound.items[0].id, quantity: 1 }], reason: "Limpeza do smoke sem turno" },
+  expected: [201]
+});
+await api(`/tabs/${noShiftTab.id}/close`, { method: "POST", body: {} });
+
+const historicalShift = await api("/cash-shifts/open", { method: "POST", body: { openingAmount: 0 }, expected: [201] });
+const crossShiftTab = await api("/tabs", { method: "POST", body: { label: `Entre-turnos-${runId}` }, expected: [201] });
+await api(`/tabs/${crossShiftTab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-cross-shift-round-${runId}` },
+  body: { items: [{ sku: `smoke-cross-shift-${runId}`, name: "Consumo entre turnos", quantity: 1, price: 5 }] },
+  expected: [201]
+});
+const historicalPayment = await api(`/tabs/${crossShiftTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-cross-shift-payment-${runId}` },
+  body: { paymentMethod: "cash", amountCents: 500 },
+  expected: [201]
+});
+await api(`/cash-shifts/${historicalShift.id}/close`, { method: "POST", body: { declaredAmount: 5 } });
+
 const shift = await api("/cash-shifts/open", {
   method: "POST",
   body: { openingAmount: 100 },
@@ -244,6 +282,136 @@ await api("/cash-shifts/open", {
   body: { openingAmount: 10 },
   expected: [409]
 });
+const crossShiftReversal = await api(`/tabs/${crossShiftTab.id}/payments/${historicalPayment.saved.id}/reversals`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-cross-shift-reversal-${runId}` },
+  body: {},
+  expected: [201]
+});
+assert.equal(crossShiftReversal.saved.shiftId, shift.id);
+assert.equal(crossShiftReversal.saved.metadata.originalShiftId, historicalShift.id);
+assert.equal((await api(`/cash-shifts`)).items.find((item) => item.id === historicalShift.id).expectedAmount, 5);
+assert.equal((await api(`/cash-shifts`)).items.find((item) => item.id === shift.id).expectedAmount, 95);
+await api(`/tabs/${crossShiftTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-cross-shift-repay-${runId}` },
+  body: { paymentMethod: "pix", amountCents: 500 },
+  expected: [201]
+});
+await api(`/tabs/${crossShiftTab.id}/close`, { method: "POST", body: {} });
+
+const mixedTab = await api("/tabs", { method: "POST", body: { kind: "table", label: `Pagamento-${runId}` }, expected: [201] });
+await api(`/tabs/${mixedTab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-payment-round-${runId}` },
+  body: { items: [{ sku: `smoke-meal-${runId}`, name: "Consumo local", quantity: 1, price: 100 }] },
+  expected: [201]
+});
+const pixKey = `smoke-payment-pix-${runId}`;
+const pixPayment = await api(`/tabs/${mixedTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": pixKey },
+  body: { paymentMethod: "pix", amountCents: 3000 },
+  expected: [201]
+});
+assert.equal(pixPayment.tab.balanceCents, 7000);
+assert.equal((await api(`/tabs/${mixedTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": pixKey },
+  body: { paymentMethod: "pix", amountCents: 3000 }
+})).saved.id, pixPayment.saved.id);
+await api(`/tabs/${mixedTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": pixKey },
+  body: { paymentMethod: "pix", amountCents: 4000 },
+  expected: [409]
+});
+await api(`/tabs/${mixedTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-payment-excess-${runId}` },
+  body: { paymentMethod: "debit_card", amountCents: 7001 },
+  expected: [409]
+});
+await api(`/tabs/${mixedTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-payment-debit-${runId}` },
+  body: { paymentMethod: "debit_card", amountCents: 7000 },
+  expected: [201]
+});
+const paidMixedTab = await api(`/tabs/${mixedTab.id}`);
+assert.equal(paidMixedTab.paidCents, 10000);
+assert.equal(paidMixedTab.balanceCents, 0);
+assert.equal(paidMixedTab.paymentMethod, "mixed");
+assert.equal((await api(`/tabs/${mixedTab.id}/close`, { method: "POST", body: {} })).status, "closed");
+
+const partialTab = await api("/tabs", { method: "POST", body: { label: `Parcial-${runId}` }, expected: [201] });
+await api(`/tabs/${partialTab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-partial-round-${runId}` },
+  body: { items: [{ sku: `smoke-partial-${runId}`, name: "Consumo parcial", quantity: 1, price: 100 }] },
+  expected: [201]
+});
+await api(`/tabs/${partialTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-partial-9999-${runId}` },
+  body: { paymentMethod: "pix", amountCents: 9999 },
+  expected: [201]
+});
+await api(`/tabs/${partialTab.id}/close`, { method: "POST", body: {}, expected: [409] });
+await api(`/tabs/${partialTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-partial-cent-${runId}` },
+  body: { paymentMethod: "pix", amountCents: 1 },
+  expected: [201]
+});
+await api(`/tabs/${partialTab.id}/close`, { method: "POST", body: {} });
+
+const paymentRaceTab = await api("/tabs", { method: "POST", body: { label: `Corrida-pagamento-${runId}` }, expected: [201] });
+await api(`/tabs/${paymentRaceTab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-payment-race-round-${runId}` },
+  body: { items: [{ sku: `smoke-payment-race-${runId}`, name: "Consumo concorrente", quantity: 1, price: 10 }] },
+  expected: [201]
+});
+const paymentRace = await Promise.all(["pix", "debit_card"].map(async (paymentMethod, index) => {
+  const response = await fetch(`${apiBase}/tabs/${paymentRaceTab.id}/payments`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "Idempotency-Key": `smoke-payment-race-${index}-${runId}` },
+    body: JSON.stringify({ paymentMethod, amountCents: 1000 })
+  });
+  return response.status;
+}));
+assert.deepEqual(paymentRace.sort(), [201, 409]);
+assert.equal((await api(`/tabs/${paymentRaceTab.id}`)).balanceCents, 0);
+await api(`/tabs/${paymentRaceTab.id}/close`, { method: "POST", body: {} });
+
+const reversalTab = await api("/tabs", { method: "POST", body: { label: `Estorno-${runId}` }, expected: [201] });
+await api(`/tabs/${reversalTab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-reversal-round-${runId}` },
+  body: { items: [{ sku: `smoke-reversal-${runId}`, name: "Consumo para estorno", quantity: 1, price: 20 }] },
+  expected: [201]
+});
+const cashPayment = await api(`/tabs/${reversalTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-cash-payment-${runId}` },
+  body: { paymentMethod: "cash", amountCents: 2000 },
+  expected: [201]
+});
+await api(`/tabs/${reversalTab.id}/payments/${cashPayment.saved.id}/reversals`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-cash-reversal-${runId}` },
+  body: {},
+  expected: [201]
+});
+assert.equal((await api(`/tabs/${reversalTab.id}`)).balanceCents, 2000);
+await api(`/tabs/${reversalTab.id}/payments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-reversal-pix-${runId}` },
+  body: { paymentMethod: "pix", amountCents: 2000 },
+  expected: [201]
+});
+await api(`/tabs/${reversalTab.id}/close`, { method: "POST", body: {} });
 await api(`/cash-shifts/${shift.id}/adjustments`, {
   method: "POST",
   body: { kind: "reinforcement", amount: 20, reason: "Troco" }
@@ -323,16 +491,18 @@ assert.equal(reprint.ok, true);
 
 const entries = (await api("/finance/entries")).items;
 assert.equal(entries.filter((entry) => entry.orderId === orders.counter.id && entry.type === "sale").length, 1);
+assert.equal(entries.filter((entry) => entry.tabId === mixedTab.id && entry.type === "sale").length, 2);
+assert.equal(entries.filter((entry) => entry.tabId === reversalTab.id && entry.type === "cancellation").length, 1);
 const currentShift = (await api("/cash-shifts")).items.find((item) => item.id === shift.id);
-assert.equal(currentShift.expectedAmount, 133.4);
+assert.equal(currentShift.expectedAmount, 128.4);
 
 const closed = await api(`/cash-shifts/${shift.id}/close`, {
   method: "POST",
-  body: { declaredAmount: 133.4 }
+  body: { declaredAmount: 128.4 }
 });
 assert.equal(closed.status, "closed");
 assert.equal(closed.differenceAmount, 0);
-await api(`/cash-shifts/${shift.id}/close`, { method: "POST", body: { declaredAmount: 133.4 }, expected: [409] });
+await api(`/cash-shifts/${shift.id}/close`, { method: "POST", body: { declaredAmount: 128.4 }, expected: [409] });
 await api(`/cash-shifts/${shift.id}/adjustments`, {
   method: "POST",
   body: { kind: "withdrawal", amount: 1, reason: "Inválido" },

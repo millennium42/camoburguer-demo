@@ -49,6 +49,18 @@ O cenário transacional provou que a mesma chave idempotente não duplica carga 
 
 O Graphify incremental sobre `/mnt/d` permaneceu bloqueado em I/O. O fallback documentado copiou o código para filesystem Linux nativo, reconstruiu o grafo localmente sem LLM (`--code-only`), clusterizou e promoveu somente os artefatos gerados. A consulta final encontrou `changeStock()` conectado a `calculateStockRequirements()`.
 
+## Incremento: pagamentos múltiplos
+
+| Comando | Ambiente | Resultado | Evidência | Pendência |
+| --- | --- | --- | --- | --- |
+| `rtk npm test` | Windows/Node 24 | aprovado | 28/28 testes | nenhuma |
+| `rtk node --check` | API, banco, frontend e smoke | aprovado | sintaxe válida | nenhuma |
+| `docker compose build api ops-web` | Docker pelo WSL | aprovado | imagens reconstruídas sem vulnerabilidade npm | nenhuma |
+| health poll + `rtk npm run smoke` | host contra compose anexado no WSL | aprovado | banco existente migrado e smoke final em 22 s | nenhuma |
+| `graphify update .` em filesystem Linux + consultas | Graphify no WSL | aprovado | 423 nós, 575 relações, 46 comunidades; símbolos de pagamento encontrados | nenhuma |
+
+O smoke provou R$ 100 pagos por Pix R$ 30 + débito R$ 70, rejeição de R$ 70,01, permanência aberta com R$ 99,99, retry idempotente, chave divergente em 409, corrida de pagamentos em 201/409 e rejeição sem turno. Também provou pagamento em dinheiro no turno anterior, fechamento preservado em R$ 5,00 e estorno compensatório de R$ 5,00 no turno atual, cujo caixa esperado terminou em R$ 128,40. Pix/débito não alteraram numerário e cada parcela manteve seu método.
+
 ## Risco residual aceito
 
 A automação do navegador embutido não inicializou neste host por erro interno do runtime. A interface foi coberta por teste DOM, contrato HTTP e smoke em container; uma conferência visual rápida em Chrome/Edge continua recomendada antes de uma apresentação pública.

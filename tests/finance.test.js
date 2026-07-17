@@ -4,6 +4,7 @@ import { createCashShift, createOrder } from "../packages/domain/index.js";
 import {
   buildEntriesFromOrder,
   buildEntryFromAdjustment,
+  buildEntryFromTabPayment,
   buildOpeningEntry,
   filterEntries,
   summarizeFinance
@@ -101,4 +102,44 @@ test("resumo conta somente pedidos presentes nas vendas filtradas", () => {
   assert.equal(summary.grossSales, 40);
   assert.equal(summary.totalOrders, 1);
   assert.equal(summary.ticketAverage, 40);
+});
+
+test("parcelas da mesma comanda preservam método e contam uma venda comercial", () => {
+  const tab = { id: "tab-100", kind: "table", label: "12" };
+  const pix = buildEntryFromTabPayment({
+    tab,
+    payment: { id: "pay-pix", kind: "payment", amountCents: 3000, paymentMethod: "pix", shiftId: "shift-a", createdAt: "2026-07-16T20:00:00.000Z" }
+  });
+  const debit = buildEntryFromTabPayment({
+    tab,
+    payment: { id: "pay-debit", kind: "payment", amountCents: 7000, paymentMethod: "debit_card", shiftId: "shift-a", createdAt: "2026-07-16T20:01:00.000Z" }
+  });
+  const summary = summarizeFinance([pix, debit]);
+
+  assert.equal(pix.amount, 30);
+  assert.equal(debit.amount, 70);
+  assert.equal(summary.grossSales, 100);
+  assert.equal(summary.totalOrders, 1);
+  assert.equal(summary.ticketAverage, 100);
+  assert.deepEqual(summary.paymentsByMethod, { pix: 30, debit_card: 70 });
+});
+
+test("estorno de parcela gera lançamento compensatório sem apagar a venda", () => {
+  const tab = { id: "tab-reversal", kind: "tab", label: "Ana" };
+  const reversal = buildEntryFromTabPayment({
+    tab,
+    payment: {
+      id: "reversal-1",
+      kind: "reversal",
+      reversesPaymentId: "payment-1",
+      amountCents: -2000,
+      paymentMethod: "cash",
+      shiftId: "shift-a",
+      createdAt: "2026-07-16T20:02:00.000Z"
+    }
+  });
+
+  assert.equal(reversal.type, "cancellation");
+  assert.equal(reversal.amount, -20);
+  assert.equal(reversal.metadata.reversesPaymentId, "payment-1");
 });
