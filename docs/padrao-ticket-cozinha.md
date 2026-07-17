@@ -9,6 +9,7 @@
 - modo de entrega
 - endereço, somente em `delivery`
 - itens
+- adicionais em linhas recuadas logo abaixo do respectivo item
 - observações por item e gerais, quando informadas
 - forma de pagamento
 
@@ -16,6 +17,7 @@
 
 - itens em destaque
 - observações sempre depois do item
+- adicionais sempre prefixados por `+`, preservando o nome congelado na venda
 - separação clara entre dados do cliente e preparo
 - texto simples e de leitura rápida
 - retries do mesmo job devem reutilizar o mesmo arquivo de spool

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import {
+  ADD_ONS,
   CATALOG,
   CATALOG_CAPTURED_AT,
   CATALOG_SOURCE_URL,
@@ -19,10 +20,34 @@ test("catálogo reflete o snapshot OlaClick de 2026-07-16", () => {
   assert.equal(CATALOG.filter((item) => item.available).length, 50);
   assert.deepEqual(
     CATALOG.find((item) => item.sku === "01-camobuger"),
-    { sku: "01-camobuger", name: "01 CAMOBUGER + BATATA FRITA", category: "Lanches", price: 35, description: "", stockCategory: "hamburguer", available: true }
+    { sku: "01-camobuger", name: "01 CAMOBUGER + BATATA FRITA", category: "Lanches", price: 35, description: "", stockCategory: "hamburguer", allowsAddons: true, available: true }
   );
   assert.equal(CATALOG.find((item) => item.sku === "produto-19").available, false);
-  assert.equal(createHash("sha256").update(JSON.stringify(CATALOG)).digest("hex"), "e7da279957c47e7fc5a659bd259099c7096cd0b43cbf7a8c46f1798731d13482");
+  assert.equal(createHash("sha256").update(JSON.stringify(CATALOG)).digest("hex"), "f705b8c8902127b9478031d07930d9fa46945e953c6f3ef32a4ef3f2a2b3a896");
+});
+
+test("adicionais são validados, congelados, cobrados e impressos", () => {
+  assert.equal(ADD_ONS.length, 17);
+  assert.equal(createHash("sha256").update(JSON.stringify(ADD_ONS)).digest("hex"), "afe6dea4b937740032955ff37893d714e8eea8ac5a84c80787ea6c87b4e7587d");
+  const order = createOrder({
+    discountPercent: 10,
+    items: [{
+      sku: "x-simples",
+      name: "X-SIMPLES",
+      quantity: 2,
+      price: 20,
+      discountPercent: 10,
+      addons: [{ sku: "ovo" }, { sku: "mucarela" }]
+    }]
+  });
+  assert.equal(order.total, 43.74);
+  assert.deepEqual(order.items[0].addons, [
+    { sku: "ovo", name: "Ovo", price: 3, quantity: 1 },
+    { sku: "mucarela", name: "Muçarela", price: 4, quantity: 1 }
+  ]);
+  assert.match(buildKitchenTicket(order), /\+ Ovo[\s\S]*\+ Muçarela/);
+  assert.throws(() => createOrder({ items: [{ sku: "refrigerante-lata", name: "Refri", price: 6, addons: [{ sku: "ovo" }] }] }), /não aceita/);
+  assert.throws(() => createOrder({ items: [{ sku: "x-simples", name: "X", price: 24, addons: [{ sku: "ovo" }, { sku: "ovo" }] }] }), /duplicado/);
 });
 
 test("pedido rejeita produto marcado como indisponível", () => {

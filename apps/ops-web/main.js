@@ -1,5 +1,6 @@
 const state = {
   catalog: [],
+  addOns: [],
   orderItems: [],
   orderAttempt: null,
   orders: [],
@@ -60,17 +61,19 @@ export function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => htmlEscapes[character]);
 }
 
-export function addOrAccumulateItem(items, selected, quantity, notes = "", discountPercent = 0) {
+export function addOrAccumulateItem(items, selected, quantity, notes = "", discountPercent = 0, addons = []) {
   const normalizedQuantity = Math.max(1, Math.trunc(Number(quantity) || 1));
   const normalizedNotes = String(notes).trim();
   const normalizedDiscount = validDiscountPercent(discountPercent);
+  const addonKey = addons.map((addon) => addon.sku).sort().join(",");
   const existing = items.find(
     (item) => item.sku === selected.sku
       && String(item.notes || "").trim() === normalizedNotes
       && validDiscountPercent(item.discountPercent) === normalizedDiscount
+      && (item.addons || []).map((addon) => addon.sku).sort().join(",") === addonKey
   );
   if (existing) existing.quantity += normalizedQuantity;
-  else items.push({ ...selected, quantity: normalizedQuantity, discountPercent: normalizedDiscount, notes: normalizedNotes });
+  else items.push({ ...selected, quantity: normalizedQuantity, addons, discountPercent: normalizedDiscount, notes: normalizedNotes });
   return items;
 }
 
@@ -96,7 +99,8 @@ function validDiscountPercent(value) {
 
 export function calculateOrderPreviewTotal(items = [], discountPercent = 0) {
   const subtotal = items.reduce((total, item) => {
-    return total + Number(item.price || 0) * Number(item.quantity || 0)
+    const addonTotal = (item.addons || []).reduce((sum, addon) => sum + Number(addon.price || 0), 0);
+    return total + (Number(item.price || 0) + addonTotal) * Number(item.quantity || 0)
       * (1 - validDiscountPercent(item.discountPercent) / 100);
   }, 0);
   return Math.round(subtotal * (1 - validDiscountPercent(discountPercent) / 100) * 100) / 100;
@@ -151,6 +155,16 @@ function renderCatalog() {
       .join("")}</optgroup>`)
     .join("");
   $("#add-item").disabled = !state.catalog.some((item) => item.available);
+  renderAddOns();
+}
+
+function renderAddOns() {
+  const selected = state.catalog.find((item) => item.sku === $("#catalog-select").value);
+  const field = $("#catalog-addons-field");
+  field.hidden = !selected?.allowsAddons;
+  $("#catalog-addons").innerHTML = selected?.allowsAddons
+    ? state.addOns.map((addon) => `<label class="check-option"><input type="checkbox" name="catalog-addon" value="${escapeHtml(addon.sku)}" /> ${escapeHtml(addon.name)} <span>${money(addon.price)}</span></label>`).join("")
+    : "";
 }
 
 function renderOrderItems() {
@@ -170,6 +184,7 @@ function renderOrderItems() {
             <span>${money(item.price)} cada</span>
             <span>${escapeHtml(item.notes || "Sem observação")}</span>
           </div>
+          ${(item.addons || []).length ? `<div class="addon-list">${item.addons.map((addon) => `+ ${escapeHtml(addon.name)} (${money(addon.price)})`).join(" · ")}</div>` : ""}
         </div>
         <div class="quantity-control">
           <button type="button" data-decrease-item="${index}" aria-label="Diminuir ${escapeHtml(item.name)}">−</button>
@@ -217,7 +232,7 @@ function renderOrders() {
           ${order.discountPercent ? `<span>Desconto ${order.discountPercent}%</span>` : ""}
           <strong>${money(order.total)}</strong>
         </div>
-        <p>${(order.items || []).map((item) => `${item.quantity}x ${escapeHtml(item.name)}${item.discountPercent ? ` (-${item.discountPercent}%)` : ""}`).join(" · ")}</p>
+        <p>${(order.items || []).map((item) => `${item.quantity}x ${escapeHtml(item.name)}${(item.addons || []).length ? ` + ${item.addons.map((addon) => escapeHtml(addon.name)).join(", ")}` : ""}${item.discountPercent ? ` (-${item.discountPercent}%)` : ""}`).join(" · ")}</p>
         <div class="actions">
           ${orderActions(order)
             .map(([status, label]) => `<button type="button" data-order-status="${escapeHtml(order.id)}" data-status="${status}">${label}</button>`)
@@ -349,6 +364,7 @@ async function refreshAll() {
   ]);
 
   state.catalog = catalog.items;
+  state.addOns = catalog.addOns || [];
   state.orders = orders.items;
   state.kitchen = kitchen.items;
   state.financeSummary = summary;
@@ -401,6 +417,7 @@ function wireTabs() {
 
 function wireCart() {
   $("#order-discount").addEventListener("input", renderOrderItems);
+  $("#catalog-select").addEventListener("change", renderAddOns);
   $("#add-item").addEventListener("click", () => {
     const selected = state.catalog.find((item) => item.sku === $("#catalog-select").value);
     if (!selected) return;
@@ -409,11 +426,15 @@ function wireCart() {
       selected,
       $("#catalog-qty").value,
       $("#catalog-notes").value,
-      $("#catalog-discount").value
+      $("#catalog-discount").value,
+      [...document.querySelectorAll('input[name="catalog-addon"]:checked')]
+        .map((input) => state.addOns.find((addon) => addon.sku === input.value))
+        .filter(Boolean)
     );
     $("#catalog-qty").value = "1";
     $("#catalog-discount").value = "0";
     $("#catalog-notes").value = "";
+    renderAddOns();
     renderOrderItems();
   });
 

@@ -70,6 +70,10 @@
                 <fieldset class="stack catalog-picker">
                   <legend>Adicionar item</legend>
                   <label>Item do cardápio<select id="catalog-select"></select></label>
+                  <fieldset id="catalog-addons-field" hidden>
+                    <legend>Adicionais</legend>
+                    <div id="catalog-addons" class="addon-grid"></div>
+                  </fieldset>
                   <div class="inline">
                     <label>Quantidade<input type="number" id="catalog-qty" min="1" step="1" value="1" inputmode="numeric" /></label>
                     <label>Desconto do item (%)<input type="number" id="catalog-discount" min="0" max="100" step="0.01" value="0" inputmode="decimal" /></label>

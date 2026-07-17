@@ -63,3 +63,23 @@ test("UI agrupa o catálogo e sinaliza produto esgotado", async () => {
   assert.match(script, /item\.available \? "" : "disabled"/);
   assert.match(script, /"Esgotado"/);
 });
+
+test("carrinho separa combinações de adicionais e soma seus preços", () => {
+  const items = [];
+  const selected = { sku: "x", name: "X", price: 20 };
+  addOrAccumulateItem(items, selected, 2, "", 0, [{ sku: "ovo", name: "Ovo", price: 3 }]);
+  addOrAccumulateItem(items, selected, 1, "", 0, [{ sku: "bacon", name: "Bacon", price: 10 }]);
+  assert.equal(items.length, 2);
+  assert.equal(calculateOrderPreviewTotal(items), 76);
+});
+
+test("UI contém o painel e os controles nativos de adicionais", async () => {
+  const [html, script] = await Promise.all([
+    readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8")
+  ]);
+  assert.match(html, /id="catalog-addons-field" hidden/);
+  assert.match(html, /id="catalog-addons"/);
+  assert.match(script, /type=\"checkbox\" name=\"catalog-addon\"/);
+  assert.match(script, /field\.hidden = !selected\?\.allowsAddons/);
+});

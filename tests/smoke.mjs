@@ -27,6 +27,7 @@ const catalog = await api("/catalog");
 assert.equal(catalog.capturedAt, "2026-07-16");
 assert.equal(catalog.items.length, 51);
 assert.equal(catalog.items.filter((item) => item.available).length, 50);
+assert.equal(catalog.addOns.length, 17);
 
 const initialShifts = (await api("/cash-shifts")).items;
 const previousOpenShift = initialShifts.find((shift) => shift.status === "open");

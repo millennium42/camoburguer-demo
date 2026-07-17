@@ -1,6 +1,26 @@
 export const CATALOG_SOURCE_URL = "https://cam-buger.ola.click/products";
 export const CATALOG_CAPTURED_AT = "2026-07-16";
 
+export const ADD_ONS = [
+  ["maionese", "Maionese", 2],
+  ["pimentao", "Pimentão", 2],
+  ["picles", "Picles", 2],
+  ["cebola", "Cebola", 2],
+  ["ovo", "Ovo", 3],
+  ["barbecue", "Barbecue", 2],
+  ["cheddar", "Molho cheddar", 4],
+  ["mucarela", "Muçarela", 4],
+  ["provolone", "Provolone", 5],
+  ["onion-rings-adicional", "Onion rings", 7],
+  ["bacon", "Bacon", 10],
+  ["calabresa", "Calabresa", 9],
+  ["hamburguer", "Hambúrguer", 7],
+  ["frango", "Frango", 9],
+  ["coracao", "Coração", 10],
+  ["alcatra", "Alcatra", 15],
+  ["salsichao", "Salsichão", 4]
+].map(([sku, name, price]) => ({ sku, name, price }));
+
 const products = [
   ["01-camobuger", "01 CAMOBUGER + BATATA FRITA", "Lanches", 35, "hamburguer"],
   ["02-camobuger-bacon", "02 CAMOBUGER BACON + BATATA FRITA", "Lanches", 37, "hamburguer"],
@@ -55,6 +75,8 @@ const products = [
   ["batata-g", "Batata frita G 600g", "Batatas fritas", 28]
 ];
 
+const addonCategories = new Set(["Lanches", "Xis tradicionais", "Xis especiais", "Dogs"]);
+
 export const CATALOG = products.map(
   ([sku, name, category, price, stockCategory = null, available = true]) => ({
     sku,
@@ -63,6 +85,7 @@ export const CATALOG = products.map(
     price,
     description: "",
     stockCategory,
+    allowsAddons: addonCategories.has(category),
     available
   })
 );

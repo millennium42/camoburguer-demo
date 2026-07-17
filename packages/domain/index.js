@@ -7,8 +7,8 @@ import {
   assertEnum,
   toMoney
 } from "../shared-types/index.js";
-import { CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL } from "./catalog.js";
-export { CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL };
+import { ADD_ONS, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL } from "./catalog.js";
+export { ADD_ONS, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL };
 
 const ALLOWED_TRANSITIONS = {
   received: ["confirmed", "cancelled"],
@@ -30,7 +30,11 @@ function normalizeDiscountPercent(value, label) {
 export function calculateOrderTotal(items = [], discountPercent = 0) {
   const subtotal = items.reduce((sum, item) => {
     const itemDiscount = normalizeDiscountPercent(item.discountPercent, "Desconto do item");
-    return sum + Number(item.quantity || 0) * Number(item.price || 0) * (1 - itemDiscount / 100);
+    const addonTotal = (item.addons || []).reduce(
+      (total, addon) => total + Number(addon.quantity || 1) * Number(addon.price || 0),
+      0
+    );
+    return sum + Number(item.quantity || 0) * (Number(item.price || 0) + addonTotal) * (1 - itemDiscount / 100);
   }, 0);
   return toMoney(
     subtotal * (1 - normalizeDiscountPercent(discountPercent, "Desconto do pedido") / 100)
@@ -52,6 +56,16 @@ export function createOrder(input) {
   const items = (input.items || []).map((item) => {
     const catalogItem = item.sku ? CATALOG.find((candidate) => candidate.sku === item.sku) : null;
     if (catalogItem && !catalogItem.available) throw new Error("Item indisponível no cardápio");
+    const addonSkus = (item.addons || []).map((addon) => String(addon.sku || ""));
+    if (new Set(addonSkus).size !== addonSkus.length) throw new Error("Adicional duplicado");
+    if (addonSkus.length && catalogItem && !catalogItem.allowsAddons) {
+      throw new Error("Item não aceita adicionais");
+    }
+    const addons = addonSkus.map((sku) => {
+      const addon = ADD_ONS.find((candidate) => candidate.sku === sku);
+      if (!addon) throw new Error("Adicional inválido");
+      return { ...addon, quantity: 1 };
+    });
     const quantity = Number(item.quantity ?? 1);
     const price = Number(item.price ?? 0);
     const discountPercent = normalizeDiscountPercent(item.discountPercent, "Desconto do item");
@@ -65,6 +79,7 @@ export function createOrder(input) {
       category: item.category || "custom",
       quantity,
       price: toMoney(price),
+      addons,
       discountPercent,
       notes: item.notes || ""
     };
@@ -132,7 +147,8 @@ export function buildKitchenTicket(order) {
   ];
   const body = order.items.map((item) => {
     const notes = item.notes ? ` | obs: ${item.notes}` : "";
-    return `${item.quantity}x ${item.name}${notes}`;
+    const addons = (item.addons || []).map((addon) => `  + ${addon.name}`).join("\n");
+    return `${item.quantity}x ${item.name}${notes}${addons ? `\n${addons}` : ""}`;
   });
   const footer = order.notes ? [`Observações gerais: ${order.notes}`] : [];
   return [...header, "", ...body, "", ...footer].join("\n");

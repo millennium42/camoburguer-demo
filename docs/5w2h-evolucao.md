@@ -65,3 +65,23 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 **Riscos:** mudança posterior do menu público. Mitigação: `capturedAt` e URL explícitos; nova captura entra por PR própria.
 
 **Rollback:** restaurar o catálogo anterior sem migração de banco; pedidos existentes preservam seus próprios snapshots.
+
+## PR 3 — Adicionais do cardápio
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Dezessete adicionais selecionáveis para Lanches, Xis e Dogs, com snapshot e preço. |
+| Why | Permitir personalização cobrada sem depender de texto livre ou alterar o produto-base. |
+| Where | Catálogo/domínio, `/catalog`, carrinho, pedido, ticket e testes. |
+| When | Selecionados antes de adicionar ao rascunho e congelados ao criar o pedido. |
+| Who | Operador escolhe; domínio valida/preça; cozinha recebe; financeiro reconhece no total. |
+| How | Checkboxes nativos, SKU único por adicional e cálculo por unidade antes dos descontos. |
+| How much | Uma lista estática e alterações localizadas, sem tabela, serviço ou dependência nova. |
+
+**Critérios de aceite:** múltiplos adicionais distintos, bloqueio de duplicado/inválido, bebidas sem adicionais, total correto e ticket legível.
+
+**Evidências:** hash dos 17 adicionais, testes de domínio/UI, `/catalog`, Graphify atualizado e smoke integrado.
+
+**Riscos:** combinações visualmente iguais acumuladas de forma indevida. Mitigação: chave do carrinho inclui SKUs dos adicionais.
+
+**Rollback:** ocultar checkboxes e rejeitar arrays novos; pedidos existentes preservam snapshots e totais já calculados.
