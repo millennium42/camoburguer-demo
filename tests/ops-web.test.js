@@ -130,3 +130,16 @@ test("UI permite parcelas, estorno e encerramento somente com saldo zerado", asy
   assert.match(script, /data-close-tab/);
   assert.match(script, /paymentLabels\[tab\.paymentMethod\]/);
 });
+
+test("financeiro expõe retirada e aplica o mesmo filtro a cards e listagem", async () => {
+  const html = await readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8");
+  const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
+  assert.match(html, /id="finance-filter-form"/);
+  assert.match(html, /name="paymentMethod"/);
+  assert.match(html, /Retirada \(sangria\)/);
+  assert.match(html, /id="clear-finance-filters"/);
+  assert.match(script, /api\(`\/finance\/summary\$\{financeQuery\}`\)/);
+  assert.match(script, /api\(`\/finance\/entries\$\{financeQuery\}`\)/);
+  assert.match(script, /financeFilters: \{ paymentMethod: "", type: "" \}/);
+  assert.match(script, /cash_withdrawal: "Retirada \(sangria\)"/);
+});

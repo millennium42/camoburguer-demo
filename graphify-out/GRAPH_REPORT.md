@@ -1,11 +1,11 @@
 # Graph Report - camoburguer-graph-rebuild-20260716  (2026-07-17)
 
 ## Corpus Check
-- 57 files · ~25,978 words
+- 57 files · ~26,705 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 423 nodes · 575 edges · 46 communities (44 shown, 2 thin omitted)
+- 425 nodes · 578 edges · 46 communities (44 shown, 2 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 8 edges (avg confidence: 0.69)
 - Token cost: 0 input · 0 output
 
@@ -61,10 +61,10 @@
 2. `$()` - 20 edges
 3. `refreshAll()` - 16 edges
 4. `wireCart()` - 13 edges
-5. `wireForms()` - 11 edges
-6. `createOrder()` - 11 edges
-7. `escapeHtml()` - 10 edges
-8. `Registro 5W2H da Evolução Operacional` - 10 edges
+5. `escapeHtml()` - 11 edges
+6. `wireForms()` - 11 edges
+7. `createOrder()` - 11 edges
+8. `Registro 5W2H da Evolução Operacional` - 11 edges
 9. `Arquitetura do Sistema` - 10 edges
 10. `mapOrder()` - 9 edges
 
@@ -131,7 +131,7 @@ Nodes (5): main, name, private, type, version
 
 ### Community 13 - "Registro 5W2H da Evolução Operacional"
 Cohesion: 0.07
-Nodes (24): PR 0 — Descontos por item e pedido, PR 1 — Guia de desenvolvimento, 5W2H e Graphify, PR 2 — Cardápio OlaClick, PR 3 — Adicionais do cardápio, PR 4 — Comandas livres, PR 5 — Rodadas e tickets corretivos, PR 6 — Estoque por categoria, PR 7 — Pagamentos múltiplos (+16 more)
+Nodes (25): PR 0 — Descontos por item e pedido, PR 1 — Guia de desenvolvimento, 5W2H e Graphify, PR 2 — Cardápio OlaClick, PR 3 — Adicionais do cardápio, PR 4 — Comandas livres, PR 5 — Rodadas e tickets corretivos, PR 6 — Estoque por categoria, PR 7 — Pagamentos múltiplos (+17 more)
 
 ### Community 14 - "Arquitetura do Sistema"
 Cohesion: 0.18
@@ -150,8 +150,8 @@ Cohesion: 0.25
 Nodes (7): Camoburguer Demo - SUBAGENTES, Doutrina comum, Entrega obrigatória de cada subagente, Foco por etapa, Poder do revisor, Sequência obrigatória, Skill obrigatória por subagente
 
 ### Community 18 - "Relatório de Validação"
-Cohesion: 0.29
-Nodes (6): Evidência reproduzível, Gates executados, Incremento: estoque por categorias, Incremento: pagamentos múltiplos, Relatório de Validação, Risco residual aceito
+Cohesion: 0.25
+Nodes (7): Evidência reproduzível, Gates executados, Incremento: estoque por categorias, Incremento: pagamentos múltiplos, Incremento: retirada e filtros financeiros, Relatório de Validação, Risco residual aceito
 
 ### Community 19 - "Ciclo do Pedido"
 Cohesion: 0.33
@@ -258,7 +258,7 @@ Cohesion: 0.50
 Nodes (3): Focus, Scenario Automation Planner, Tool Doctrine
 
 ## Knowledge Gaps
-- **213 isolated node(s):** `name`, `version`, `private`, `type`, `start` (+208 more)
+- **215 isolated node(s):** `name`, `version`, `private`, `type`, `start` (+210 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -270,9 +270,9 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 2 inferred relationships involving `wireCart()` (e.g. with `renderAddOns()` and `renderOrderItems()`) actually correct?**
   _`wireCart()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `version`, `private` to the rest of the system?**
-  _213 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _215 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `main.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.14396456256921372 - nodes in this community are weakly interconnected._
 - **Should `server.js` be split into smaller, more focused modules?**
   _Cohesion score 0.07896575821104122 - nodes in this community are weakly interconnected._
 - **Should `dependencies` be split into smaller, more focused modules?**

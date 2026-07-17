@@ -61,6 +61,17 @@ O Graphify incremental sobre `/mnt/d` permaneceu bloqueado em I/O. O fallback do
 
 O smoke provou R$ 100 pagos por Pix R$ 30 + débito R$ 70, rejeição de R$ 70,01, permanência aberta com R$ 99,99, retry idempotente, chave divergente em 409, corrida de pagamentos em 201/409 e rejeição sem turno. Também provou pagamento em dinheiro no turno anterior, fechamento preservado em R$ 5,00 e estorno compensatório de R$ 5,00 no turno atual, cujo caixa esperado terminou em R$ 128,40. Pix/débito não alteraram numerário e cada parcela manteve seu método.
 
+## Incremento: retirada e filtros financeiros
+
+| Comando | Ambiente | Resultado | Evidência | Pendência |
+| --- | --- | --- | --- | --- |
+| `rtk npm test` | Windows/Node 24 | aprovado | 29/29 testes | nenhuma |
+| `docker compose build ops-web` | Docker pelo WSL | aprovado | imagem Nginx atualizada | nenhuma |
+| health poll + `rtk npm run smoke` | host contra compose anexado no WSL | aprovado | smoke completo em 26 s | nenhuma |
+| `graphify update .` em filesystem Linux | Graphify no WSL | aprovado | 425 nós, 578 relações e 46 comunidades | nenhuma |
+
+O smoke comparou faturamento bruto com a soma exclusiva de vendas, confirmou que `cash_withdrawal` não entra em receita, filtrou listagem e resumo por Pix e combinou `type=cash_withdrawal` com `paymentMethod=cash`. A interface gera uma única query para cards/totais e lançamentos e oferece limpeza explícita do filtro.
+
 ## Risco residual aceito
 
 A automação do navegador embutido não inicializou neste host por erro interno do runtime. A interface foi coberta por teste DOM, contrato HTTP e smoke em container; uma conferência visual rápida em Chrome/Edge continua recomendada antes de uma apresentação pública.

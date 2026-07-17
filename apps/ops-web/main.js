@@ -14,6 +14,7 @@ const state = {
   kitchen: [],
   financeSummary: null,
   financeEntries: [],
+  financeFilters: { paymentMethod: "", type: "" },
   shifts: []
 };
 
@@ -57,7 +58,7 @@ const financeTypeLabels = {
   cancellation: "Cancelamento",
   opening: "Abertura",
   cash_reinforcement: "Reforço",
-  cash_withdrawal: "Sangria",
+  cash_withdrawal: "Retirada (sangria)",
   closing_adjustment: "Diferença de fechamento"
 };
 
@@ -342,7 +343,13 @@ function renderFinanceSummary() {
     <div class="stat"><span>Vendas líquidas</span><strong>${money(summary.netSales)}</strong></div>
     <div class="stat"><span>Pedidos concluídos</span><strong>${summary.totalOrders}</strong></div>
     <div class="stat"><span>Ticket médio</span><strong>${money(summary.ticketAverage)}</strong></div>
+    <div class="stat"><span>Recebimentos por forma</span><strong>${Object.entries(summary.paymentsByMethod).map(([method, amount]) => `${escapeHtml(paymentLabels[method] || method)}: ${money(amount)}`).join(" · ") || "Sem vendas"}</strong></div>
   `;
+  const activeFilters = [
+    state.financeFilters.paymentMethod ? paymentLabels[state.financeFilters.paymentMethod] : null,
+    state.financeFilters.type ? financeTypeLabels[state.financeFilters.type] : null
+  ].filter(Boolean);
+  $("#finance-filter-status").textContent = activeFilters.length ? `Filtro ativo: ${activeFilters.join(" · ")}` : "Consolidado sem filtros";
 }
 
 function renderEntries() {
@@ -419,14 +426,16 @@ async function api(path, options = {}) {
 }
 
 async function refreshAll() {
+  const financeParams = new URLSearchParams(Object.entries(state.financeFilters).filter(([, value]) => value));
+  const financeQuery = financeParams.size ? `?${financeParams}` : "";
   const [catalog, inventory, tabs, orders, kitchen, summary, entries, shifts] = await Promise.all([
     api("/catalog"),
     api("/inventory"),
     api("/tabs?status=open"),
     api("/orders"),
     api("/kitchen/queue"),
-    api("/finance/summary"),
-    api("/finance/entries"),
+    api(`/finance/summary${financeQuery}`),
+    api(`/finance/entries${financeQuery}`),
     api("/cash-shifts")
   ]);
 
@@ -620,6 +629,17 @@ function wireCart() {
 }
 
 function wireForms() {
+  $("#finance-filter-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    state.financeFilters = { paymentMethod: data.get("paymentMethod"), type: data.get("type") };
+    await refreshAll();
+  });
+  $("#clear-finance-filters").addEventListener("click", async () => {
+    $("#finance-filter-form").reset();
+    state.financeFilters = { paymentMethod: "", type: "" };
+    await refreshAll();
+  });
   document.body.addEventListener("submit", async (event) => {
     const form = event.target.closest?.("[data-payment-form]");
     if (!form) return;

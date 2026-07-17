@@ -493,6 +493,17 @@ const entries = (await api("/finance/entries")).items;
 assert.equal(entries.filter((entry) => entry.orderId === orders.counter.id && entry.type === "sale").length, 1);
 assert.equal(entries.filter((entry) => entry.tabId === mixedTab.id && entry.type === "sale").length, 2);
 assert.equal(entries.filter((entry) => entry.tabId === reversalTab.id && entry.type === "cancellation").length, 1);
+const financeSummary = await api("/finance/summary");
+assert.equal(financeSummary.grossSales, Math.round(entries.filter((entry) => entry.type === "sale").reduce((sum, entry) => sum + entry.amount, 0) * 100) / 100);
+const pixEntries = (await api("/finance/entries?paymentMethod=pix")).items;
+assert.ok(pixEntries.length > 0);
+assert.ok(pixEntries.every((entry) => entry.paymentMethod === "pix"));
+const pixSummary = await api("/finance/summary?paymentMethod=pix");
+assert.equal(pixSummary.grossSales, Math.round(pixEntries.filter((entry) => entry.type === "sale").reduce((sum, entry) => sum + entry.amount, 0) * 100) / 100);
+const withdrawalEntries = (await api("/finance/entries?type=cash_withdrawal&paymentMethod=cash")).items;
+assert.ok(withdrawalEntries.length > 0);
+assert.ok(withdrawalEntries.every((entry) => entry.type === "cash_withdrawal" && entry.paymentMethod === "cash"));
+assert.equal((await api("/finance/summary?type=cash_withdrawal&paymentMethod=cash")).grossSales, 0);
 const currentShift = (await api("/cash-shifts")).items.find((item) => item.id === shift.id);
 assert.equal(currentShift.expectedAmount, 128.4);
 
