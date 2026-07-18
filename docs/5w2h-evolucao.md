@@ -45,3 +45,23 @@ Este documento usa What, Why, Where, When, Who, How e How much como registro dec
 ## Próximos incrementos
 
 Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evidências, riscos e rollback antes do commit final.
+
+## PR 2 — Cardápio OlaClick
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Snapshot estático do cardápio público, com categorias, preços, disponibilidade e mapeamento de estoque. |
+| Why | Evitar preços fictícios na operação e manter a demo alinhada à oferta atual. |
+| Where | Pacote de domínio, endpoint `/catalog`, seletor do frontend e testes. |
+| When | Carregado na abertura da operação; atualização futura exige novo snapshot versionado. |
+| Who | Fonte pública fornece; domínio versiona; API entrega; operador seleciona apenas disponíveis. |
+| How | Lista local capturada em 2026-07-16, agrupada por `optgroup`, sem scraper ou chamada externa em runtime. |
+| How much | Um arquivo de dados, pequenos ajustes em três consumidores e nenhuma dependência nova. |
+
+**Critérios de aceite:** 51 registros, 50 disponíveis, “Produto 19” bloqueado no frontend e domínio, snapshot integral protegido por hash e origem/data verificáveis.
+
+**Evidências:** teste de contrato e hash do catálogo, rejeição do indisponível, cobertura de optgroup/esgotado, consulta Graphify e endpoint `/catalog` no smoke integrado.
+
+**Riscos:** mudança posterior do menu público. Mitigação: `capturedAt` e URL explícitos; nova captura entra por PR própria.
+
+**Rollback:** restaurar o catálogo anterior sem migração de banco; pedidos existentes preservam seus próprios snapshots.

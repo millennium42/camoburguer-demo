@@ -1,12 +1,35 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import {
+  CATALOG,
+  CATALOG_CAPTURED_AT,
+  CATALOG_SOURCE_URL,
   buildKitchenTicket,
   closeCashShift,
   createCashShift,
   createOrder,
   transitionOrder
 } from "../packages/domain/index.js";
+
+test("catálogo reflete o snapshot OlaClick de 2026-07-16", () => {
+  assert.equal(CATALOG_CAPTURED_AT, "2026-07-16");
+  assert.equal(CATALOG_SOURCE_URL, "https://cam-buger.ola.click/products");
+  assert.equal(CATALOG.length, 51);
+  assert.equal(CATALOG.filter((item) => item.available).length, 50);
+  assert.deepEqual(
+    CATALOG.find((item) => item.sku === "01-camobuger"),
+    { sku: "01-camobuger", name: "01 CAMOBUGER + BATATA FRITA", category: "Lanches", price: 35, description: "", stockCategory: "hamburguer", available: true }
+  );
+  assert.equal(CATALOG.find((item) => item.sku === "produto-19").available, false);
+  assert.equal(createHash("sha256").update(JSON.stringify(CATALOG)).digest("hex"), "e7da279957c47e7fc5a659bd259099c7096cd0b43cbf7a8c46f1798731d13482");
+});
+
+test("pedido rejeita produto marcado como indisponível", () => {
+  assert.throws(() => createOrder({
+    items: [{ sku: "produto-19", name: "Produto 19", quantity: 1, price: 10 }]
+  }), /indisponível/);
+});
 
 test("pedido calcula total e gera ticket simples", () => {
   const order = createOrder({

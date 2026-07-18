@@ -2,7 +2,9 @@ import Fastify from "fastify";
 import { randomUUID } from "node:crypto";
 import cors from "@fastify/cors";
 import {
-  DEMO_CATALOG,
+  CATALOG,
+  CATALOG_CAPTURED_AT,
+  CATALOG_SOURCE_URL,
   buildKitchenTicket,
   closeCashShift,
   createCashShift,
@@ -346,7 +348,11 @@ function emitFinanceEvent(type, payload) {
 }
 
 app.get("/health", async () => ({ ok: true, service: "api" }));
-app.get("/catalog", async () => ({ items: DEMO_CATALOG }));
+app.get("/catalog", async () => ({
+  sourceUrl: CATALOG_SOURCE_URL,
+  capturedAt: CATALOG_CAPTURED_AT,
+  items: CATALOG
+}));
 app.get("/scenario-rules", async () => ({
   items: [
     {
