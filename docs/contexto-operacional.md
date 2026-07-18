@@ -25,3 +25,18 @@ O Camoburguer opera como restaurante de pequeno porte com pedidos vindos de balc
 - Emitir ticket direto para cozinha
 - Exibir fila operacional clara
 - Registrar financeiro gerencial automaticamente a partir dos eventos do pedido e do fechamento de caixa
+
+## Consumo local
+
+- Comanda e mesa são duas apresentações do mesmo agregado comercial `service_tabs` e usam identificador livre obrigatório.
+- Não há cadastro fixo nem mapa de mesas; apenas identificadores abertos são exclusivos após normalização.
+- O carrinho é rascunho editável. Cada envio confirmado vira uma rodada imutável e um ticket independente para a cozinha.
+- Correções posteriores não reescrevem o ticket original: geram cancelamento auditável e, quando necessário, uma nova rodada de produção.
+- A comanda fecha somente com saldo financeiro exatamente zerado; o ciclo da cozinha continua independente.
+
+## Responsabilidades adicionais da v1
+
+- O operador carrega e ajusta os saldos iniciais de Xis, Dog e Hambúrguer; o sistema nunca inventa estoque real.
+- O operador registra cada parcela de pagamento e confere o saldo antes de encerrar a comanda.
+- A retirada de numerário é apresentada como “Retirada (sangria)” e não compõe faturamento.
+- Adicionais são snapshots comerciais no item; não possuem estoque individual nesta versão.

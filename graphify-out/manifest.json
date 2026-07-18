@@ -35,8 +35,8 @@
     "semantic_hash": "43f63ae4ef8f5b1240c6aebf9b4930b2"
   },
   "apps/ops-web/main.js": {
-    "mtime": 1784258628.9072573,
-    "ast_hash": "564cbb1a7f236ec6c6e981413c66804d",
+    "mtime": 1784260662.082765,
+    "ast_hash": "edb3194462427d8f2f9ca87b1c347f35",
     "semantic_hash": ""
   },
   "apps/print-bridge/package.json": {
@@ -100,13 +100,13 @@
     "semantic_hash": ""
   },
   "tests/ops-web.test.js": {
-    "mtime": 1784258637.3914735,
-    "ast_hash": "ca932a58289855d0549b068cfd565b1f",
+    "mtime": 1784260330.510847,
+    "ast_hash": "e728085668c8d0e038736d6557b61f3f",
     "semantic_hash": ""
   },
   "tests/smoke.mjs": {
-    "mtime": 1784259654.3959668,
-    "ast_hash": "33e342ec3a341cf60d099e21ed682274",
+    "mtime": 1784260348.1088834,
+    "ast_hash": "1a9bfad56b058e744a722e6aa1b1e5ea",
     "semantic_hash": ""
   },
   "AGENTS.md": {
@@ -125,8 +125,8 @@
     "semantic_hash": ""
   },
   "apps/ops-web/index.html": {
-    "mtime": 1784253529.0966146,
-    "ast_hash": "ba750a0ab61308e68e348dcbba781b13",
+    "mtime": 1784260305.896943,
+    "ast_hash": "a057ac8a60fb8a01bf85bce2cf4bf068",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -135,8 +135,8 @@
     "semantic_hash": ""
   },
   "docs/5w2h-evolucao.md": {
-    "mtime": 1784258838.7396264,
-    "ast_hash": "52a47bb207c3a22c9a31e045598a9645",
+    "mtime": 1784260370.9130194,
+    "ast_hash": "830244808065cfb5469c6dc2d51fd2e8",
     "semantic_hash": ""
   },
   "docs/arquitetura-do-sistema.md": {
@@ -160,8 +160,8 @@
     "semantic_hash": ""
   },
   "docs/ciclo-financeiro.md": {
-    "mtime": 1784258803.7080634,
-    "ast_hash": "8009eb4de0695c080b74fb13c2321793",
+    "mtime": 1784260370.9070187,
+    "ast_hash": "dd40ec8d16dd8fc7234c9e31328d13d7",
     "semantic_hash": ""
   },
   "docs/contexto-operacional.md": {
@@ -190,8 +190,8 @@
     "semantic_hash": ""
   },
   "docs/relatorio-validacao.md": {
-    "mtime": 1784259891.3238685,
-    "ast_hash": "524a3df653738155f3a3fb57bf427f41",
+    "mtime": 1784260633.8432508,
+    "ast_hash": "a4e43754f8a6acd35a70772343fd8a9a",
     "semantic_hash": ""
   },
   "skills/architecture-gate-review/SKILL.md": {

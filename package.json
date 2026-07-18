@@ -15,7 +15,7 @@
     "start:api": "npm run start --workspace @camoburguer/api",
     "start:print": "npm run start --workspace @camoburguer/print-bridge",
     "start:sim": "npm run start --workspace @camoburguer/event-simulator",
-    "graph:update": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify update .\"",
+    "graph:update": "rtk wsl.exe -d Ubuntu -- bash -lc \"bash scripts/graphify-update-wsl.sh\"",
     "graph:extract": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify extract . --out .\"",
     "graph:extract:code": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify extract . --out . --code-only\""
   }

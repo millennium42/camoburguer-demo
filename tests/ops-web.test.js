@@ -130,3 +130,25 @@ test("UI permite parcelas, estorno e encerramento somente com saldo zerado", asy
   assert.match(script, /data-close-tab/);
   assert.match(script, /paymentLabels\[tab\.paymentMethod\]/);
 });
+
+test("financeiro expõe retirada e aplica o mesmo filtro a cards e listagem", async () => {
+  const html = await readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8");
+  const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
+  assert.match(html, /id="finance-filter-form"/);
+  assert.match(html, /name="paymentMethod"/);
+  assert.match(html, /Retirada \(sangria\)/);
+  assert.match(html, /id="clear-finance-filters"/);
+  assert.match(script, /api\(`\/finance\/summary\$\{financeQuery\}`\)/);
+  assert.match(script, /api\(`\/finance\/entries\$\{financeQuery\}`\)/);
+  assert.match(script, /financeFilters: \{ paymentMethod: "", type: "" \}/);
+  assert.match(script, /cash_withdrawal: "Retirada \(sangria\)"/);
+});
+
+test("layout estreito contém formulário, adicionais e navegação no viewport", async () => {
+  const styles = await readFile(new URL("../apps/ops-web/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.grid > \*, \.stack > \*, fieldset, label \{ min-width: 0; \}/);
+  assert.match(styles, /input, select \{ width: 100%; max-width: 100%; min-width: 0; \}/);
+  assert.match(styles, /\.tab-bar \{ display: flex; width: 100%; overflow-x: auto; \}/);
+  assert.match(styles, /\.tab-button \{ flex: 0 0 auto; \}/);
+  assert.match(styles, /\.addon-grid \{ grid-template-columns: 1fr; \}/);
+});

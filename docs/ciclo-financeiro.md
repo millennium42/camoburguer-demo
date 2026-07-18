@@ -22,7 +22,7 @@ Comandas usam centavos inteiros: o consumo soma rodadas, o pago soma parcelas e 
 
 - O caixa possui apenas os estados `open` e `closed`; a tela deve mostrar o estado atual.
 - Abrir é permitido somente quando estiver `closed`; fechar e adicionar movimentação são permitidos somente quando estiver `open`.
-- Reforço e sangria são criados pelo botão **Adicionar movimentação**, que abre um pop-up para escolher o tipo, informar valor e observação e confirmar.
+- Reforço e **Retirada (sangria)** são criados pelo botão **Adicionar movimentação**, que abre um pop-up para escolher o tipo, informar valor e observação e confirmar. A retirada usa o tipo existente `withdrawal`; não existe categoria duplicada.
 - O fechamento exige o valor declarado e registra a diferença sem ocultar movimentos anteriores.
 - Somente parcelas de comanda em dinheiro alteram o caixa esperado; outros métodos alteram faturamento, não numerário.
 - Toda parcela ou estorno de comanda exige turno aberto para manter vínculo temporal; estorno em dinheiro compensa o turno atual e referencia o pagamento/turno original nos metadados.
@@ -37,3 +37,5 @@ Comandas usam centavos inteiros: o consumo soma rodadas, o pago soma parcelas e 
 - movimento por turno
 - diferença de caixa
 - horário de pico
+
+O filtro por forma de pagamento e tipo de lançamento é único para a tela: a mesma query alimenta listagem, cards, totais e distribuição por método. **Limpar filtro** restaura o consolidado completo.
