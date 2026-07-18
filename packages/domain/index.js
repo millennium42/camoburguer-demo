@@ -10,6 +10,17 @@ import {
 import { ADD_ONS, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL } from "./catalog.js";
 export { ADD_ONS, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL };
 
+export function calculateStockRequirements(items = []) {
+  const requirements = {};
+  for (const item of items) {
+    const category = CATALOG.find((candidate) => candidate.sku === item.sku)?.stockCategory;
+    const quantity = Number(item.quantity || 0);
+    if (category && !Number.isInteger(quantity)) throw new Error("Quantidade de item com estoque deve ser inteira");
+    if (category) requirements[category] = (requirements[category] || 0) + quantity;
+  }
+  return requirements;
+}
+
 const ALLOWED_TRANSITIONS = {
   received: ["confirmed", "cancelled"],
   confirmed: ["in_preparation", "cancelled"],

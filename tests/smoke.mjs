@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import pg from "pg";
 
 const apiBase = process.env.API_BASE_URL || "http://127.0.0.1:3001";
 const webBase = process.env.WEB_BASE_URL || "http://127.0.0.1:8081";
@@ -29,6 +30,35 @@ assert.equal(catalog.items.length, 51);
 assert.equal(catalog.items.filter((item) => item.available).length, 50);
 assert.equal(catalog.addOns.length, 17);
 
+const initialInventory = await api("/inventory");
+const initialXis = initialInventory.balances.find((item) => item.category === "xis").quantity;
+const legacyOrderId = `legacy-stock-${runId}`;
+const database = new pg.Client({
+  connectionString: process.env.DATABASE_URL || "postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer"
+});
+await database.connect();
+await database.query(
+  `INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, notes, total, discount_percent, items, metadata)
+   VALUES ($1, 'counter', 'confirmed', 'Pedido legado', 'pickup', '', 24, 0, $2::jsonb, '{}'::jsonb)`,
+  [legacyOrderId, JSON.stringify([{ id: `legacy-line-${runId}`, sku: "x-simples", name: "X-SIMPLES", quantity: 1, price: 24, addons: [] }])]
+);
+await database.end();
+await api(`/orders/${legacyOrderId}/status`, { method: "PATCH", body: { status: "cancelled" } });
+assert.equal((await api("/inventory")).balances.find((item) => item.category === "xis").quantity, initialXis);
+const stockKey = `smoke-stock-${runId}`;
+const stocked = await api("/inventory/xis/adjustments", {
+  method: "POST",
+  headers: { "Idempotency-Key": stockKey },
+  body: { delta: 5, reason: "Carga do smoke" },
+  expected: [201]
+});
+assert.equal(stocked.balances.find((item) => item.category === "xis").quantity, initialXis + 5);
+assert.equal((await api("/inventory/xis/adjustments", {
+  method: "POST",
+  headers: { "Idempotency-Key": stockKey },
+  body: { delta: 5, reason: "Carga do smoke" }
+})).repeated, true);
+
 const tab = await api("/tabs", {
   method: "POST",
   body: { kind: "table", label: `Mesa-${runId}`, customerName: "Cliente local" },
@@ -43,6 +73,13 @@ const tabRound = await api(`/tabs/${tab.id}/rounds`, {
 });
 assert.equal(tabRound.tabId, tab.id);
 assert.equal(tabRound.roundNumber, 1);
+assert.equal((await api("/inventory")).balances.find((item) => item.category === "xis").quantity, initialXis + 4);
+await api(`/tabs/${tab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-stock-insufficient-${runId}` },
+  body: { items: [{ sku: "x-simples", name: "X-SIMPLES", quantity: initialXis + 5, price: 24 }] },
+  expected: [409]
+});
 await api(`/orders/${tabRound.id}/status`, { method: "PATCH", body: { status: "cancelled" }, expected: [409] });
 assert.equal((await api(`/tabs/${tab.id}/rounds`, {
   method: "POST",
@@ -70,7 +107,123 @@ assert.equal((await api(`/tabs/${tab.id}/rounds/${tabRound.id}/cancellations`, {
 const cancelledTab = await api(`/tabs/${tab.id}`);
 assert.equal(cancelledTab.total, 0);
 assert.equal(cancelledTab.rounds[0].items[0].quantity, 1);
+assert.equal((await api("/inventory")).balances.find((item) => item.category === "xis").quantity, initialXis + 5);
 await api(`/tabs/${tab.id}/close`, { method: "POST", body: {} });
+
+const preparedTab = await api("/tabs", { method: "POST", body: { label: `Preparo-${runId}` }, expected: [201] });
+const preparedRound = await api(`/tabs/${preparedTab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-prepared-round-${runId}` },
+  body: { items: [{ sku: "x-simples", name: "X-SIMPLES", quantity: 1, price: 24 }] },
+  expected: [201]
+});
+await api(`/orders/${preparedRound.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+await api(`/tabs/${preparedTab.id}/rounds/${preparedRound.id}/cancellations`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-prepared-cancel-${runId}` },
+  body: { items: [{ itemId: preparedRound.items[0].id, quantity: 1 }], reason: "Após preparo" },
+  expected: [201]
+});
+assert.equal((await api("/inventory")).balances.find((item) => item.category === "xis").quantity, initialXis + 4);
+await api("/inventory/xis/adjustments", {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-stock-restore-${runId}` },
+  body: { delta: 1, reason: "Reposição do smoke" },
+  expected: [201]
+});
+await api(`/tabs/${preparedTab.id}/close`, { method: "POST", body: {} });
+
+const dogBalance = (await api("/inventory")).balances.find((item) => item.category === "dog").quantity;
+if (dogBalance !== 1) {
+  await api("/inventory/dog/adjustments", {
+    method: "POST",
+    headers: { "Idempotency-Key": `smoke-dog-one-${runId}` },
+    body: { delta: 1 - dogBalance, reason: "Preparar concorrência do smoke" },
+    expected: [201]
+  });
+}
+const concurrentTabs = await Promise.all([
+  api("/tabs", { method: "POST", body: { label: `Concorrente-A-${runId}` }, expected: [201] }),
+  api("/tabs", { method: "POST", body: { label: `Concorrente-B-${runId}` }, expected: [201] })
+]);
+const concurrentRounds = await Promise.all(concurrentTabs.map(async (candidate, index) => {
+  const response = await fetch(`${apiBase}/tabs/${candidate.id}/rounds`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "Idempotency-Key": `smoke-concurrent-${index}-${runId}` },
+    body: JSON.stringify({ items: [{ sku: "dog-tradicional", name: "DOG TRADICIONAL", quantity: 1, price: 21 }] })
+  });
+  return { status: response.status, body: await response.json() };
+}));
+assert.deepEqual(concurrentRounds.map((result) => result.status).sort(), [201, 409]);
+assert.equal((await api("/inventory")).balances.find((item) => item.category === "dog").quantity, 0);
+const concurrentWinner = concurrentRounds.find((result) => result.status === 201).body;
+await api(`/tabs/${concurrentWinner.tabId}/rounds/${concurrentWinner.id}/cancellations`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-concurrent-cancel-${runId}` },
+  body: { items: [{ itemId: concurrentWinner.items[0].id, quantity: 1 }], reason: "Limpeza da concorrência" },
+  expected: [201]
+});
+assert.equal((await api("/inventory")).balances.find((item) => item.category === "dog").quantity, 1);
+await Promise.all(concurrentTabs.map((candidate) => api(`/tabs/${candidate.id}/close`, { method: "POST", body: {} })));
+
+const divergentKey = `smoke-divergent-stock-${runId}`;
+await api("/inventory/hamburguer/adjustments", {
+  method: "POST",
+  headers: { "Idempotency-Key": divergentKey },
+  body: { delta: 1, reason: "Payload original" },
+  expected: [201]
+});
+await api("/inventory/dog/adjustments", {
+  method: "POST",
+  headers: { "Idempotency-Key": divergentKey },
+  body: { delta: 1, reason: "Payload divergente" },
+  expected: [409]
+});
+
+const racingKey = `smoke-racing-stock-${runId}`;
+const racingAdjustments = await Promise.all(["dog", "hamburguer"].map(async (category) => {
+  const response = await fetch(`${apiBase}/inventory/${category}/adjustments`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "Idempotency-Key": racingKey },
+    body: JSON.stringify({ delta: 1, reason: `Corrida ${category}` })
+  });
+  return { category, status: response.status };
+}));
+assert.deepEqual(racingAdjustments.map((result) => result.status).sort(), [201, 409]);
+const racingWinner = racingAdjustments.find((result) => result.status === 201).category;
+await api(`/inventory/${racingWinner}/adjustments`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-racing-cleanup-${runId}` },
+  body: { delta: -1, reason: "Limpeza da corrida idempotente" },
+  expected: [201]
+});
+
+const beforeRollback = await api("/inventory");
+for (const category of ["dog", "xis"]) {
+  const balance = beforeRollback.balances.find((item) => item.category === category).quantity;
+  if (balance !== 1) {
+    await api(`/inventory/${category}/adjustments`, {
+      method: "POST",
+      headers: { "Idempotency-Key": `smoke-rollback-balance-${category}-${runId}` },
+      body: { delta: 1 - balance, reason: "Preparar rollback multcategoria" },
+      expected: [201]
+    });
+  }
+}
+const rollbackTab = await api("/tabs", { method: "POST", body: { label: `Rollback-${runId}` }, expected: [201] });
+await api(`/tabs/${rollbackTab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-rollback-round-${runId}` },
+  body: { items: [
+    { sku: "dog-tradicional", name: "DOG TRADICIONAL", quantity: 1, price: 21 },
+    { sku: "x-simples", name: "X-SIMPLES", quantity: 2, price: 24 }
+  ] },
+  expected: [409]
+});
+const afterRollback = await api("/inventory");
+assert.equal(afterRollback.balances.find((item) => item.category === "dog").quantity, 1);
+assert.equal(afterRollback.balances.find((item) => item.category === "xis").quantity, 1);
+await api(`/tabs/${rollbackTab.id}/close`, { method: "POST", body: {} });
 
 const initialShifts = (await api("/cash-shifts")).items;
 const previousOpenShift = initialShifts.find((shift) => shift.status === "open");

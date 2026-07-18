@@ -7,6 +7,7 @@ import {
   CATALOG_CAPTURED_AT,
   CATALOG_SOURCE_URL,
   buildKitchenTicket,
+  calculateStockRequirements,
   closeCashShift,
   createCancellationOrder,
   createCashShift,
@@ -25,6 +26,16 @@ test("catálogo reflete o snapshot OlaClick de 2026-07-16", () => {
   );
   assert.equal(CATALOG.find((item) => item.sku === "produto-19").available, false);
   assert.equal(createHash("sha256").update(JSON.stringify(CATALOG)).digest("hex"), "f705b8c8902127b9478031d07930d9fa46945e953c6f3ef32a4ef3f2a2b3a896");
+});
+
+test("necessidade de estoque agrega somente Xis, Dog e Hambúrguer", () => {
+  assert.deepEqual(calculateStockRequirements([
+    { sku: "x-simples", quantity: 2 },
+    { sku: "dog-frango", quantity: 3 },
+    { sku: "01-camobuger", quantity: 1 },
+    { sku: "refrigerante-lata", quantity: 9 }
+  ]), { xis: 2, dog: 3, hamburguer: 1 });
+  assert.throws(() => calculateStockRequirements([{ sku: "x-simples", quantity: 1.5 }]), /inteira/);
 });
 
 test("adicionais são validados, congelados, cobrados e impressos", () => {

@@ -69,6 +69,27 @@ CREATE TABLE IF NOT EXISTS print_jobs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS stock_balances (
+  category TEXT PRIMARY KEY,
+  quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT stock_balances_category_check CHECK (category IN ('xis', 'dog', 'hamburguer'))
+);
+
+CREATE TABLE IF NOT EXISTS stock_movements (
+  id TEXT PRIMARY KEY,
+  category TEXT NOT NULL REFERENCES stock_balances(category),
+  delta INTEGER NOT NULL CHECK (delta <> 0),
+  reason TEXT NOT NULL,
+  order_id TEXT NULL REFERENCES orders(id) ON DELETE SET NULL,
+  idempotency_key TEXT NULL,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO stock_balances (category, quantity) VALUES ('xis', 0), ('dog', 0), ('hamburguer', 0)
+ON CONFLICT (category) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS cash_shifts (
   id TEXT PRIMARY KEY,
   status TEXT NOT NULL,
@@ -136,6 +157,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS service_tabs_one_open_label
   ON service_tabs (LOWER(BTRIM(label))) WHERE status = 'open';
 CREATE UNIQUE INDEX IF NOT EXISTS orders_one_round_number_per_tab
   ON orders (tab_id, round_number) WHERE tab_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS stock_movements_idempotency_unique
+  ON stock_movements (idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS stock_movements_one_order_effect
+  ON stock_movements (order_id, category, reason) WHERE order_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS cash_shifts_one_open
   ON cash_shifts ((status)) WHERE status = 'open';
 CREATE UNIQUE INDEX IF NOT EXISTS print_jobs_one_confirmation_per_order
