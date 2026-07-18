@@ -1,6 +1,6 @@
 # Relatório de Validação
 
-Linha de base herdada de `codex/descontos-por-item-e-pedido` (`9174d61`), revisada em 2026-07-16. Cada incremento posterior acrescenta sua própria evidência antes da promoção.
+Linha de base atual consolidada na `main` (`b901fd4`), revisada em 2026-07-18. Cada incremento posterior nasce de `main`, abre PR contra `main` e acrescenta sua própria evidência antes da promoção.
 
 ## Gates executados
 

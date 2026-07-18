@@ -191,10 +191,10 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 | Pergunta | Resposta |
 | --- | --- |
 | What | Consolidar documentação, automatizar a atualização segura do Graphify no WSL, executar regressão integrada e corrigir o overflow descoberto na inspeção móvel. |
-| Why | Encerrar a pilha com evidência reproduzível e impedir que um release funcional no desktop permaneça impraticável no atendimento por tela estreita. |
+| Why | Encerrar a evolução com evidência reproduzível e impedir que um release funcional no desktop permaneça impraticável no atendimento por tela estreita. |
 | Where | README, arquitetura, contexto, automações, guia, relatório, Graphify, CSS do `ops-web` e teste de regressão. |
-| When | Depois de todos os incrementos funcionais e antes de promover as PRs empilhadas para revisão pronta. |
-| Who | Maker consolida e executa; navegador prova a experiência; reviewer distinto decide o go/no-go; mantenedor integra a pilha na ordem. |
+| When | Depois de todos os incrementos funcionais e antes de promover as PRs independentes para revisão pronta. |
+| Who | Maker consolida e executa; navegador prova a experiência; reviewer distinto decide o go/no-go; mantenedor integra cada PR pela `main`. |
 | How | Suíte completa, build/compose no WSL, healthchecks estáveis, smoke, inspeção desktop/390 px, correção mínima, Graphify em staging Linux e peer review final. |
 | How much | Um script de desenvolvimento, uma regra CSS localizada, um teste adicional e atualização de seis documentos; sem schema, serviço, dependência ou custo financeiro novo. |
 
