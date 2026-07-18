@@ -16,16 +16,16 @@ O contexto variável vem depois e deve ser pequeno:
 
 Não existe banco vetorial no produto. m1nd e Graphify são ferramentas de desenvolvimento, não dependências de produção.
 
-## Fluxo Git empilhado
+## Fluxo Git baseado na main
 
 1. Atualizar a branch-base e garantir árvore limpa.
-2. Criar `codex/<entrega>` a partir da branch imediatamente anterior.
+2. Criar `codex/<entrega>` sempre a partir de `main` atualizada.
 3. Implementar uma entrega coesa, com documentação e testes no mesmo diff.
 4. Atualizar Graphify pelo WSL e consultar ao menos um símbolo novo.
 5. Solicitar revisão peer-to-peer com maker e reviewer distintos.
 6. Manter um commit técnico por branch; correções de revisão entram por `commit --amend`.
-7. Publicar e abrir PR draft apontando para a branch anterior.
-8. Após o merge da predecessora, rebasear a sucessora em `main`, publicar com `--force-with-lease` e retargetar a PR.
+7. Publicar e abrir PR draft apontando diretamente para `main`.
+8. Se `main` avançar antes do merge, rebasear a branch em `main`, publicar com `--force-with-lease` e manter a PR apontada para `main`.
 
 O commit descreve contexto, domínio, banco, API, frontend, documentação, testes, compatibilidade, riscos e rollback. A PR repete somente o necessário para avaliação e contém a evidência reproduzível.
 
@@ -99,7 +99,7 @@ O `revisor_final` aplica `skills/release-readiness-review/SKILL.md` depois do QA
 3. Publicar com `git push -u origin codex/<entrega>` e abrir PR pública inicialmente como draft.
 4. Incluir 5W2H, mudanças por camada, contrato, compatibilidade, evidências, riscos e rollback no corpo da PR.
 5. Promover para pronta somente após peer review e ausência de P0/P1.
-6. Em pilha, apontar para a predecessora; após o merge dela, rebasear em `main`, usar `--force-with-lease` e retargetar a PR.
+6. Toda PR deve ter `main` como base; se houver drift, rebasear em `main` e publicar com `--force-with-lease`.
 
 ## Rollback e solução de problemas
 
