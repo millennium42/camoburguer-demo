@@ -38,6 +38,14 @@ O commit descreve contexto, domínio, banco, API, frontend, documentação, test
 - Atualizar primeiro `docs/padrao-ticket-cozinha.md` quando o contrato impresso mudar.
 - Não introduzir login, fiscal, CMV por receita, estoque de ingredientes ou integração automática com marketplaces sem novo requisito.
 
+### Migrações e compatibilidade
+
+- O `schemaSql` deve aceitar banco vazio e banco já populado; colunas/tabelas novas usam defaults ou nulabilidade compatíveis com dados anteriores.
+- Constraints, índices e chaves estrangeiras são a última defesa, mas mensagens `400/409` devem explicar a regra na fronteira HTTP.
+- Toda operação com múltiplos efeitos usa uma única transação. Não persistir pedido, baixa, ticket, pagamento ou financeiro pela metade.
+- Dados auditáveis são append-only: correções geram cancelamento, reversão ou ajuste compensatório, nunca exclusão do histórico.
+- O smoke cria primeiro um cenário legado e deixa a inicialização da API aplicar as migrações antes de exercitar as features novas.
+
 ## Validação
 
 Execução local rápida:
@@ -50,21 +58,24 @@ rtk git diff --check
 Stack integrada pelo WSL:
 
 ```powershell
-rtk wsl.exe -d Ubuntu -- docker compose up -d --build
+rtk wsl.exe -d Ubuntu -- docker compose build
+rtk wsl.exe -d Ubuntu -- docker compose up
 rtk npm run smoke
 rtk wsl.exe -d Ubuntu -- docker compose ps
 ```
 
-Graphify deve rodar pelo WSL. A versão Windows falha ao promover arquivos temporários dentro de `graphify-out/` neste workspace NTFS:
+Na validação assistida, manter `docker compose up` em primeiro plano, aguardar `api`, `ops-web` e `print-bridge` responderem aos healthchecks e executar o smoke em outro terminal. Em disco NTFS montado pelo WSL, o primeiro boot pode levar mais tempo; ausência de resposta antes do healthcheck não autoriza apagar volumes.
+
+Graphify deve rodar pelo WSL. A versão Windows falha ao promover arquivos temporários dentro de `graphify-out/` neste workspace NTFS e a atualização direta em `/mnt/d` pode permanecer bloqueada em I/O. O script oficial sincroniza o código para `$HOME/.cache/camoburguer-demo/graphify-worktree`, atualiza em filesystem Linux e devolve somente os cinco artefatos rastreados:
 
 ```powershell
 rtk npm run graph:update
 rtk graphify explain "<símbolo novo>"
 ```
 
-O primeiro comando escreve o grafo pelo Linux; `query`, `path` e `explain` são consultas somente leitura e podem usar o CLI Windows. Antes da primeira atualização, provar `rtk wsl.exe -d Ubuntu -- bash -lc "command -v graphify"`.
+O primeiro comando executa `scripts/graphify-update-wsl.sh`; `query`, `path` e `explain` são consultas somente leitura e podem usar o CLI Windows. Antes da primeira atualização, provar `rtk wsl.exe -d Ubuntu -- bash -lc "command -v graphify && command -v rsync"`.
 
-Se a atualização incremental falhar, executar `rtk npm run graph:extract:code`, validar `graphify-out/graph.json` como JSON e repetir a consulta. O campo gerado `built_at_commit` identifica o commit-base lido antes da atualização e não pode ser igual ao próprio commit que adicionará o grafo. A freshness da PR é provada pelo conjunto: atualização executada depois da última edição, `manifest.json` atualizado, consulta do símbolo novo, JSON válido e árvore Git limpa após o commit.
+Se a atualização incremental falhar no staging, o próprio script executa `extract --code-only --no-cluster` seguido de `cluster-only`; não há chamada semântica nem banco vetorial no produto. O campo gerado `built_at_commit` identifica o commit-base lido antes da atualização e não pode ser igual ao próprio commit que adicionará o grafo. A freshness da PR é provada pelo conjunto: atualização executada depois da última edição, `manifest.json` atualizado, consulta do símbolo novo, JSON válido e árvore Git limpa após o commit.
 
 ## Revisão e aceite
 
@@ -78,6 +89,17 @@ Antes de publicar como pronta:
 - Graphify atualizado e consultável;
 - 5W2H e documentos de domínio coerentes;
 - rollback descrito sem perda de dados.
+
+O `revisor_final` aplica `skills/release-readiness-review/SKILL.md` depois do QA e registra bloqueadores primeiro, riscos residuais e verificações manuais. A aprovação peer-to-peer deve vir de agente diferente do maker; papéis sem arquivos afetados registram “sem impacto” e justificam pela matriz da PR.
+
+## Publicação e promoção
+
+1. Conferir `git diff --check`, suíte, smoke, healthchecks, spool e interface.
+2. Manter um único commit na branch; usar `commit --amend` para correções internas da mesma entrega.
+3. Publicar com `git push -u origin codex/<entrega>` e abrir PR pública inicialmente como draft.
+4. Incluir 5W2H, mudanças por camada, contrato, compatibilidade, evidências, riscos e rollback no corpo da PR.
+5. Promover para pronta somente após peer review e ausência de P0/P1.
+6. Em pilha, apontar para a predecessora; após o merge dela, rebasear em `main`, usar `--force-with-lease` e retargetar a PR.
 
 ## Rollback e solução de problemas
 

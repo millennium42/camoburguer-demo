@@ -185,3 +185,23 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 **Riscos:** aplicar filtro apenas na lista. Mitigação: uma string de query criada no `refreshAll` e reutilizada nos dois endpoints.
 
 **Rollback:** remover os controles e voltar a buscar endpoints sem query; lançamentos e tipos persistidos não mudam.
+
+## PR 9 — QA, documentação e release
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Consolidar documentação, automatizar a atualização segura do Graphify no WSL, executar regressão integrada e corrigir o overflow descoberto na inspeção móvel. |
+| Why | Encerrar a pilha com evidência reproduzível e impedir que um release funcional no desktop permaneça impraticável no atendimento por tela estreita. |
+| Where | README, arquitetura, contexto, automações, guia, relatório, Graphify, CSS do `ops-web` e teste de regressão. |
+| When | Depois de todos os incrementos funcionais e antes de promover as PRs empilhadas para revisão pronta. |
+| Who | Maker consolida e executa; navegador prova a experiência; reviewer distinto decide o go/no-go; mantenedor integra a pilha na ordem. |
+| How | Suíte completa, build/compose no WSL, healthchecks estáveis, smoke, inspeção desktop/390 px, correção mínima, Graphify em staging Linux e peer review final. |
+| How much | Um script de desenvolvimento, uma regra CSS localizada, um teste adicional e atualização de seis documentos; sem schema, serviço, dependência ou custo financeiro novo. |
+
+**Critérios de aceite:** 30 testes verdes; smoke completo em banco migrado; quatro containers ativos; pedidos, comandas, estoque, cozinha e financeiro inspecionados; filtro Pix coerente; viewport de 390 px sem overflow do documento; grafo atualizado e consulta nova respondida.
+
+**Evidências:** `npm test` 30/30; Docker/WSL saudável; smoke final em 22,5 s; console do navegador sem erro/aviso; `scrollWidth` 375 em viewport de 390 px; revisão visual desktop e móvel; atualização Graphify pelo script versionado.
+
+**Riscos:** a recriação sequencial dos containers pode deixar healthchecks antigos responderem enquanto o Compose ainda substitui a API. Mitigação: exigir todos os serviços saudáveis e estáveis por 15 segundos antes do smoke.
+
+**Rollback:** reverter CSS/teste/script/documentos desta PR sem tocar nos dados ou nas features anteriores; se o Graphify deixar de atualizar, os artefatos da branch-base continuam utilizáveis como snapshot até nova reconstrução.
