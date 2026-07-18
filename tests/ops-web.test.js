@@ -60,8 +60,9 @@ test("UI expõe somente as modalidades válidas e não identifica operador", asy
 test("UI agrupa o catálogo e sinaliza produto esgotado", async () => {
   const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
   assert.match(script, /<optgroup label=/);
-  assert.match(script, /item\.available \? "" : "disabled"/);
+  assert.match(script, /sellable \? "" : "disabled"/);
   assert.match(script, /"Esgotado"/);
+  assert.match(script, /"Sem estoque"/);
 });
 
 test("carrinho separa combinações de adicionais e soma seus preços", () => {
@@ -94,4 +95,27 @@ test("UI expõe comandas e reutiliza o formulário de pedidos", async () => {
   assert.match(html, /id="active-tab-banner"/);
   assert.match(script, /\/tabs\?status=open/);
   assert.match(script, /`\/tabs\/\$\{state\.activeTabId\}\/rounds`/);
+});
+
+test("UI corrige rodada enviada por diálogo e endpoint de cancelamento", async () => {
+  const [html, script] = await Promise.all([
+    readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8")
+  ]);
+  assert.match(html, /id="cancellation-dialog"/);
+  assert.match(script, /data-cancel-item=/);
+  assert.match(script, /\/cancellations`/);
+  assert.match(script, /CANCELAMENTO/);
+});
+
+test("UI expõe estoque, ajustes e indisponibilidade no cardápio", async () => {
+  const [html, script] = await Promise.all([
+    readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8")
+  ]);
+  assert.match(html, /data-tab="estoque"/);
+  assert.match(html, /id="inventory-form"/);
+  assert.match(script, /api\("\/inventory"\)/);
+  assert.match(script, /"Sem estoque"/);
+  assert.match(script, /\/inventory\/\$\{data\.get\("category"\)\}\/adjustments/);
 });

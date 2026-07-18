@@ -22,3 +22,7 @@
 - separação clara entre dados do cliente e preparo
 - texto simples e de leitura rápida
 - retries do mesmo job devem reutilizar o mesmo arquivo de spool
+
+## Ticket corretivo
+
+Item já enviado nunca é apagado ou reimpresso como se fosse novo. O cancelamento gera ticket separado com `CANCELAMENTO / RETIRAR`, comanda, nova rodada, referência curta ao pedido original, quantidades canceladas e motivo. O ticket original permanece imutável.

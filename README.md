@@ -34,6 +34,7 @@ O smoke cria pedidos nas quatro origens, valida Delivery/Retirada/Local, cozinha
 - `packages/domain`: regras de pedido, ticket e caixa.
 - `packages/finance-core`: lançamentos e resumos financeiros.
 - `packages/shared-types`: enumerações compartilhadas.
+- `docs/estoque.md`: contrato de saldos, baixas e ajustes das três categorias controladas.
 - `docs/`: contratos operacionais e arquitetura em português.
 - `skills/` e `SUBAGENTES.md`: processo agent-first com revisão entre pares.
 - `graphify-out/`: grafo estrutural navegável do projeto.

@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS orders (
   idempotency_key TEXT NULL UNIQUE,
   tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL,
   round_number INTEGER NULL,
+  round_kind TEXT NOT NULL DEFAULT 'production',
+  reverses_order_id TEXT NULL REFERENCES orders(id) ON DELETE SET NULL,
   source TEXT NOT NULL,
   status TEXT NOT NULL,
   customer_name TEXT NOT NULL,
@@ -44,6 +46,11 @@ CREATE TABLE IF NOT EXISTS orders (
   CONSTRAINT orders_tab_round_check CHECK (
     (tab_id IS NULL AND round_number IS NULL) OR (tab_id IS NOT NULL AND round_number > 0)
   ),
+  CONSTRAINT orders_round_kind_check CHECK (round_kind IN ('production', 'cancellation')),
+  CONSTRAINT orders_reversal_check CHECK (
+    (round_kind = 'production' AND reverses_order_id IS NULL) OR
+    (round_kind = 'cancellation' AND tab_id IS NOT NULL AND reverses_order_id IS NOT NULL)
+  ),
   CONSTRAINT orders_delivery_address_check CHECK (
     fulfillment_mode <> 'delivery' OR NULLIF(BTRIM(delivery_address), '') IS NOT NULL
   )
@@ -61,6 +68,27 @@ CREATE TABLE IF NOT EXISTS print_jobs (
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS stock_balances (
+  category TEXT PRIMARY KEY,
+  quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT stock_balances_category_check CHECK (category IN ('xis', 'dog', 'hamburguer'))
+);
+
+CREATE TABLE IF NOT EXISTS stock_movements (
+  id TEXT PRIMARY KEY,
+  category TEXT NOT NULL REFERENCES stock_balances(category),
+  delta INTEGER NOT NULL CHECK (delta <> 0),
+  reason TEXT NOT NULL,
+  order_id TEXT NULL REFERENCES orders(id) ON DELETE SET NULL,
+  idempotency_key TEXT NULL,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO stock_balances (category, quantity) VALUES ('xis', 0), ('dog', 0), ('hamburguer', 0)
+ON CONFLICT (category) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS cash_shifts (
   id TEXT PRIMARY KEY,
@@ -91,6 +119,8 @@ CREATE TABLE IF NOT EXISTS finance_entries (
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key TEXT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS round_number INTEGER NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS round_kind TEXT NOT NULL DEFAULT 'production';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS reverses_order_id TEXT NULL REFERENCES orders(id) ON DELETE SET NULL;
 ALTER TABLE orders ALTER COLUMN payment_method DROP NOT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_percent NUMERIC(5,2) NOT NULL DEFAULT 0;
@@ -127,6 +157,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS service_tabs_one_open_label
   ON service_tabs (LOWER(BTRIM(label))) WHERE status = 'open';
 CREATE UNIQUE INDEX IF NOT EXISTS orders_one_round_number_per_tab
   ON orders (tab_id, round_number) WHERE tab_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS stock_movements_idempotency_unique
+  ON stock_movements (idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS stock_movements_one_order_effect
+  ON stock_movements (order_id, category, reason) WHERE order_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS cash_shifts_one_open
   ON cash_shifts ((status)) WHERE status = 'open';
 CREATE UNIQUE INDEX IF NOT EXISTS print_jobs_one_confirmation_per_order
@@ -152,6 +186,14 @@ BEGIN
     ALTER TABLE orders ADD CONSTRAINT orders_tab_round_check
       CHECK ((tab_id IS NULL AND round_number IS NULL) OR (tab_id IS NOT NULL AND round_number > 0)) NOT VALID;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_round_kind_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_round_kind_check
+      CHECK (round_kind IN ('production', 'cancellation')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_reversal_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_reversal_check
+      CHECK ((round_kind = 'production' AND reverses_order_id IS NULL) OR (round_kind = 'cancellation' AND tab_id IS NOT NULL AND reverses_order_id IS NOT NULL)) NOT VALID;
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cash_shifts_status_check') THEN
     ALTER TABLE cash_shifts ADD CONSTRAINT cash_shifts_status_check
       CHECK (status IN ('open', 'closed')) NOT VALID;
@@ -162,6 +204,8 @@ ALTER TABLE orders VALIDATE CONSTRAINT orders_fulfillment_mode_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_delivery_address_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_discount_percent_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_tab_round_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_round_kind_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_reversal_check;
 ALTER TABLE cash_shifts VALIDATE CONSTRAINT cash_shifts_status_check;
 `;
 
@@ -200,6 +244,8 @@ export function mapOrder(row) {
     idempotencyKey: row.idempotency_key,
     tabId: row.tab_id,
     roundNumber: row.round_number,
+    roundKind: row.round_kind || "production",
+    reversesOrderId: row.reverses_order_id,
     source: row.source,
     status: row.status,
     customerName: row.customer_name,
