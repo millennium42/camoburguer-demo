@@ -7,7 +7,9 @@ import {
   CATALOG_CAPTURED_AT,
   CATALOG_SOURCE_URL,
   buildKitchenTicket,
+  calculateStockRequirements,
   closeCashShift,
+  createCancellationOrder,
   createCashShift,
   createOrder,
   transitionOrder
@@ -24,6 +26,16 @@ test("catálogo reflete o snapshot OlaClick de 2026-07-16", () => {
   );
   assert.equal(CATALOG.find((item) => item.sku === "produto-19").available, false);
   assert.equal(createHash("sha256").update(JSON.stringify(CATALOG)).digest("hex"), "f705b8c8902127b9478031d07930d9fa46945e953c6f3ef32a4ef3f2a2b3a896");
+});
+
+test("necessidade de estoque agrega somente Xis, Dog e Hambúrguer", () => {
+  assert.deepEqual(calculateStockRequirements([
+    { sku: "x-simples", quantity: 2 },
+    { sku: "dog-frango", quantity: 3 },
+    { sku: "01-camobuger", quantity: 1 },
+    { sku: "refrigerante-lata", quantity: 9 }
+  ]), { xis: 2, dog: 3, hamburguer: 1 });
+  assert.throws(() => calculateStockRequirements([{ sku: "x-simples", quantity: 1.5 }]), /inteira/);
 });
 
 test("adicionais são validados, congelados, cobrados e impressos", () => {
@@ -74,6 +86,34 @@ test("pedido calcula total e gera ticket simples", () => {
   const ticket = buildKitchenTicket(order);
   assert.match(ticket, /Cliente: Milla/);
   assert.match(ticket, /Horário: \d{2}:\d{2}/);
+});
+
+test("pedido vinculado à comanda preserva rodada e IDs das linhas", () => {
+  const order = createOrder({
+    tabId: "tab-1",
+    roundNumber: 2,
+    metadata: { tabLabel: "Mesa 4" },
+    items: [{ name: "X", quantity: 1, price: 20 }]
+  });
+  assert.equal(order.tabId, "tab-1");
+  assert.equal(order.roundNumber, 2);
+  assert.ok(order.items[0].id);
+  assert.match(buildKitchenTicket(order), /Comanda: Mesa 4[\s\S]*Rodada: 2/);
+});
+
+test("cancelamento cria rodada negativa e ticket corretivo sem alterar o original", () => {
+  const originalItem = { id: "line-1", sku: "x-simples", name: "X-SIMPLES", quantity: 2, price: 24 };
+  const cancellation = createCancellationOrder({
+    tabId: "tab-1",
+    roundNumber: 2,
+    reversesOrderId: "order-original",
+    items: [{ ...originalItem, id: undefined, reversesItemId: originalItem.id, quantity: 1 }]
+  });
+  assert.equal(cancellation.roundKind, "cancellation");
+  assert.equal(cancellation.total, -24);
+  assert.equal(cancellation.items[0].reversesItemId, "line-1");
+  assert.equal(originalItem.quantity, 2);
+  assert.match(buildKitchenTicket(cancellation), /CANCELAMENTO \/ RETIRAR[\s\S]*Corrige pedido/);
 });
 
 test("pedido aplica desconto por item antes do desconto geral e valida os limites", () => {

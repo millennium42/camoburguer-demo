@@ -22,6 +22,8 @@
 
       <nav class="tab-bar" aria-label="Áreas do sistema">
         <button type="button" class="tab-button active" data-tab="pedidos">Pedidos</button>
+        <button type="button" class="tab-button" data-tab="comandas">Comandas</button>
+        <button type="button" class="tab-button" data-tab="estoque">Estoque</button>
         <button type="button" class="tab-button" data-tab="cozinha">Cozinha</button>
         <button type="button" class="tab-button" data-tab="financeiro">Financeiro</button>
       </nav>
@@ -34,6 +36,10 @@
             <article class="card">
               <h2>Novo pedido</h2>
               <form id="order-form" class="stack">
+                <div id="active-tab-banner" class="active-tab-banner" hidden>
+                  <strong id="active-tab-label"></strong>
+                  <button type="button" id="clear-active-tab">Sair da comanda</button>
+                </div>
                 <div class="grid two">
                   <label>Canal
                     <select name="source" required>
@@ -56,7 +62,7 @@
                 </label>
                 <div class="grid two">
                   <label>Cliente<input name="customerName" placeholder="Nome do cliente" /></label>
-                  <label>Pagamento
+                  <label id="order-payment-field">Pagamento
                     <select name="paymentMethod" required>
                       <option value="cash">Dinheiro</option>
                       <option value="pix">Pix</option>
@@ -101,6 +107,45 @@
             <article class="card">
               <h2>Fila de atendimento</h2>
               <div id="orders-list" class="stack"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-estoque">
+          <div class="grid two">
+            <article class="card">
+              <h2>Estoque por categoria</h2>
+              <div id="inventory-balances" class="stats-grid"></div>
+              <form id="inventory-form" class="stack divided-form">
+                <label>Categoria<select name="category"><option value="xis">Xis</option><option value="dog">Dog</option><option value="hamburguer">Hambúrguer</option></select></label>
+                <label>Ajuste em unidades<input name="delta" type="number" step="1" required placeholder="Ex.: 10 ou -2" /></label>
+                <label>Motivo<input name="reason" required placeholder="Carga inicial, contagem, perda..." /></label>
+                <button type="submit" class="primary">Registrar ajuste</button>
+              </form>
+            </article>
+            <article class="card">
+              <h2>Movimentações de estoque</h2>
+              <div id="inventory-movements" class="stack"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-comandas">
+          <div class="grid two">
+            <article class="card">
+              <h2>Abrir comanda</h2>
+              <form id="tab-form" class="stack">
+                <label>Tipo
+                  <select name="kind"><option value="tab">Comanda</option><option value="table">Mesa</option></select>
+                </label>
+                <label>Identificador<input name="label" required placeholder="Ex.: 12, Balcão Ana" /></label>
+                <label>Cliente (opcional)<input name="customerName" placeholder="Nome do cliente" /></label>
+                <button type="submit" class="primary">Abrir comanda</button>
+              </form>
+            </article>
+            <article class="card">
+              <div class="section-heading"><h2>Comandas abertas</h2><span id="tabs-count" class="pill">0</span></div>
+              <div id="tabs-list" class="stack"></div>
             </article>
           </div>
         </section>
@@ -171,6 +216,20 @@
         <label>Valor<input name="amount" type="number" min="0.01" step="0.01" required /></label>
         <label>Motivo<input name="reason" placeholder="Troco, retirada para pagamento..." required /></label>
         <button type="submit" class="primary">Salvar movimentação</button>
+      </form>
+    </dialog>
+
+    <dialog id="cancellation-dialog" aria-labelledby="cancellation-title">
+      <form id="cancellation-form" class="stack">
+        <div class="section-heading">
+          <h2 id="cancellation-title">Cancelar item enviado</h2>
+          <button type="button" id="close-cancellation-dialog" class="icon-button" aria-label="Fechar">×</button>
+        </div>
+        <p id="cancellation-item" class="lede"></p>
+        <input type="hidden" name="tabId" /><input type="hidden" name="orderId" /><input type="hidden" name="itemId" />
+        <label>Quantidade<input name="quantity" type="number" min="1" step="1" required /></label>
+        <label>Motivo<input name="reason" required placeholder="Erro de lançamento, cliente desistiu..." /></label>
+        <button type="submit" class="danger">Emitir ticket de cancelamento</button>
       </form>
     </dialog>
 

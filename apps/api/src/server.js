@@ -1,14 +1,17 @@
 import Fastify from "fastify";
 import { randomUUID } from "node:crypto";
 import cors from "@fastify/cors";
+import { toMoney } from "@camoburguer/shared-types";
 import {
   ADD_ONS,
   CATALOG,
   CATALOG_CAPTURED_AT,
   CATALOG_SOURCE_URL,
   buildKitchenTicket,
+  calculateStockRequirements,
   closeCashShift,
   createCashShift,
+  createCancellationOrder,
   createOrder,
   transitionOrder
 } from "@camoburguer/domain";
@@ -20,7 +23,7 @@ import {
   summarizeFinance
 } from "@camoburguer/finance-core";
 import { config } from "./config.js";
-import { createDb, mapFinanceEntry, mapOrder, mapShift } from "./db.js";
+import { createDb, mapFinanceEntry, mapOrder, mapShift, mapTab } from "./db.js";
 import { createSseHub } from "./sse.js";
 
 const app = Fastify({ logger: true });
@@ -31,23 +34,28 @@ await app.register(cors, { origin: true });
 
 app.setErrorHandler((error, request, reply) => {
   const clientError = Boolean(error.validation) || (!error.code && /inválid|obrigatóri|deve ter|transição|item|preço|valor/i.test(error.message));
-  if (!clientError) request.log.error(error);
+  const publicError = clientError || Number(error.statusCode) < 500;
+  if (!publicError) request.log.error(error);
   return reply
     .code(clientError ? 400 : (error.statusCode || 500))
-    .send({ message: clientError ? error.message : "Erro interno do servidor" });
+    .send({ message: publicError ? error.message : "Erro interno do servidor" });
 });
 
 async function insertOrder(order, executor = db) {
   const { rows } = await executor.query(
     `INSERT INTO orders (
-      id, idempotency_key, source, status, customer_name, fulfillment_mode, delivery_address,
+      id, idempotency_key, tab_id, round_number, round_kind, reverses_order_id, source, status, customer_name, fulfillment_mode, delivery_address,
       promised_at, notes, payment_method, total, discount_percent, items, metadata, created_at, updated_at
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14::jsonb,$15,$16
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18::jsonb,$19,$20
     ) RETURNING *`,
     [
       order.id,
       order.idempotencyKey,
+      order.tabId,
+      order.roundNumber,
+      order.roundKind,
+      order.reversesOrderId,
       order.source,
       order.status,
       order.customerName,
@@ -86,6 +94,92 @@ async function getOrderByIdempotencyKey(idempotencyKey, executor = db) {
 async function listOrders() {
   const { rows } = await db.query("SELECT * FROM orders ORDER BY created_at DESC");
   return rows.map(mapOrder);
+}
+
+async function getTab(tabId, executor = db, forUpdate = false) {
+  const { rows } = await executor.query(
+    `SELECT * FROM service_tabs WHERE id = $1${forUpdate ? " FOR UPDATE" : ""}`,
+    [tabId]
+  );
+  return rows[0] ? mapTab(rows[0]) : null;
+}
+
+async function tabView(tab, executor = db) {
+  const { rows } = await executor.query(
+    "SELECT * FROM orders WHERE tab_id = $1 ORDER BY round_number, created_at",
+    [tab.id]
+  );
+  const rounds = rows.map(mapOrder);
+  return {
+    ...tab,
+    rounds,
+    total: toMoney(tab.finalTotal ?? rounds.filter((order) => order.status !== "cancelled").reduce((sum, order) => sum + Number(order.total), 0))
+  };
+}
+
+async function listTabs(status = null) {
+  const values = status ? [status] : [];
+  const { rows } = await db.query(
+    `SELECT * FROM service_tabs${status ? " WHERE status = $1" : ""} ORDER BY opened_at DESC`,
+    values
+  );
+  return Promise.all(rows.map((row) => tabView(mapTab(row))));
+}
+
+async function changeStock(order, multiplier, reason, executor, sourceOrderId = order.id) {
+  const requirements = calculateStockRequirements(order.items);
+  const movements = [];
+  for (const category of Object.keys(requirements).sort()) {
+    const delta = Number(requirements[category]) * multiplier;
+    if (reason === "cancellation") {
+      const sale = await executor.query(
+        "SELECT 1 FROM stock_movements WHERE order_id = $1 AND category = $2 AND reason = 'sale'",
+        [sourceOrderId, category]
+      );
+      if (!sale.rows[0]) continue;
+    }
+    const { rows } = await executor.query(
+      "SELECT * FROM stock_balances WHERE category = $1 FOR UPDATE",
+      [category]
+    );
+    const inserted = await executor.query(
+      `INSERT INTO stock_movements (id, category, delta, reason, order_id, metadata, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7) ON CONFLICT DO NOTHING RETURNING *`,
+      [randomUUID(), category, delta, reason, order.id, JSON.stringify({ roundKind: order.roundKind }), new Date().toISOString()]
+    );
+    if (!inserted.rows[0]) continue;
+    const nextQuantity = Number(rows[0].quantity) + delta;
+    if (nextQuantity < 0) {
+      const error = new Error(`Estoque insuficiente para ${category}`);
+      error.statusCode = 409;
+      throw error;
+    }
+    await executor.query(
+      "UPDATE stock_balances SET quantity = $2, updated_at = NOW() WHERE category = $1",
+      [category, nextQuantity]
+    );
+    movements.push(inserted.rows[0]);
+  }
+  return movements;
+}
+
+async function inventoryView() {
+  const [balances, movements] = await Promise.all([
+    db.query("SELECT * FROM stock_balances ORDER BY category"),
+    db.query("SELECT * FROM stock_movements ORDER BY created_at DESC LIMIT 100")
+  ]);
+  return {
+    balances: balances.rows.map((row) => ({ category: row.category, quantity: Number(row.quantity), updatedAt: new Date(row.updated_at).toISOString() })),
+    movements: movements.rows.map((row) => ({
+      id: row.id,
+      category: row.category,
+      delta: Number(row.delta),
+      reason: row.reason,
+      orderId: row.order_id,
+      metadata: row.metadata || {},
+      createdAt: new Date(row.created_at).toISOString()
+    }))
+  };
 }
 
 async function updateOrder(order, expectedStatus, executor = db) {
@@ -259,9 +353,9 @@ async function reservePrintJob(order, reason = "confirmed", executor = db) {
   return rows[0] ? mapPrintJob(rows[0]) : null;
 }
 
-async function getConfirmationPrintJob(orderId) {
+async function getPrimaryPrintJob(orderId) {
   const { rows } = await db.query(
-    "SELECT * FROM print_jobs WHERE order_id = $1 AND reason = 'confirmed' LIMIT 1",
+    "SELECT * FROM print_jobs WHERE order_id = $1 AND reason IN ('confirmed', 'cancellation') ORDER BY created_at LIMIT 1",
     [orderId]
   );
   return rows[0] ? mapPrintJob(rows[0]) : null;
@@ -376,6 +470,260 @@ app.get("/scenario-rules", async () => ({
   ]
 }));
 
+app.get("/inventory", async () => inventoryView());
+
+app.post("/inventory/:category/adjustments", async (request, reply) => {
+  const category = request.params.category;
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  const delta = Number(request.body?.delta);
+  const note = String(request.body?.reason || "").trim();
+  if (!["xis", "dog", "hamburguer"].includes(category)) return reply.code(400).send({ message: "Categoria de estoque inválida" });
+  if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
+  if (!Number.isInteger(delta) || delta === 0) return reply.code(400).send({ message: "Ajuste deve ser um inteiro diferente de zero" });
+  if (!note) return reply.code(400).send({ message: "Motivo do ajuste é obrigatório" });
+
+  const result = await db.transaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [idempotencyKey]);
+    const { rows: repeatedRows } = await client.query(
+      "SELECT * FROM stock_movements WHERE idempotency_key = $1",
+      [idempotencyKey]
+    );
+    if (repeatedRows[0]) {
+      const original = repeatedRows[0];
+      const samePayload = original.category === category
+        && Number(original.delta) === delta
+        && String(original.metadata?.note || "") === note;
+      if (!samePayload) {
+        const error = new Error("Idempotency-Key já usada com outro ajuste de estoque");
+        error.statusCode = 409;
+        throw error;
+      }
+      return { movement: original, repeated: true };
+    }
+    const { rows: balanceRows } = await client.query(
+      "SELECT * FROM stock_balances WHERE category = $1 FOR UPDATE",
+      [category]
+    );
+    const nextQuantity = Number(balanceRows[0].quantity) + delta;
+    if (nextQuantity < 0) {
+      const error = new Error("Ajuste deixaria o estoque negativo");
+      error.statusCode = 409;
+      throw error;
+    }
+    await client.query(
+      "UPDATE stock_balances SET quantity = $2, updated_at = NOW() WHERE category = $1",
+      [category, nextQuantity]
+    );
+    const { rows } = await client.query(
+      `INSERT INTO stock_movements (id, category, delta, reason, idempotency_key, metadata, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7) RETURNING *`,
+      [
+        randomUUID(),
+        category,
+        delta,
+        delta > 0 ? "manual_entry" : "manual_withdrawal",
+        idempotencyKey,
+        JSON.stringify({ note }),
+        new Date().toISOString()
+      ]
+    );
+    return { movement: rows[0], repeated: false };
+  });
+  return reply.code(result.repeated ? 200 : 201).send({
+    ...(await inventoryView()),
+    repeated: result.repeated
+  });
+});
+
+app.get("/tabs", async (request, reply) => {
+  const status = request.query?.status || null;
+  if (status && !["open", "closed", "cancelled"].includes(status)) {
+    return reply.code(400).send({ message: "Status de comanda inválido" });
+  }
+  return { items: await listTabs(status) };
+});
+
+app.post("/tabs", async (request, reply) => {
+  const kind = request.body?.kind || "tab";
+  const label = String(request.body?.label || "").trim();
+  if (!['tab', 'table'].includes(kind)) return reply.code(400).send({ message: "Tipo de comanda inválido" });
+  if (!label) return reply.code(400).send({ message: "Identificador da comanda é obrigatório" });
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO service_tabs (id, kind, label, customer_name, status, opened_at)
+       VALUES ($1,$2,$3,$4,'open',$5) RETURNING *`,
+      [randomUUID(), kind, label, String(request.body?.customerName || "").trim() || null, new Date().toISOString()]
+    );
+    return reply.code(201).send(await tabView(mapTab(rows[0])));
+  } catch (error) {
+    if (error.code === "23505") return reply.code(409).send({ message: "Já existe uma comanda aberta com este identificador" });
+    throw error;
+  }
+});
+
+app.get("/tabs/:tabId", async (request, reply) => {
+  const tab = await getTab(request.params.tabId);
+  return tab ? tabView(tab) : reply.code(404).send({ message: "Comanda não encontrada" });
+});
+
+app.post("/tabs/:tabId/rounds", async (request, reply) => {
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
+  const existing = await getOrderByIdempotencyKey(idempotencyKey);
+  if (existing) return existing.tabId === request.params.tabId
+    ? existing
+    : reply.code(409).send({ message: "Chave idempotente já usada em outra operação" });
+
+  let result;
+  try {
+    result = await db.transaction(async (client) => {
+      const tab = await getTab(request.params.tabId, client, true);
+      if (!tab) return { notFound: true };
+      if (tab.status !== "open") return { conflict: true };
+      const { rows } = await client.query(
+        "SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM orders WHERE tab_id = $1",
+        [tab.id]
+      );
+      const order = transitionOrder(createOrder({
+        ...(request.body || {}),
+        idempotencyKey,
+        tabId: tab.id,
+        roundNumber: Number(rows[0].next_round),
+        source: "counter",
+        fulfillmentMode: "local",
+        paymentMethod: null,
+        customerName: request.body?.customerName || tab.customerName || tab.label,
+        metadata: { ...(request.body?.metadata || {}), tabLabel: tab.label }
+      }), "confirmed");
+      const saved = await insertOrder(order, client);
+      await changeStock(saved, -1, "sale", client);
+      return { saved, printJob: await reservePrintJob(saved, "confirmed", client) };
+    });
+  } catch (error) {
+    if (error.code === "23505") {
+      const duplicate = await getOrderByIdempotencyKey(idempotencyKey);
+      if (duplicate) return duplicate.tabId === request.params.tabId
+        ? duplicate
+        : reply.code(409).send({ message: "Chave idempotente já usada em outra operação" });
+    }
+    throw error;
+  }
+  if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
+  if (result.conflict) return reply.code(409).send({ message: "Comanda não está aberta" });
+  emitOrderEvent("tab.round.created", result.saved);
+  if (result.printJob) await dispatchPrintJob(result.printJob);
+  return reply.code(201).send(result.saved);
+});
+
+app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) => {
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
+  const existing = await getOrderByIdempotencyKey(idempotencyKey);
+  if (existing) return existing.tabId === request.params.tabId && existing.reversesOrderId === request.params.orderId
+    ? existing
+    : reply.code(409).send({ message: "Chave idempotente já usada em outra operação" });
+
+  let result;
+  try {
+    result = await db.transaction(async (client) => {
+      const tab = await getTab(request.params.tabId, client, true);
+      if (!tab) return { notFound: true };
+      if (tab.status !== "open") return { conflict: "Comanda não está aberta" };
+      const original = await getOrder(request.params.orderId, client, true);
+      if (!original || original.tabId !== tab.id || original.roundKind !== "production") {
+        return { conflict: "Rodada original inválida" };
+      }
+      const { rows: cancellationRows } = await client.query(
+        "SELECT items FROM orders WHERE reverses_order_id = $1 AND round_kind = 'cancellation'",
+        [original.id]
+      );
+      const previouslyCancelled = cancellationRows.flatMap((row) => row.items || []);
+      const requested = request.body?.items;
+      if (!Array.isArray(requested) || !requested.length) return { invalid: "Informe ao menos um item para cancelar" };
+      if (new Set(requested.map((item) => item.itemId)).size !== requested.length) {
+        return { invalid: "Item de cancelamento duplicado" };
+      }
+      const items = [];
+      for (const requestedItem of requested) {
+        const originalItem = original.items.find((item) => item.id === requestedItem.itemId);
+        const quantity = Number(requestedItem.quantity);
+        const cancelledQuantity = previouslyCancelled
+          .filter((item) => item.reversesItemId === requestedItem.itemId)
+          .reduce((sum, item) => sum + Number(item.quantity), 0);
+        if (!originalItem || !Number.isInteger(quantity) || quantity <= 0 || quantity > originalItem.quantity - cancelledQuantity) {
+          return { invalid: "Quantidade de cancelamento inválida" };
+        }
+        items.push({
+          ...originalItem,
+          id: undefined,
+          quantity,
+          reversesItemId: originalItem.id
+        });
+      }
+      const { rows } = await client.query(
+        "SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM orders WHERE tab_id = $1",
+        [tab.id]
+      );
+      const cancellation = transitionOrder(createCancellationOrder({
+        idempotencyKey,
+        tabId: tab.id,
+        roundNumber: Number(rows[0].next_round),
+        reversesOrderId: original.id,
+        source: "counter",
+        fulfillmentMode: "local",
+        paymentMethod: null,
+        customerName: original.customerName,
+        discountPercent: original.discountPercent,
+        items,
+        notes: String(request.body?.reason || "").trim(),
+        metadata: {
+          tabLabel: tab.label,
+          originalStatusAtCancellation: original.status
+        }
+      }), "confirmed");
+      const saved = await insertOrder(cancellation, client);
+      if (original.status === "confirmed") await changeStock(saved, 1, "cancellation", client, original.id);
+      return { saved, printJob: await reservePrintJob(saved, "cancellation", client) };
+    });
+  } catch (error) {
+    if (error.code === "23505") {
+      const duplicate = await getOrderByIdempotencyKey(idempotencyKey);
+      if (duplicate && duplicate.tabId === request.params.tabId && duplicate.reversesOrderId === request.params.orderId) return duplicate;
+    }
+    throw error;
+  }
+  if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
+  if (result.conflict) return reply.code(409).send({ message: result.conflict });
+  if (result.invalid) return reply.code(400).send({ message: result.invalid });
+  emitOrderEvent("tab.round.cancelled", result.saved);
+  if (result.printJob) await dispatchPrintJob(result.printJob);
+  return reply.code(201).send(result.saved);
+});
+
+app.post("/tabs/:tabId/close", async (request, reply) => {
+  const result = await db.transaction(async (client) => {
+    const tab = await getTab(request.params.tabId, client, true);
+    if (!tab) return { notFound: true };
+    if (tab.status !== "open") return { conflict: true };
+    const view = await tabView(tab, client);
+    if (Number(view.total) !== 0) return { balance: view.total };
+    const { rows } = await client.query(
+      `UPDATE service_tabs SET status = 'closed', final_total = $2, closed_at = $3
+       WHERE id = $1 AND status = 'open' RETURNING *`,
+      [tab.id, view.total, new Date().toISOString()]
+    );
+    return { saved: mapTab(rows[0]) };
+  });
+  if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
+  if (result.conflict) return reply.code(409).send({ message: "Comanda já encerrada" });
+  if (result.balance != null) return reply.code(409).send({
+    code: "TAB_BALANCE_PENDING",
+    message: "Registre os pagamentos antes de encerrar a comanda",
+    balance: result.balance
+  });
+  return result.saved;
+});
+
 app.get("/orders", async () => ({ items: await listOrders() }));
 
 app.post("/orders", async (request, reply) => {
@@ -387,7 +735,7 @@ app.post("/orders", async (request, reply) => {
   }
   const existing = await getOrderByIdempotencyKey(idempotencyKey);
   if (existing) {
-    const pendingPrintJob = await getConfirmationPrintJob(existing.id);
+    const pendingPrintJob = await getPrimaryPrintJob(existing.id);
     if (pendingPrintJob?.status === "pending") await dispatchPrintJob(pendingPrintJob);
     return existing;
   }
@@ -400,6 +748,7 @@ app.post("/orders", async (request, reply) => {
   try {
     result = await db.transaction(async (client) => {
       const saved = await insertOrder(order, client);
+      await changeStock(saved, -1, "sale", client);
       const printJob = await reservePrintJob(saved, "confirmed", client);
       return { saved, printJob };
     });
@@ -429,6 +778,7 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
   const result = await db.transaction(async (client) => {
     const order = await getOrder(request.params.orderId, client, true);
     if (!order) return { notFound: true };
+    if (order.tabId && nextStatus === "cancelled") return { tabCancellationForbidden: true };
     if (order.status === nextStatus) {
       return { saved: order, previousStatus: order.status, entries: [], printJob: null, repeated: true };
     }
@@ -437,12 +787,15 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
     const updated = transitionOrder(order, nextStatus);
     const saved = await updateOrder(updated, previousStatus, client);
     if (!saved) return { conflict: true };
+    if (!saved.tabId && previousStatus === "confirmed" && nextStatus === "cancelled") {
+      await changeStock(saved, 1, "cancellation", client, saved.id);
+    }
 
     const printJob = nextStatus === "confirmed"
       ? await reservePrintJob(saved, "confirmed", client)
       : null;
     const shift = await getOpenShift(client);
-    const entries = await insertEntries(buildEntriesFromOrder({
+    const entries = saved.tabId ? [] : await insertEntries(buildEntriesFromOrder({
       order: saved,
       previousStatus,
       nextStatus,
@@ -461,6 +814,7 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
   });
 
   if (result.notFound) return reply.code(404).send({ message: "Pedido não encontrado" });
+  if (result.tabCancellationForbidden) return reply.code(409).send({ message: "Use um ticket corretivo para cancelar itens da comanda" });
   if (result.conflict) return reply.code(409).send({ message: "Pedido foi alterado; atualize a tela" });
   if (result.repeated) return result.saved;
 

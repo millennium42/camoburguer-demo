@@ -1,5 +1,13 @@
 # Ciclo do Pedido
 
+## Comandas locais
+
+Uma comanda livre identifica consumo local sem exigir cadastro fixo de mesas. O operador abre `tab` ou `table`, monta o carrinho existente e envia uma rodada. Cada rodada continua sendo um pedido confirmado do núcleo único, com `tabId`, número sequencial e ticket próprio. Pedidos de canais externos permanecem sem comanda.
+
+Rodadas não carregam forma de pagamento e não geram venda ao concluir a cozinha. O endpoint de fechamento já protege comandas com saldo, mas o encerramento de uma comanda utilizada só se torna operacional após o registro dos pagamentos na PR específica.
+
+Itens do rascunho podem ser alterados livremente. Depois do envio, toda correção referencia a linha estável da rodada original e cria uma rodada negativa de cancelamento, com ticket próprio. Cancelamentos parciais respeitam a quantidade ainda não cancelada e não sobrescrevem pedido ou ticket original.
+
 ## Estados
 
 - `received`

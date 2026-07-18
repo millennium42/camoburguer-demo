@@ -59,6 +59,10 @@ button.danger { color: var(--danger); border-color: #e6beb7; }
 .check-option { flex-direction: row; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 10px; }
 .check-option span { margin-left: auto; color: var(--muted); }
 .addon-list { margin-top: 6px; color: var(--accent); font-size: .88rem; }
+.active-tab-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-radius: 12px; background: #e3f2e9; border: 1px solid #b9dec8; }
+.tab-rounds { display: grid; gap: 8px; margin-top: 12px; }
+.round-row { padding: 10px; border-left: 4px solid var(--accent); background: #fff8f3; }
+.cancellation { border-color: var(--danger); background: #fae8e4; }
 .order-meta, .mini-meta { color: var(--muted); font-size: .88rem; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .kitchen-card { border-left: 6px solid var(--accent); }

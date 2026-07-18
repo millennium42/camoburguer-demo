@@ -10,6 +10,17 @@ import {
 import { ADD_ONS, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL } from "./catalog.js";
 export { ADD_ONS, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL };
 
+export function calculateStockRequirements(items = []) {
+  const requirements = {};
+  for (const item of items) {
+    const category = CATALOG.find((candidate) => candidate.sku === item.sku)?.stockCategory;
+    const quantity = Number(item.quantity || 0);
+    if (category && !Number.isInteger(quantity)) throw new Error("Quantidade de item com estoque deve ser inteira");
+    if (category) requirements[category] = (requirements[category] || 0) + quantity;
+  }
+  return requirements;
+}
+
 const ALLOWED_TRANSITIONS = {
   received: ["confirmed", "cancelled"],
   confirmed: ["in_preparation", "cancelled"],
@@ -48,11 +59,9 @@ export function createOrder(input) {
     FULFILLMENT_MODES,
     "fulfillmentMode"
   );
-  const paymentMethod = assertEnum(
-    input.paymentMethod || "cash",
-    PAYMENT_METHODS,
-    "paymentMethod"
-  );
+  const paymentMethod = input.tabId && input.paymentMethod == null
+    ? null
+    : assertEnum(input.paymentMethod || "cash", PAYMENT_METHODS, "paymentMethod");
   const items = (input.items || []).map((item) => {
     const catalogItem = item.sku ? CATALOG.find((candidate) => candidate.sku === item.sku) : null;
     if (catalogItem && !catalogItem.available) throw new Error("Item indisponível no cardápio");
@@ -74,6 +83,8 @@ export function createOrder(input) {
     }
     if (!Number.isFinite(price) || price < 0) throw new Error("Preço de item inválido");
     return {
+      id: item.id || randomUUID(),
+      reversesItemId: item.reversesItemId || null,
       sku: item.sku || null,
       name: String(item.name).trim(),
       category: item.category || "custom",
@@ -98,6 +109,10 @@ export function createOrder(input) {
   return {
     id: input.id || randomUUID(),
     idempotencyKey: String(input.idempotencyKey || "").trim() || null,
+    tabId: input.tabId || null,
+    roundNumber: input.roundNumber == null ? null : Number(input.roundNumber),
+    roundKind: input.roundKind || "production",
+    reversesOrderId: input.reversesOrderId || null,
     source,
     status: "received",
     customerName: input.customerName || "Cliente",
@@ -110,12 +125,19 @@ export function createOrder(input) {
     discountPercent,
     total: calculateOrderTotal(items, discountPercent),
     metadata: {
+      ...(input.metadata || {}),
       priority: input.priority || "normal",
       channelLabel: input.channelLabel || source
     },
     createdAt: now,
     updatedAt: now
   };
+}
+
+export function createCancellationOrder(input) {
+  if (!input.tabId || !input.reversesOrderId) throw new Error("Cancelamento exige comanda e rodada original");
+  const order = createOrder({ ...input, roundKind: "cancellation" });
+  return { ...order, total: toMoney(-Math.abs(order.total)) };
 }
 
 export function transitionOrder(order, nextStatus) {
@@ -133,7 +155,10 @@ export function transitionOrder(order, nextStatus) {
 
 export function buildKitchenTicket(order) {
   const header = [
+    ...(order.roundKind === "cancellation" ? ["*** CANCELAMENTO / RETIRAR ***"] : []),
     `Pedido ${order.id.slice(0, 8).toUpperCase()}`,
+    ...(order.reversesOrderId ? [`Corrige pedido: ${order.reversesOrderId.slice(0, 8).toUpperCase()}`] : []),
+    ...(order.tabId ? [`Comanda: ${order.metadata?.tabLabel || order.tabId}`, `Rodada: ${order.roundNumber}`] : []),
     `Horário: ${new Date(order.createdAt).toLocaleString("pt-BR", {
       timeZone: "America/Sao_Paulo",
       hour: "2-digit",
@@ -143,7 +168,7 @@ export function buildKitchenTicket(order) {
     `Cliente: ${order.customerName}`,
     `Entrega: ${order.fulfillmentMode}`,
     ...(order.deliveryAddress ? [`Endereço: ${order.deliveryAddress}`] : []),
-    `Pagamento: ${order.paymentMethod}`
+    ...(order.paymentMethod ? [`Pagamento: ${order.paymentMethod}`] : [])
   ];
   const body = order.items.map((item) => {
     const notes = item.notes ? ` | obs: ${item.notes}` : "";

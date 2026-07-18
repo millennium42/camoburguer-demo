@@ -3,6 +3,11 @@ const state = {
   addOns: [],
   orderItems: [],
   orderAttempt: null,
+  cancellationAttempt: null,
+  inventoryAttempt: null,
+  tabs: [],
+  activeTabId: null,
+  inventory: { balances: [], movements: [] },
   orders: [],
   kitchen: [],
   financeSummary: null,
@@ -148,14 +153,30 @@ function notify(message, tone = "success") {
 
 function renderCatalog() {
   const select = $("#catalog-select");
+  const balances = Object.fromEntries(state.inventory.balances.map((item) => [item.category, item.quantity]));
   const categories = Object.groupBy(state.catalog, (item) => item.category);
   select.innerHTML = Object.entries(categories)
     .map(([category, items]) => `<optgroup label="${escapeHtml(category)}">${items
-      .map((item) => `<option value="${escapeHtml(item.sku)}" ${item.available ? "" : "disabled"}>${escapeHtml(item.name)} · ${item.available ? money(item.price) : "Esgotado"}</option>`)
+      .map((item) => {
+        const inStock = !item.stockCategory || Number(balances[item.stockCategory]) > 0;
+        const sellable = item.available && inStock;
+        const availability = !item.available ? "Esgotado" : inStock ? money(item.price) : "Sem estoque";
+        return `<option value="${escapeHtml(item.sku)}" ${sellable ? "" : "disabled"}>${escapeHtml(item.name)} · ${availability}</option>`;
+      })
       .join("")}</optgroup>`)
     .join("");
-  $("#add-item").disabled = !state.catalog.some((item) => item.available);
+  $("#add-item").disabled = !state.catalog.some((item) => item.available && (!item.stockCategory || Number(balances[item.stockCategory]) > 0));
   renderAddOns();
+}
+
+function renderInventory() {
+  const labels = { xis: "Xis", dog: "Dog", hamburguer: "Hambúrguer" };
+  $("#inventory-balances").innerHTML = state.inventory.balances
+    .map((item) => `<div class="stat"><span>${labels[item.category]}</span><strong>${item.quantity}</strong></div>`)
+    .join("");
+  $("#inventory-movements").innerHTML = state.inventory.movements.length
+    ? state.inventory.movements.map((item) => `<div class="entry-card"><div class="mini-meta"><span>${labels[item.category]}</span><span>${formatWhen(item.createdAt)}</span><span>${escapeHtml(item.reason)}</span></div><strong>${item.delta > 0 ? "+" : ""}${item.delta}</strong>${item.metadata?.note ? `<p>${escapeHtml(item.metadata.note)}</p>` : ""}</div>`).join("")
+    : '<p class="empty-state">Nenhuma movimentação.</p>';
 }
 
 function renderAddOns() {
@@ -204,13 +225,47 @@ function renderOrderItems() {
   );
 }
 
+function renderTabs() {
+  $("#tabs-count").textContent = String(state.tabs.length);
+  $("#tabs-list").innerHTML = state.tabs.length
+    ? state.tabs.map((tab) => `<article class="order-card">
+        <div class="section-heading"><strong>${escapeHtml(tab.kind === "table" ? `Mesa ${tab.label}` : `Comanda ${tab.label}`)}</strong><span>${money(tab.total)}</span></div>
+        <div class="mini-meta"><span>${escapeHtml(tab.customerName || "Sem cliente")}</span><span>${tab.rounds.length} rodada(s)</span><span>${formatWhen(tab.openedAt)}</span></div>
+        <div class="tab-rounds">${tab.rounds.map((round) => `<div class="round-row ${round.roundKind === "cancellation" ? "cancellation" : ""}">
+          <strong>${round.roundKind === "cancellation" ? "Cancelamento" : `Rodada ${round.roundNumber}`}</strong>
+          ${(round.items || []).map((item) => {
+            const cancelled = tab.rounds.filter((candidate) => candidate.reversesOrderId === round.id)
+              .flatMap((candidate) => candidate.items || [])
+              .filter((candidate) => candidate.reversesItemId === item.id)
+              .reduce((sum, candidate) => sum + Number(candidate.quantity), 0);
+            const remaining = Number(item.quantity) - cancelled;
+            return `<div>${item.quantity}x ${escapeHtml(item.name)}${round.roundKind === "production" && remaining > 0 ? ` <button type="button" data-cancel-item="${escapeHtml(item.id)}" data-cancel-tab="${escapeHtml(tab.id)}" data-cancel-order="${escapeHtml(round.id)}" data-cancel-max="${remaining}" data-cancel-name="${escapeHtml(item.name)}">Cancelar</button>` : ""}</div>`;
+          }).join("")}
+        </div>`).join("")}</div>
+        <div class="actions"><button type="button" data-use-tab="${escapeHtml(tab.id)}" class="primary">Lançar itens</button></div>
+      </article>`).join("")
+    : '<p class="empty-state">Nenhuma comanda aberta.</p>';
+  renderActiveTab();
+}
+
+function renderActiveTab() {
+  const tab = state.tabs.find((item) => item.id === state.activeTabId);
+  if (state.activeTabId && !tab) state.activeTabId = null;
+  const active = Boolean(tab);
+  $("#active-tab-banner").hidden = !active;
+  $("#order-payment-field").hidden = active;
+  $("#active-tab-label").textContent = active
+    ? `${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label} · rodada ${tab.rounds.length + 1}`
+    : "";
+}
+
 function orderActions(order) {
   const actions = [];
   if (order.status === "received") actions.push(["confirmed", "Confirmar"]);
   if (order.status === "confirmed") actions.push(["in_preparation", "Em preparo"]);
   if (order.status === "in_preparation") actions.push(["ready", "Pronto"]);
   if (order.status === "ready") actions.push(["completed", "Concluir"]);
-  if (!['completed', 'cancelled'].includes(order.status)) actions.push(["cancelled", "Cancelar"]);
+  if (!order.tabId && !['completed', 'cancelled'].includes(order.status)) actions.push(["cancelled", "Cancelar"]);
   return actions;
 }
 
@@ -252,9 +307,11 @@ function renderKitchen() {
   }
   list.innerHTML = state.kitchen
     .map((order) => `
-      <div class="order-card kitchen-card">
+      <div class="order-card kitchen-card ${order.roundKind === "cancellation" ? "cancellation" : ""}">
         <div class="order-meta">
           <span class="pill">${escapeHtml(statusLabels[order.status] || order.status)}</span>
+          ${order.roundKind === "cancellation" ? '<span class="pill">CANCELAMENTO</span>' : ""}
+          ${order.tabId ? `<span>Comanda ${escapeHtml(order.metadata?.tabLabel || order.tabId)} · rodada ${order.roundNumber}</span>` : ""}
           <span>${escapeHtml(sourceLabels[order.source] || order.source)}</span>
           <span>${escapeHtml(fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode)}</span>
           <strong>${escapeHtml(order.customerName || "Cliente")}</strong>
@@ -262,7 +319,7 @@ function renderKitchen() {
         </div>
         ${order.deliveryAddress ? `<p><strong>Endereço:</strong> ${escapeHtml(order.deliveryAddress)}</p>` : ""}
         <ul class="kitchen-items">
-          ${(order.items || []).map((item) => `<li><strong>${item.quantity}x ${escapeHtml(item.name)}</strong>${item.notes ? ` — ${escapeHtml(item.notes)}` : ""}</li>`).join("")}
+          ${(order.items || []).map((item) => `<li><strong>${item.quantity}x ${escapeHtml(item.name)}</strong>${(item.addons || []).map((addon) => `<div>+ ${escapeHtml(addon.name)}</div>`).join("")}${item.notes ? ` — ${escapeHtml(item.notes)}` : ""}</li>`).join("")}
         </ul>
       </div>
     `)
@@ -354,8 +411,10 @@ async function api(path, options = {}) {
 }
 
 async function refreshAll() {
-  const [catalog, orders, kitchen, summary, entries, shifts] = await Promise.all([
+  const [catalog, inventory, tabs, orders, kitchen, summary, entries, shifts] = await Promise.all([
     api("/catalog"),
+    api("/inventory"),
+    api("/tabs?status=open"),
     api("/orders"),
     api("/kitchen/queue"),
     api("/finance/summary"),
@@ -365,6 +424,8 @@ async function refreshAll() {
 
   state.catalog = catalog.items;
   state.addOns = catalog.addOns || [];
+  state.inventory = inventory;
+  state.tabs = tabs.items;
   state.orders = orders.items;
   state.kitchen = kitchen.items;
   state.financeSummary = summary;
@@ -372,6 +433,8 @@ async function refreshAll() {
   state.shifts = shifts.items;
 
   renderCatalog();
+  renderInventory();
+  renderTabs();
   renderOrderItems();
   renderOrders();
   renderKitchen();
@@ -404,14 +467,14 @@ function syncDeliveryAddress() {
   if (!delivery) input.value = "";
 }
 
+function showPanel(name) {
+  document.querySelectorAll(".tab-button").forEach((item) => item.classList.toggle("active", item.dataset.tab === name));
+  document.querySelectorAll(".tab-panel").forEach((item) => item.classList.toggle("active", item.id === `tab-${name}`));
+}
+
 function wireTabs() {
   document.querySelectorAll(".tab-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      document.querySelectorAll(".tab-button").forEach((item) => item.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      $(`#tab-${button.dataset.tab}`).classList.add("active");
-    });
+    button.addEventListener("click", () => showPanel(button.dataset.tab));
   });
 }
 
@@ -441,6 +504,24 @@ function wireCart() {
   document.body.addEventListener("click", async (event) => {
     const button = event.target.closest?.("button");
     if (!button) return;
+    if (button.dataset.cancelItem) {
+      const form = $("#cancellation-form");
+      form.elements.tabId.value = button.dataset.cancelTab;
+      form.elements.orderId.value = button.dataset.cancelOrder;
+      form.elements.itemId.value = button.dataset.cancelItem;
+      form.elements.quantity.max = button.dataset.cancelMax;
+      form.elements.quantity.value = button.dataset.cancelMax;
+      $("#cancellation-item").textContent = `${button.dataset.cancelName} · máximo ${button.dataset.cancelMax}`;
+      state.cancellationAttempt = null;
+      $("#cancellation-dialog").showModal();
+      return;
+    }
+    if (button.dataset.useTab) {
+      state.activeTabId = button.dataset.useTab;
+      renderActiveTab();
+      showPanel("pedidos");
+      return;
+    }
     const removeIndex = button.dataset.removeItem;
     const decreaseIndex = button.dataset.decreaseItem;
     const increaseIndex = button.dataset.increaseItem;
@@ -499,6 +580,81 @@ function wireCart() {
 
 function wireForms() {
   $("#fulfillment-mode").addEventListener("change", syncDeliveryAddress);
+  $("#clear-active-tab").addEventListener("click", () => {
+    state.activeTabId = null;
+    renderActiveTab();
+  });
+  $("#close-cancellation-dialog").addEventListener("click", () => $("#cancellation-dialog").close());
+  $("#cancellation-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    const payload = {
+      items: [{ itemId: data.get("itemId"), quantity: Number(data.get("quantity")) }],
+      reason: data.get("reason")
+    };
+    state.cancellationAttempt = nextOrderAttempt(state.cancellationAttempt, payload);
+    try {
+      await api(`/tabs/${data.get("tabId")}/rounds/${data.get("orderId")}/cancellations`, {
+        method: "POST",
+        headers: { "Idempotency-Key": state.cancellationAttempt.key },
+        body: JSON.stringify(payload)
+      });
+      state.cancellationAttempt = null;
+      form.reset();
+      $("#cancellation-dialog").close();
+      await refreshAll();
+      notify("Ticket de cancelamento enviado à cozinha.");
+    } catch (error) {
+      notify(error.message, "error");
+    }
+  });
+
+  $("#tab-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    try {
+      const tab = await api("/tabs", {
+        method: "POST",
+        body: JSON.stringify({ kind: data.get("kind"), label: data.get("label"), customerName: data.get("customerName") })
+      });
+      state.activeTabId = tab.id;
+      form.reset();
+      await refreshAll();
+      showPanel("pedidos");
+      notify("Comanda aberta. Adicione os itens da primeira rodada.");
+    } catch (error) {
+      notify(error.message, "error");
+    }
+  });
+
+  $("#inventory-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    const payload = { delta: Number(data.get("delta")), reason: data.get("reason") };
+    state.inventoryAttempt = nextOrderAttempt(state.inventoryAttempt, {
+      category: data.get("category"),
+      ...payload
+    });
+    try {
+      await api(`/inventory/${data.get("category")}/adjustments`, {
+        method: "POST",
+        headers: { "Idempotency-Key": state.inventoryAttempt.key },
+        body: JSON.stringify(payload)
+      });
+      state.inventoryAttempt = null;
+      form.reset();
+      await refreshAll();
+      notify("Estoque ajustado.");
+    } catch (error) {
+      notify(error.message, "error");
+    }
+  });
 
   $("#order-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -526,7 +682,7 @@ function wireForms() {
     submit.disabled = true;
     submit.textContent = "Enviando...";
     try {
-      await api("/orders", {
+      await api(state.activeTabId ? `/tabs/${state.activeTabId}/rounds` : "/orders", {
         method: "POST",
         headers: { "Idempotency-Key": state.orderAttempt.key },
         body: JSON.stringify(payload)
