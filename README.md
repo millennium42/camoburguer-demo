@@ -4,10 +4,10 @@ Aplicação operacional de restaurante para centralizar pedidos de Balcão, What
 
 ## Executar a demo
 
-Pré-requisitos: Docker Desktop, Docker Compose, Node.js 24+ e npm.
+Pré-requisitos: Docker Desktop com integração WSL, distribuição Ubuntu, Graphify instalado no Ubuntu, Node.js 24+ e npm.
 
 ```powershell
-rtk docker compose up -d --build
+rtk wsl.exe -d Ubuntu -- docker compose up -d --build
 ```
 
 - Operação: <http://127.0.0.1:8081>
@@ -19,8 +19,8 @@ rtk docker compose up -d --build
 ```powershell
 rtk npm test
 rtk npm run smoke
-rtk docker compose ps
-rtk proxy graphify update .
+rtk wsl.exe -d Ubuntu -- docker compose ps
+rtk npm run graph:update
 ```
 
 O smoke cria pedidos nas quatro origens, valida Delivery/Retirada/Local, cozinha, idempotência, impressão, caixa, movimentações, fechamento e financeiro.
@@ -37,6 +37,8 @@ O smoke cria pedidos nas quatro origens, valida Delivery/Retirada/Local, cozinha
 - `docs/`: contratos operacionais e arquitetura em português.
 - `skills/` e `SUBAGENTES.md`: processo agent-first com revisão entre pares.
 - `graphify-out/`: grafo estrutural navegável do projeto.
+
+O fluxo completo de implementação, revisão, Docker via WSL, RAG e publicação está em [`docs/guia-de-desenvolvimento.md`](docs/guia-de-desenvolvimento.md). O histórico decisório 5W2H está em [`docs/5w2h-evolucao.md`](docs/5w2h-evolucao.md).
 
 ## Doutrina de desenvolvimento
 

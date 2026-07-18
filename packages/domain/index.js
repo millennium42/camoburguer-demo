@@ -7,13 +7,8 @@ import {
   assertEnum,
   toMoney
 } from "../shared-types/index.js";
-
-export const DEMO_CATALOG = [
-  { sku: "xis-salada", name: "Xis Salada", category: "xis", price: 27.9 },
-  { sku: "hamburguer-artesanal", name: "Hambúrguer Artesanal", category: "burger", price: 31.9 },
-  { sku: "batata-frita", name: "Batata Frita", category: "porcao", price: 16.9 },
-  { sku: "refrigerante-lata", name: "Refrigerante Lata", category: "bebida", price: 6.5 }
-];
+import { CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL } from "./catalog.js";
+export { CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL };
 
 const ALLOWED_TRANSITIONS = {
   received: ["confirmed", "cancelled"],
@@ -55,6 +50,8 @@ export function createOrder(input) {
     "paymentMethod"
   );
   const items = (input.items || []).map((item) => {
+    const catalogItem = item.sku ? CATALOG.find((candidate) => candidate.sku === item.sku) : null;
+    if (catalogItem && !catalogItem.available) throw new Error("Item indisponível no cardápio");
     const quantity = Number(item.quantity ?? 1);
     const price = Number(item.price ?? 0);
     const discountPercent = normalizeDiscountPercent(item.discountPercent, "Desconto do item");

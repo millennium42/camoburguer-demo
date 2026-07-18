@@ -144,10 +144,13 @@ function notify(message, tone = "success") {
 
 function renderCatalog() {
   const select = $("#catalog-select");
-  select.innerHTML = state.catalog
-    .map((item) => `<option value="${escapeHtml(item.sku)}">${escapeHtml(item.name)} · ${money(item.price)}</option>`)
+  const categories = Object.groupBy(state.catalog, (item) => item.category);
+  select.innerHTML = Object.entries(categories)
+    .map(([category, items]) => `<optgroup label="${escapeHtml(category)}">${items
+      .map((item) => `<option value="${escapeHtml(item.sku)}" ${item.available ? "" : "disabled"}>${escapeHtml(item.name)} · ${item.available ? money(item.price) : "Esgotado"}</option>`)
+      .join("")}</optgroup>`)
     .join("");
-  $("#add-item").disabled = state.catalog.length === 0;
+  $("#add-item").disabled = !state.catalog.some((item) => item.available);
 }
 
 function renderOrderItems() {

@@ -1,13 +1,18 @@
-# Graph Report - Camoburguer Demo  (2026-07-14)
+# Graph Report - Camoburguer Demo  (2026-07-16)
 
 ## Corpus Check
-- 55 files · ~13,614 words
+- 55 files · ~16,148 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 356 nodes · 447 edges · 43 communities (41 shown, 2 thin omitted)
-- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 4 edges (avg confidence: 0.73)
+- 377 nodes · 480 edges · 44 communities (42 shown, 2 thin omitted)
+- Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 5 edges (avg confidence: 0.68)
 - Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `4be95944`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - server.js
@@ -52,47 +57,48 @@
 - index.js
 - Camoburguer Demo
 - Relatório de Validação
+- index.js
 
 ## God Nodes (most connected - your core abstractions)
 1. `$()` - 17 edges
-2. `toMoney()` - 15 edges
+2. `toMoney()` - 16 edges
 3. `refreshAll()` - 14 edges
 4. `Arquitetura do Sistema` - 10 edges
-5. `wireForms()` - 9 edges
-6. `scripts` - 9 edges
-7. `mapOrder()` - 8 edges
-8. `mapShift()` - 8 edges
-9. `wireCart()` - 8 edges
-10. `escapeHtml()` - 7 edges
+5. `wireCart()` - 9 edges
+6. `wireForms()` - 9 edges
+7. `scripts` - 9 edges
+8. `createOrder()` - 9 edges
+9. `mapOrder()` - 8 edges
+10. `mapShift()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `mapOrder()` --calls--> `toMoney()`  [EXTRACTED]
   apps/api/src/db.js → packages/shared-types/index.js
-- `listOrders()` --indirect_call--> `mapOrder()`  [INFERRED]
-  apps/api/src/server.js → apps/api/src/db.js
 - `mapFinanceEntry()` --calls--> `toMoney()`  [EXTRACTED]
   apps/api/src/db.js → packages/shared-types/index.js
-- `listEntries()` --indirect_call--> `mapFinanceEntry()`  [INFERRED]
-  apps/api/src/server.js → apps/api/src/db.js
 - `mapShift()` --calls--> `toMoney()`  [EXTRACTED]
   apps/api/src/db.js → packages/shared-types/index.js
+- `reservePrintJob()` --calls--> `buildKitchenTicket()`  [EXTRACTED]
+  apps/api/src/server.js → packages/domain/index.js
+- `listOrders()` --indirect_call--> `mapOrder()`  [INFERRED]
+  apps/api/src/server.js → apps/api/src/db.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (43 total, 2 thin omitted)
+## Communities (44 total, 2 thin omitted)
 
 ### Community 0 - "server.js"
-Cohesion: 0.08
-Nodes (47): config, createDb(), mapFinanceEntry(), mapOrder(), mapShift(), app, db, dispatchPrintJob() (+39 more)
+Cohesion: 0.11
+Nodes (26): config, createDb(), mapFinanceEntry(), mapOrder(), mapShift(), app, db, dispatchPrintJob() (+18 more)
 
 ### Community 1 - "dependencies"
 Cohesion: 0.09
 Nodes (21): dependencies, @camoburguer/domain, @camoburguer/finance-core, @camoburguer/shared-types, dotenv, fastify, @fastify/cors, pg (+13 more)
 
 ### Community 2 - "main.js"
-Cohesion: 0.16
-Nodes (33): activeShift(), addOrAccumulateItem(), api(), escapeHtml(), financeTypeLabels, formatWhen(), fulfillmentLabels, htmlEscapes (+25 more)
+Cohesion: 0.15
+Nodes (36): activeShift(), addOrAccumulateItem(), api(), calculateOrderPreviewTotal(), escapeHtml(), financeTypeLabels, formatWhen(), fulfillmentLabels (+28 more)
 
 ### Community 3 - "scripts"
 Cohesion: 0.11
@@ -235,26 +241,36 @@ Cohesion: 0.28
 Nodes (8): api(), bridgePayload, createOrder(), currentShift, orders, previousOpenShift, request(), runId
 
 ### Community 41 - "Camoburguer Demo"
-Cohesion: 0.29
-Nodes (6): Camoburguer Demo, Doutrina de desenvolvimento, Estrutura, Executar a demo, Limites da v1, Validar
+Cohesion: 0.09
+Nodes (19): PR 0 — Descontos por item e pedido, PR 1 — Guia de desenvolvimento, 5W2H e Graphify, PR 2 — Cardápio OlaClick, Próximos incrementos, Registro 5W2H da Evolução Operacional, Fluxo Git empilhado, Guia de Desenvolvimento, Implementação (+11 more)
 
 ### Community 42 - "Relatório de Validação"
 Cohesion: 0.40
 Nodes (4): Evidência reproduzível, Gates executados, Relatório de Validação, Risco residual aceito
 
+### Community 43 - "index.js"
+Cohesion: 0.16
+Nodes (23): CATALOG, products, ALLOWED_TRANSITIONS, buildKitchenTicket(), calculateOrderTotal(), closeCashShift(), createCashShift(), createOrder() (+15 more)
+
 ## Knowledge Gaps
-- **179 isolated node(s):** `name`, `version`, `private`, `type`, `start` (+174 more)
+- **191 isolated node(s):** `name`, `version`, `private`, `type`, `start` (+186 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
+- **Why does `toMoney()` connect `index.js` to `server.js`?**
+  _High betweenness centrality (0.002) - this node is a cross-community bridge._
 - **What connects `name`, `version`, `private` to the rest of the system?**
-  _179 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _191 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `server.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.0780399274047187 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.10887096774193548 - nodes in this community are weakly interconnected._
 - **Should `dependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._
+- **Should `main.js` be split into smaller, more focused modules?**
+  _Cohesion score 0.1465149359886202 - nodes in this community are weakly interconnected._
 - **Should `scripts` be split into smaller, more focused modules?**
   _Cohesion score 0.10526315789473684 - nodes in this community are weakly interconnected._
+- **Should `Camoburguer Demo` be split into smaller, more focused modules?**
+  _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._

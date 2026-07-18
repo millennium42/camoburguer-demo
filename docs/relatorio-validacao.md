@@ -1,12 +1,14 @@
 # Relatório de Validação
 
+Linha de base herdada de `codex/descontos-por-item-e-pedido` (`9174d61`), revisada em 2026-07-16. Cada incremento posterior acrescenta sua própria evidência antes da promoção.
+
 ## Gates executados
 
 | Gate | Estado | Evidência principal |
 | --- | --- | --- |
 | Processo | aprovado | jornadas e regras registradas nos documentos operacionais |
 | Arquitetura | aprovado com ressalvas resolvidas | idempotência, transações e fronteiras documentadas |
-| Domínio/DB | aprovado | 12 testes unitários/contratuais e constraints PostgreSQL |
+| Domínio/DB | aprovado | 13 testes unitários/contratuais e constraints PostgreSQL |
 | Backend | aprovado | pedido confirmado em uma chamada, efeitos únicos e caixa transacional |
 | Frontend | aprovado com ressalva visual | teste DOM, sintaxe e smoke HTTP; automação visual indisponível no host |
 | Impressão/Infra | aprovado | containers saudáveis, spool persistente e retry idempotente |
@@ -16,14 +18,14 @@
 
 ```powershell
 rtk npm test
-rtk docker compose up -d --build
+rtk wsl.exe -d Ubuntu -- docker compose up -d --build
 rtk npm run smoke
-rtk docker compose ps
+rtk wsl.exe -d Ubuntu -- docker compose ps
 ```
 
 Resultados da entrega:
 
-- 12 de 12 testes aprovados.
+- 13 de 13 testes aprovados na linha de base de descontos.
 - Quatro origens de pedido criadas e presentes na fila da cozinha.
 - Repetição com a mesma chave devolveu o mesmo pedido.
 - Venda repetida gerou exatamente um lançamento.

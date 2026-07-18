@@ -15,8 +15,8 @@
     "start:api": "npm run start --workspace @camoburguer/api",
     "start:print": "npm run start --workspace @camoburguer/print-bridge",
     "start:sim": "npm run start --workspace @camoburguer/event-simulator",
-    "graph:update": "rtk graphify update .",
-    "graph:extract": "rtk graphify extract . --out .",
-    "graph:extract:code": "rtk graphify extract . --out . --code-only"
+    "graph:update": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify update .\"",
+    "graph:extract": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify extract . --out .\"",
+    "graph:extract:code": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify extract . --out . --code-only\""
   }
 }
