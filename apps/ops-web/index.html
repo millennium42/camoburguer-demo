@@ -76,20 +76,6 @@
                   </label>
                 </div>
                 <label>Observações do pedido<input name="notes" placeholder="Sem cebola, ponto da carne..." /></label>
-                <fieldset class="stack catalog-picker">
-                  <legend>Adicionar item</legend>
-                  <label>Item do cardápio<select id="catalog-select"></select></label>
-                  <fieldset id="catalog-addons-field" hidden>
-                    <legend>Adicionais</legend>
-                    <div id="catalog-addons" class="addon-grid"></div>
-                  </fieldset>
-                  <div class="inline">
-                    <label>Quantidade<input type="number" id="catalog-qty" min="1" step="1" value="1" inputmode="numeric" /></label>
-                    <label>Desconto do item (%)<input type="number" id="catalog-discount" min="0" max="100" step="0.01" value="0" inputmode="decimal" /></label>
-                    <label>Observação do item<input id="catalog-notes" placeholder="Detalhe do item" /></label>
-                    <button type="button" id="add-item">Adicionar</button>
-                  </div>
-                </fieldset>
                 <div>
                   <div class="section-heading">
                     <h3>Itens do pedido</h3>
@@ -105,6 +91,12 @@
                 </fieldset>
                 <button type="submit" class="primary">Finalizar pedido</button>
               </form>
+            </article>
+
+            <article class="card" id="menu-card">
+              <h2>Cardápio</h2>
+              <nav id="menu-tabs" class="tab-bar menu-tabs" aria-label="Categorias do Cardápio"></nav>
+              <div id="menu-products" class="menu-products-grid"></div>
             </article>
 
             <article class="card">
@@ -253,6 +245,35 @@
     </dialog>
 
     <div id="print-area"></div>
+
+    <dialog id="item-config-dialog" aria-labelledby="item-config-title">
+      <form id="item-config-form" class="stack">
+        <div class="section-heading">
+          <h2 id="item-config-title">Configurar Item</h2>
+          <button type="button" id="close-item-config-dialog" class="icon-button" aria-label="Fechar">×</button>
+        </div>
+        
+        <fieldset id="item-config-addons-field" hidden>
+          <legend>Adicionais</legend>
+          <div id="item-config-addons" class="addon-grid"></div>
+        </fieldset>
+
+        <div class="grid two">
+          <label>Quantidade
+            <input type="number" name="quantity" min="1" step="1" value="1" inputmode="numeric" required />
+          </label>
+          <label>Desconto (%)
+            <input type="number" name="discount" min="0" max="100" step="0.01" value="0" inputmode="decimal" />
+          </label>
+        </div>
+        
+        <label>Observação do item
+          <input name="notes" placeholder="Sem gelo, ponto da carne..." />
+        </label>
+        
+        <button type="submit" class="primary">Adicionar ao pedido</button>
+      </form>
+    </dialog>
 
     <script type="module" src="./main.js"></script>
   </body>
