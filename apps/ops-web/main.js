@@ -242,7 +242,11 @@ function renderCatalog() {
   const grid = $("#menu-products");
   const balances = Object.fromEntries(state.inventory.balances.map((item) => [item.category, item.quantity]));
   
-  const categories = Object.groupBy(state.catalog, (item) => item.category);
+  const categories = state.catalog.reduce((acc, item) => {
+    acc[item.category] = acc[item.category] || [];
+    acc[item.category].push(item);
+    return acc;
+  }, {});
   const categoryNames = Object.keys(categories);
   
   if (!activeMenuCategory || !categoryNames.includes(activeMenuCategory)) {
