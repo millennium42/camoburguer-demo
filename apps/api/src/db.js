@@ -140,6 +140,54 @@ CREATE TABLE IF NOT EXISTS finance_entries (
   occurred_at TIMESTAMPTZ NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS channel_mappings (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL,
+  merchant_id TEXT NOT NULL,
+  external_id TEXT NOT NULL,
+  external_status TEXT NULL,
+  sync_status TEXT NOT NULL DEFAULT 'synchronized',
+  sync_error TEXT NULL,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (channel, merchant_id, external_id)
+);
+
+CREATE TABLE IF NOT EXISTS channel_events (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  external_event_id TEXT NOT NULL,
+  merchant_id TEXT NULL,
+  external_order_id TEXT NULL,
+  event_type TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  error TEXT NULL,
+  occurred_at TIMESTAMPTZ NULL,
+  received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMPTZ NULL,
+  UNIQUE (channel, external_event_id)
+);
+
+CREATE TABLE IF NOT EXISTS channel_commands (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  channel TEXT NOT NULL,
+  action TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  status TEXT NOT NULL DEFAULT 'pending',
+  attempts INTEGER NOT NULL DEFAULT 0,
+  next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  response_payload JSONB NULL,
+  error TEXT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ NULL,
+  UNIQUE (channel, idempotency_key)
+);
+
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key TEXT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS round_number INTEGER NULL;
@@ -198,6 +246,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS finance_entries_one_order_effect
   ON finance_entries (order_id, type) WHERE type IN ('sale', 'cancellation');
 CREATE UNIQUE INDEX IF NOT EXISTS finance_entries_one_payment_effect
   ON finance_entries (payment_id) WHERE payment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS channel_mappings_order_id ON channel_mappings (order_id);
+CREATE INDEX IF NOT EXISTS channel_events_status ON channel_events (status) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS channel_commands_pending ON channel_commands (channel, status, next_attempt_at) WHERE status IN ('pending', 'processing');
 
 DO $migration$
 BEGIN
@@ -351,5 +402,56 @@ export function mapShift(row) {
     notes: row.notes,
     openedAt: new Date(row.opened_at).toISOString(),
     closedAt: row.closed_at ? new Date(row.closed_at).toISOString() : null
+  };
+}
+
+export function mapChannelMapping(row) {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    channel: row.channel,
+    merchantId: row.merchant_id,
+    externalId: row.external_id,
+    externalStatus: row.external_status,
+    syncStatus: row.sync_status,
+    syncError: row.sync_error,
+    metadata: row.metadata || {},
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString()
+  };
+}
+
+export function mapChannelEvent(row) {
+  return {
+    id: row.id,
+    channel: row.channel,
+    externalEventId: row.external_event_id,
+    merchantId: row.merchant_id,
+    externalOrderId: row.external_order_id,
+    eventType: row.event_type,
+    payload: row.payload || {},
+    status: row.status,
+    error: row.error,
+    occurredAt: row.occurred_at ? new Date(row.occurred_at).toISOString() : null,
+    receivedAt: new Date(row.received_at).toISOString(),
+    processedAt: row.processed_at ? new Date(row.processed_at).toISOString() : null
+  };
+}
+
+export function mapChannelCommand(row) {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    channel: row.channel,
+    action: row.action,
+    idempotencyKey: row.idempotency_key,
+    payload: row.payload || {},
+    status: row.status,
+    attempts: row.attempts,
+    nextAttemptAt: new Date(row.next_attempt_at).toISOString(),
+    responsePayload: row.response_payload,
+    error: row.error,
+    createdAt: new Date(row.created_at).toISOString(),
+    completedAt: row.completed_at ? new Date(row.completed_at).toISOString() : null
   };
 }
