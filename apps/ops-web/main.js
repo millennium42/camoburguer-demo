@@ -154,6 +154,7 @@ function printOrderTicket(order) {
       <p><strong>Pedido:</strong> #${order.id.slice(0,6).toUpperCase()}</p>
       <p><strong>Cliente:</strong> ${order.customerName || "Não informado"}</p>
       <p><strong>Tipo:</strong> ${fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode}</p>
+      ${order.fulfillmentMode === 'delivery' && order.deliveryAddress ? `<p><strong>Endereço:</strong> ${order.deliveryAddress}</p>` : ''}
       <div style="border-bottom: 1px dashed black; margin-bottom: 10px;"></div>
       ${itemsHtml}
       <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
