@@ -1,5 +1,6 @@
 import { createDb } from "../../db.js";
 import createDeliveryMuchAdapter from "./providers/deliverymuch.js";
+import createIFoodAdapter from "./providers/ifood.js";
 
 export function startIntegrationPolling({ config, db }) {
   const adapters = [];
@@ -8,7 +9,9 @@ export function startIntegrationPolling({ config, db }) {
     adapters.push(createDeliveryMuchAdapter(config, db));
   }
   
-  // Future: iFood adapter will go here
+  if (config.ifood?.enabled) {
+    adapters.push(createIFoodAdapter(config, db));
+  }
 
   if (adapters.length === 0) return;
 
