@@ -95,7 +95,9 @@ h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; }
 
 .stack { display: flex; flex-direction: column; gap: 16px; }
 .grid > *, .stack > *, fieldset, label { min-width: 0; }
-.inline { display: grid; gap: 16px; grid-template-columns: 100px 140px minmax(140px, 1fr) auto; align-items: end; }
+.inline { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; }
+.inline > * { flex: 1 1 130px; }
+.inline > button, .inline > .actions { flex: 0 0 auto; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .section-heading h2, .section-heading h3 { margin: 0; }
 
