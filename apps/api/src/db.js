@@ -314,6 +314,30 @@ export function createDb(connectionString) {
         client.release();
       }
     },
+    async anonymizeCustomerData(searchTerm) {
+      const term = `%${searchTerm}%`;
+      const anonymizedText = "[DADO ANONIMIZADO LGPD]";
+      const ordersQuery = `
+        UPDATE orders 
+        SET customer_name = $2, delivery_address = $2
+        WHERE customer_name ILIKE $1 OR delivery_address ILIKE $1
+        RETURNING id;
+      `;
+      const tabsQuery = `
+        UPDATE service_tabs 
+        SET customer_name = $2
+        WHERE customer_name ILIKE $1
+        RETURNING id;
+      `;
+      const [ordersRes, tabsRes] = await Promise.all([
+        pool.query(ordersQuery, [term, anonymizedText]),
+        pool.query(tabsQuery, [term, anonymizedText])
+      ]);
+      return {
+        anonymizedOrders: ordersRes.rowCount,
+        anonymizedTabs: tabsRes.rowCount
+      };
+    },
     async close() {
       await pool.end();
     }

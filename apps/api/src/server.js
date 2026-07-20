@@ -1,6 +1,8 @@
 import Fastify from "fastify";
 import { randomUUID } from "node:crypto";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import { toMoney } from "@camoburguer/shared-types";
 import {
   ADD_ONS,
@@ -33,6 +35,16 @@ const app = Fastify({ logger: true });
 const db = createDb(config.databaseUrl);
 const sse = createSseHub();
 const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_paid"];
+
+await app.register(helmet, {
+  contentSecurityPolicy: false,
+  global: true
+});
+
+await app.register(rateLimit, {
+  max: 100,
+  timeWindow: '1 minute'
+});
 
 await app.register(cors, { origin: true });
 
@@ -1139,6 +1151,15 @@ app.post("/cash-shifts/:shiftId/close", async (request, reply) => {
   if (result.conflict) return reply.code(409).send({ message: "O caixa já está fechado" });
   emitFinanceEvent("cash.shift.closed", result.saved);
   return result.saved;
+});
+
+app.post("/lgpd/anonymize", async (request, reply) => {
+  const { searchTerm } = request.body;
+  if (!searchTerm || typeof searchTerm !== "string" || searchTerm.length < 3) {
+    return reply.code(400).send({ error: "Termo de busca (min 3 chars) obrigatorio para anonimizacao" });
+  }
+  const result = await db.anonymizeCustomerData(searchTerm);
+  return { success: true, ...result };
 });
 
 app.get("/events/orders", async (_, reply) => {
