@@ -45,8 +45,6 @@
                     <select name="source" required>
                       <option value="counter">Balcão</option>
                       <option value="whatsapp">WhatsApp</option>
-                      <option value="ifood">iFood</option>
-                      <option value="olaclick">OlaClick</option>
                     </select>
                   </label>
                   <label>Modalidade
@@ -102,6 +100,11 @@
                 </fieldset>
                 <button type="submit" class="primary">Finalizar pedido</button>
               </form>
+            </article>
+
+            <article class="card" id="auth-queue-card" hidden>
+              <h2>Aguardando Autorização</h2>
+              <div id="auth-list" class="stack"></div>
             </article>
 
             <article class="card">

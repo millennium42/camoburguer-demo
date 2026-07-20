@@ -96,8 +96,20 @@ async function getOrderByIdempotencyKey(idempotencyKey, executor = db) {
 }
 
 async function listOrders() {
-  const { rows } = await db.query("SELECT * FROM orders ORDER BY created_at DESC");
-  return rows.map(mapOrder);
+  const { rows } = await db.query(`
+    SELECT o.*, cm.sync_status, cm.external_id, cm.channel
+    FROM orders o
+    LEFT JOIN channel_mappings cm ON o.id = cm.order_id
+    ORDER BY o.created_at DESC
+  `);
+  return rows.map(row => {
+    const order = mapOrder(row);
+    if (row.channel) {
+      order.syncStatus = row.sync_status;
+      order.externalId = row.external_id;
+    }
+    return order;
+  });
 }
 
 async function getTab(tabId, executor = db, forUpdate = false) {

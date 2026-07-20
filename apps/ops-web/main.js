@@ -280,27 +280,62 @@ function orderActions(order) {
 
 function renderOrders() {
   const list = $("#orders-list");
-  if (!state.orders.length) {
+  const authList = $("#auth-list");
+  const authCard = $("#auth-queue-card");
+
+  const authOrders = state.orders.filter(o => o.status === "received" && ["ifood", "deliverymuch"].includes(o.source));
+  const normalOrders = state.orders.filter(o => !authOrders.includes(o));
+
+  if (authOrders.length) {
+    authCard.hidden = false;
+    authList.innerHTML = authOrders.map(order => `
+      <div class="order-card integration-card">
+        <div class="integration-meta">
+          <strong>${escapeHtml(sourceLabels[order.source] || order.source)}</strong>
+          <span>Aguardando autorização</span>
+          ${order.syncStatus ? `<span>(Sincronização: ${order.syncStatus})</span>` : ""}
+        </div>
+        <div class="order-meta">
+          <span>${escapeHtml(fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode)}</span>
+          <span>${escapeHtml(order.customerName || "Cliente")}</span>
+          <span>${formatWhen(order.createdAt)}</span>
+          <strong>${money(order.total)}</strong>
+        </div>
+        <p>${(order.items || []).map((item) => `${item.quantity}x ${escapeHtml(item.name)}${(item.addons || []).length ? ` + ${item.addons.map((addon) => escapeHtml(addon.name)).join(", ")}` : ""}${item.discountPercent ? ` (-${item.discountPercent}%)` : ""}`).join(" · ")}</p>
+        <div class="actions">
+          <button type="button" class="primary" data-integration-accept="${escapeHtml(order.id)}">Aceitar pedido</button>
+          <button type="button" class="danger" data-integration-cancel="${escapeHtml(order.id)}">Recusar</button>
+        </div>
+      </div>
+    `).join("");
+  } else {
+    authCard.hidden = true;
+    authList.innerHTML = "";
+  }
+
+  if (!normalOrders.length) {
     list.innerHTML = '<p class="empty-state">Nenhum pedido registrado.</p>';
     return;
   }
-  list.innerHTML = state.orders
+  
+  list.innerHTML = normalOrders
     .map((order) => `
       <div class="order-card">
         <div class="order-meta">
-          <span class="pill">${escapeHtml(sourceLabels[order.source] || order.source)}</span>
+          <span class="pill ${['ifood', 'deliverymuch'].includes(order.source) ? 'warning' : ''}">${escapeHtml(sourceLabels[order.source] || order.source)}</span>
           <span>${escapeHtml(fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode)}</span>
           <span>${escapeHtml(order.customerName || "Cliente")}</span>
-          <span>${escapeHtml(statusLabels[order.status] || order.status)}</span>
+          <span class="pill ${order.status === 'completed' ? 'open' : order.status === 'cancelled' ? 'danger' : ''}">${escapeHtml(statusLabels[order.status] || order.status)}</span>
           <span>${formatWhen(order.createdAt)}</span>
+          ${order.syncStatus && order.syncStatus !== 'synced' ? `<span class="pill warning">Sync: ${order.syncStatus}</span>` : ""}
           ${order.discountPercent ? `<span>Desconto ${order.discountPercent}%</span>` : ""}
           <strong>${money(order.total)}</strong>
         </div>
         <p>${(order.items || []).map((item) => `${item.quantity}x ${escapeHtml(item.name)}${(item.addons || []).length ? ` + ${item.addons.map((addon) => escapeHtml(addon.name)).join(", ")}` : ""}${item.discountPercent ? ` (-${item.discountPercent}%)` : ""}`).join(" · ")}</p>
         <div class="actions">
-          ${orderActions(order)
-            .map(([status, label]) => `<button type="button" data-order-status="${escapeHtml(order.id)}" data-status="${status}">${label}</button>`)
-            .join("")}
+          ${orderActions(order).map(([action, label]) => `
+            <button type="button" data-order-action="${action}" data-order-id="${escapeHtml(order.id)}">${escapeHtml(label)}</button>
+          `).join("")}
           <button type="button" data-reprint="${escapeHtml(order.id)}">Reimprimir</button>
         </div>
       </div>
@@ -594,16 +629,67 @@ function wireCart() {
       return;
     }
 
-    if (!button.dataset.orderStatus && !button.dataset.reprint) return;
+    if (button.dataset.integrationAccept) {
+      button.disabled = true;
+      const orderId = button.dataset.integrationAccept;
+      try {
+        await api(`/orders/${orderId}/accept`, {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: "{}"
+        });
+        notify("Aceitação enviada. O pedido aparecerá na Fila de atendimento em breve.");
+        await refreshAll();
+      } catch (error) {
+        notify(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+      return;
+    }
+
+    if (button.dataset.integrationCancel) {
+      button.disabled = true;
+      const orderId = button.dataset.integrationCancel;
+      try {
+        await api(`/orders/${orderId}/cancel`, {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: JSON.stringify({ reasonId: "501" }) // Hardcoded para a demo
+        });
+        notify("Cancelamento enviado para a plataforma.");
+        await refreshAll();
+      } catch (error) {
+        notify(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+      return;
+    }
+
+    if (!button.dataset.orderAction && !button.dataset.reprint && !button.dataset.orderStatus) return;
     button.disabled = true;
     try {
-      if (button.dataset.orderStatus) {
-        await api(`/orders/${button.dataset.orderStatus}/status`, {
-          method: "PATCH",
-          body: JSON.stringify({ status: button.dataset.status })
-        });
+      if (button.dataset.orderAction || button.dataset.orderStatus) {
+        const orderId = button.dataset.orderId || button.dataset.orderStatus; // fallback para botões velhos
+        const action = button.dataset.orderAction || button.dataset.status;
+        
+        if (["startPreparation", "ready"].includes(action)) {
+          // Ações de integração
+          await api(`/orders/${orderId}/${action}`, {
+            method: "POST",
+            headers: { "Idempotency-Key": crypto.randomUUID() },
+            body: "{}"
+          });
+        } else {
+          // Status regular
+          await api(`/orders/${orderId}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({ status: action })
+          });
+        }
         notify("Status do pedido atualizado.");
-      } else {
+      } else if (button.dataset.reprint) {
         await api(`/orders/${button.dataset.reprint}/reprint`, { method: "POST", body: "{}" });
         notify("Reimpressão enviada para a cozinha.");
       }
