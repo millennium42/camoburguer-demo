@@ -32,6 +32,10 @@
 
       <main>
         <section class="tab-panel active" id="tab-pedidos">
+          <article class="card" id="auth-queue-card" hidden style="border-color: var(--warning); background: rgba(245, 158, 11, 0.05);">
+            <h2>⚡ Integrações Aguardando</h2>
+            <div id="auth-list" class="grid two"></div>
+          </article>
           <div class="grid two">
             <article class="card">
               <h2>Novo pedido</h2>
@@ -103,13 +107,8 @@
               </form>
             </article>
 
-            <article class="card" id="auth-queue-card" hidden>
-              <h2>⚠️ Integrações Aguardando</h2>
-              <div id="auth-list" class="stack"></div>
-            </article>
-
             <article class="card">
-              <h2>🍔 Fila de Produção</h2>
+              <h2>🍳 Fila de Produção</h2>
               <div id="orders-list" class="stack"></div>
             </article>
           </div>
