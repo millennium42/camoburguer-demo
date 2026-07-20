@@ -642,6 +642,42 @@ function wireCart() {
       const button = event.target.closest?.("button");
       if (!button) return;
 
+      if (button.dataset.integrationAccept) {
+        button.disabled = true;
+        try {
+          await api(`/orders/${button.dataset.integrationAccept}/accept`, {
+            method: "POST",
+            headers: { "Idempotency-Key": crypto.randomUUID() },
+            body: "{}"
+          });
+          notify("Pedido aceito na integração.");
+          await refreshAll();
+        } catch (error) {
+          notify(error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+        return;
+      }
+
+      if (button.dataset.integrationCancel) {
+        button.disabled = true;
+        try {
+          await api(`/orders/${button.dataset.integrationCancel}/cancel`, {
+            method: "POST",
+            headers: { "Idempotency-Key": crypto.randomUUID() },
+            body: JSON.stringify({ reasonId: "501" })
+          });
+          notify("Cancelamento enviado para a integração.");
+          await refreshAll();
+        } catch (error) {
+          notify(error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+        return;
+      }
+
       if (button.dataset.printShift) {
         button.disabled = true;
         try {
