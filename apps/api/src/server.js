@@ -26,6 +26,7 @@ import {
 import { config } from "./config.js";
 import { createDb, mapFinanceEntry, mapOrder, mapShift, mapTab, mapTabPayment } from "./db.js";
 import { createSseHub } from "./sse.js";
+import integrationRoutes from "./integrations/integration-routes.js";
 
 const app = Fastify({ logger: true });
 const db = createDb(config.databaseUrl);
@@ -1144,6 +1145,8 @@ app.get("/events/finance", async (_, reply) => {
   sse.subscribe("finance", reply);
   return reply;
 });
+
+await app.register(integrationRoutes);
 
 await db.init();
 await recoverPrintJobs(true);
