@@ -2,13 +2,13 @@
 
 :root {
   color-scheme: dark;
-  --bg-gradient: linear-gradient(135deg, #09090b, #18181b, #120f0c);
-  --bg: #09090b;
-  --card: rgba(39, 39, 42, 0.4);
-  --card-hover: rgba(63, 63, 70, 0.6);
-  --line: rgba(255, 255, 255, 0.08);
-  --text: #fafafa;
-  --muted: #a1a1aa;
+  --bg-gradient: linear-gradient(135deg, #1c1614, #29211e, #1a1412);
+  --bg: #1c1614;
+  --card: rgba(45, 33, 27, 0.5);
+  --card-hover: rgba(58, 43, 35, 0.7);
+  --line: rgba(255, 255, 255, 0.06);
+  --text: #f5f5f4;
+  --muted: #a8a29e;
   --accent: #d97706;
   --accent-hover: #f59e0b;
   --accent-soft: rgba(217, 119, 6, 0.15);
@@ -102,12 +102,12 @@ h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; }
 .section-heading h2, .section-heading h3 { margin: 0; }
 
 label { display: flex; flex-direction: column; gap: 8px; font-size: .95rem; font-weight: 500; color: var(--muted); }
-fieldset { margin: 0; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; background: rgba(0,0,0,0.2); }
+fieldset { margin: 0; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px; background: rgba(0,0,0,0.25); }
 legend { padding: 0 12px; font-weight: 700; color: var(--accent); }
 
-input, select, button { border-radius: var(--radius-sm); border: 1px solid var(--line); padding: 14px 16px; background: rgba(0,0,0,0.3); color: var(--text); transition: all 0.2s ease; }
+input, select, button { border-radius: var(--radius-sm); border: 1px solid var(--line); padding: 14px 16px; background: rgba(0,0,0,0.4); color: var(--text); transition: all 0.2s ease; }
 input, select { width: 100%; max-width: 100%; min-width: 0; }
-input:focus, select:focus { border-color: var(--accent); background: rgba(0,0,0,0.5); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+input:focus, select:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
 
 button { cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 button:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); }
