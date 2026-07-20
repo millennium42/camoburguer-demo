@@ -234,81 +234,59 @@ function notify(message, tone = "success") {
   feedback.hidden = false;
 }
 
-let activeMenuCategory = null;
-let configuringProduct = null;
-
 function renderCatalog() {
-  const tabs = $("#menu-tabs");
-  const grid = $("#menu-products");
+  const container = $("#catalog-modal-content");
+  if (!container) return;
   const balances = Object.fromEntries(state.inventory.balances.map((item) => [item.category, item.quantity]));
   
   const categories = state.catalog.reduce((acc, item) => {
-    acc[item.category] = acc[item.category] || [];
-    acc[item.category].push(item);
+    (acc[item.category] = acc[item.category] || []).push(item);
     return acc;
   }, {});
-  const categoryNames = Object.keys(categories);
   
-  if (!activeMenuCategory || !categoryNames.includes(activeMenuCategory)) {
-    activeMenuCategory = categoryNames[0] || null;
-  }
-  
-  tabs.innerHTML = categoryNames.map(cat => `
-    <button type="button" class="tab-button ${cat === activeMenuCategory ? 'active' : ''}" data-menu-category="${escapeHtml(cat)}">
-      ${escapeHtml(cat)}
-    </button>
-  `).join("");
-
-  if (activeMenuCategory) {
-    grid.innerHTML = categories[activeMenuCategory].map(item => {
-      const outOfStock = item.stockCategory && Number(balances[item.stockCategory] || 0) <= 0;
-      const disabled = !item.available || outOfStock;
-      return `
-        <div class="menu-item-card ${disabled ? 'disabled' : ''}">
-          <div class="menu-item-info">
-            <strong>${escapeHtml(item.name)}</strong>
-            <span>${disabled ? (item.available ? "Sem estoque" : "Esgotado") : money(item.price)}</span>
+  container.innerHTML = Object.entries(categories)
+    .map(([category, items]) => `
+      <div style="grid-column: 1 / -1;">
+        <h3 style="margin: 1rem 0 0.5rem 0; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; color: var(--accent);">${escapeHtml(category)}</h3>
+      </div>
+      ${items.map((item) => {
+        const inStock = !item.stockCategory || Number(balances[item.stockCategory]) > 0;
+        const sellable = item.available && inStock;
+        const availability = !item.available ? "Esgotado" : inStock ? money(item.price) : "Sem estoque";
+        return \`
+          <div class="menu-product-card" \${sellable ? "" : 'style="opacity: 0.6;"'}>
+            <div>
+              <h3>\${escapeHtml(item.name)}</h3>
+              <p>\${escapeHtml(item.description || "")}</p>
+              <div class="price">\${availability}</div>
+            </div>
+            <button type="button" class="primary" data-open-config="\${escapeHtml(item.sku)}" \${sellable ? "" : "disabled"}>Selecionar</button>
           </div>
-          <div class="menu-item-actions">
-            ${disabled 
-              ? `<span class="out-of-stock-label">Indisponível</span>` 
-              : `<button type="button" class="link-button" data-config-item="${escapeHtml(item.sku)}">Configurar (Adicionais/Desconto)</button>`
-            }
-          </div>
-        </div>
-      `;
-    }).join("");
-  } else {
-    grid.innerHTML = "";
-  }
-}
-
-function renderInventory() {
-  const labels = { xis: "Xis", dog: "Dog", hamburguer: "Hambúrguer" };
-  $("#inventory-balances").innerHTML = state.inventory.balances
-    .map((item) => `<div class="stat"><span>${labels[item.category]}</span><strong>${item.quantity}</strong></div>`)
+        \`;
+      }).join("")}
+    `)
     .join("");
-  $("#inventory-movements").innerHTML = state.inventory.movements.length
-    ? state.inventory.movements.map((item) => `<div class="entry-card"><div class="mini-meta"><span>${labels[item.category]}</span><span>${formatWhen(item.createdAt)}</span><span>${escapeHtml(item.reason)}</span></div><strong>${item.delta > 0 ? "+" : ""}${item.delta}</strong>${item.metadata?.note ? `<p>${escapeHtml(item.metadata.note)}</p>` : ""}</div>`).join("")
-    : '<p class="empty-state">Nenhuma movimentação.</p>';
 }
 
-function openItemConfigDialog(sku) {
-  configuringProduct = state.catalog.find((item) => item.sku === sku);
-  if (!configuringProduct) return;
+function openItemConfig(sku) {
+  const item = state.catalog.find((i) => i.sku === sku);
+  if (!item) return;
   
-  $("#item-config-title").textContent = configuringProduct.name;
-  const addonsField = $("#item-config-addons-field");
+  $("#config-item-sku").value = item.sku;
+  $("#config-item-name").textContent = item.name;
+  $("#config-item-price").textContent = money(item.price);
   
-  addonsField.hidden = !configuringProduct.allowsAddons;
-  $("#item-config-addons").innerHTML = configuringProduct.allowsAddons
-    ? state.addOns.map((addon) => `<label class="check-option"><input type="checkbox" name="item-addon" value="${escapeHtml(addon.sku)}" /> ${escapeHtml(addon.name)} <span>${money(addon.price)}</span></label>`).join("")
+  const field = $("#config-addons-field");
+  field.hidden = !item.allowsAddons;
+  $("#config-addons").innerHTML = item.allowsAddons
+    ? state.addOns.map((addon) => \`<label class="check-option"><input type="checkbox" name="config-addon" value="\${escapeHtml(addon.sku)}" /> \${escapeHtml(addon.name)} <span>\${money(addon.price)}</span></label>\`).join("")
     : "";
     
-  $("#item-config-form").reset();
+  $("#config-qty").value = "1";
+  $("#config-discount").value = "0";
+  $("#config-notes").value = "";
+  
   $("#item-config-dialog").showModal();
-}price)}</span></label>`).join("")
-    : "";
 }
 
 function renderOrderItems() {
@@ -659,46 +637,42 @@ function wireTabs() {
 function wireCart() {
   $("#order-discount").addEventListener("input", renderOrderItems);
   
+  $("#btn-open-catalog").addEventListener("click", () => {
+    $("#catalog-modal").showModal();
+  });
+  
+  $("#close-catalog-modal").addEventListener("click", () => {
+    $("#catalog-modal").close();
+  });
+  
+  $("#close-item-config-dialog").addEventListener("click", () => {
+    $("#item-config-dialog").close();
+  });
+  
   $("#item-config-form").addEventListener("submit", (e) => {
     e.preventDefault();
-    if (!configuringProduct) return;
-    const form = new FormData(e.target);
+    const sku = $("#config-item-sku").value;
+    const selected = state.catalog.find((item) => item.sku === sku);
+    if (!selected) return;
     
     addOrAccumulateItem(
       state.orderItems,
-      configuringProduct,
-      form.get("quantity"),
-      form.get("notes") || "",
-      form.get("discount") || "0",
-      [...document.querySelectorAll('input[name="item-addon"]:checked')]
+      selected,
+      $("#config-qty").value,
+      $("#config-notes").value,
+      $("#config-discount").value,
+      [...document.querySelectorAll('input[name="config-addon"]:checked')]
         .map((input) => state.addOns.find((addon) => addon.sku === input.value))
         .filter(Boolean)
     );
     
-    $("#item-config-dialog").close();
-    configuringProduct = null;
     renderOrderItems();
-  });
-
-  $("#close-item-config-dialog").addEventListener("click", () => {
     $("#item-config-dialog").close();
-    configuringProduct = null;
+    $("#catalog-modal").close();
   });
 
-  document.body.addEventListener("click", async (event) => {
-    const tabBtn = event.target.closest?.(".tab-button[data-menu-category]");
-    if (tabBtn) {
-      activeMenuCategory = tabBtn.dataset.menuCategory;
-      renderCatalog();
-      return;
-    }
-    const configBtn = event.target.closest?.("button[data-config-item]");
-    if (configBtn) {
-      openItemConfigDialog(configBtn.dataset.configItem);
-      return;
-    }
-    
-    const button = event.target.closest?.("button");
+    document.body.addEventListener("click", async (event) => {
+      const button = event.target.closest?.("button");
       if (!button) return;
 
       if (button.dataset.integrationAccept) {
@@ -828,6 +802,11 @@ function wireCart() {
       const item = state.orderItems[Number(increaseIndex)];
       setItemQuantity(state.orderItems, Number(increaseIndex), item.quantity + 1);
       renderOrderItems();
+      return;
+    }
+
+    if (button.dataset.openConfig) {
+      openItemConfig(button.dataset.openConfig);
       return;
     }
 
