@@ -27,6 +27,7 @@ import { config } from "./config.js";
 import { createDb, mapFinanceEntry, mapOrder, mapShift, mapTab, mapTabPayment } from "./db.js";
 import { createSseHub } from "./sse.js";
 import integrationRoutes from "./integrations/integration-routes.js";
+import { startIntegrationPolling } from "./integrations/polling-runner.js";
 
 const app = Fastify({ logger: true });
 const db = createDb(config.databaseUrl);
@@ -1152,5 +1153,7 @@ await db.init();
 await recoverPrintJobs(true);
 // ponytail: retry fixo atende a demo single-instance; adotar backoff/fila quando houver volume real.
 setInterval(() => recoverPrintJobs().catch((error) => app.log.error(error)), 15_000).unref();
+
+startIntegrationPolling({ config, db });
 
 app.listen({ host: "0.0.0.0", port: config.port });
