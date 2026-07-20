@@ -23,16 +23,17 @@ const apiBase = typeof window === "undefined"
   : `${window.location.protocol}//${window.location.hostname}:3001`;
 
 const sourceLabels = {
-  counter: "Balcão",
-  whatsapp: "WhatsApp",
-  ifood: "iFood",
-  olaclick: "OlaClick"
+  counter: "🍔 Balcão",
+  whatsapp: "💬 WhatsApp",
+  ifood: "🔴 iFood",
+  deliverymuch: "🟠 Delivery Much",
+  olaclick: "🟢 OlaClick"
 };
 
 const fulfillmentLabels = {
-  delivery: "Delivery",
-  pickup: "Retirada",
-  local: "Local"
+  delivery: "🛵 Delivery",
+  pickup: "🛍️ Retirada",
+  local: "🍽️ Local"
 };
 
 const statusLabels = {
@@ -40,7 +41,7 @@ const statusLabels = {
   confirmed: "Confirmado",
   in_preparation: "Em preparo",
   ready: "Pronto",
-  completed: "Concluído",
+  completed: "Finalizado",
   cancelled: "Cancelado"
 };
 

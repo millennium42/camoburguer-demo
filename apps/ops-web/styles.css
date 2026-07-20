@@ -2,22 +2,22 @@
 
 :root {
   color-scheme: dark;
-  --bg-gradient: linear-gradient(135deg, #0f172a, #1e1b4b, #2e1065);
-  --bg: #0b0f19;
-  --card: rgba(30, 41, 59, 0.4);
-  --card-hover: rgba(30, 41, 59, 0.7);
-  --line: rgba(255, 255, 255, 0.1);
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --accent: #8b5cf6;
-  --accent-hover: #a78bfa;
-  --accent-soft: rgba(139, 92, 246, 0.2);
+  --bg-gradient: linear-gradient(135deg, #09090b, #18181b, #120f0c);
+  --bg: #09090b;
+  --card: rgba(39, 39, 42, 0.4);
+  --card-hover: rgba(63, 63, 70, 0.6);
+  --line: rgba(255, 255, 255, 0.08);
+  --text: #fafafa;
+  --muted: #a1a1aa;
+  --accent: #d97706;
+  --accent-hover: #f59e0b;
+  --accent-soft: rgba(217, 119, 6, 0.15);
   --ok: #10b981;
   --danger: #ef4444;
   --danger-soft: rgba(239, 68, 68, 0.1);
   --warning: #f59e0b;
   --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  --glow: 0 0 20px rgba(139, 92, 246, 0.4);
+  --glow: 0 0 20px rgba(217, 119, 6, 0.3);
   font-family: 'Inter', system-ui, sans-serif;
   --radius-sm: 12px;
   --radius-md: 16px;
