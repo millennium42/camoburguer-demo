@@ -234,22 +234,49 @@ function notify(message, tone = "success") {
   feedback.hidden = false;
 }
 
+let activeMenuCategory = null;
+let configuringProduct = null;
+
 function renderCatalog() {
-  const select = $("#catalog-select");
+  const tabs = $("#menu-tabs");
+  const grid = $("#menu-products");
   const balances = Object.fromEntries(state.inventory.balances.map((item) => [item.category, item.quantity]));
+  
   const categories = Object.groupBy(state.catalog, (item) => item.category);
-  select.innerHTML = Object.entries(categories)
-    .map(([category, items]) => `<optgroup label="${escapeHtml(category)}">${items
-      .map((item) => {
-        const inStock = !item.stockCategory || Number(balances[item.stockCategory]) > 0;
-        const sellable = item.available && inStock;
-        const availability = !item.available ? "Esgotado" : inStock ? money(item.price) : "Sem estoque";
-        return `<option value="${escapeHtml(item.sku)}" ${sellable ? "" : "disabled"}>${escapeHtml(item.name)} · ${availability}</option>`;
-      })
-      .join("")}</optgroup>`)
-    .join("");
-  $("#add-item").disabled = !state.catalog.some((item) => item.available && (!item.stockCategory || Number(balances[item.stockCategory]) > 0));
-  renderAddOns();
+  const categoryNames = Object.keys(categories);
+  
+  if (!activeMenuCategory || !categoryNames.includes(activeMenuCategory)) {
+    activeMenuCategory = categoryNames[0] || null;
+  }
+  
+  tabs.innerHTML = categoryNames.map(cat => `
+    <button type="button" class="tab-button ${cat === activeMenuCategory ? 'active' : ''}" data-menu-category="${escapeHtml(cat)}">
+      ${escapeHtml(cat)}
+    </button>
+  `).join("");
+
+  if (activeMenuCategory) {
+    grid.innerHTML = categories[activeMenuCategory].map(item => {
+      const outOfStock = item.stockCategory && Number(balances[item.stockCategory] || 0) <= 0;
+      const disabled = !item.available || outOfStock;
+      return `
+        <div class="menu-item-card ${disabled ? 'disabled' : ''}">
+          <div class="menu-item-info">
+            <strong>${escapeHtml(item.name)}</strong>
+            <span>${disabled ? (item.available ? "Sem estoque" : "Esgotado") : money(item.price)}</span>
+          </div>
+          <div class="menu-item-actions">
+            ${disabled 
+              ? `<span class="out-of-stock-label">Indisponível</span>` 
+              : `<button type="button" class="link-button" data-config-item="${escapeHtml(item.sku)}">Configurar (Adicionais/Desconto)</button>`
+            }
+          </div>
+        </div>
+      `;
+    }).join("");
+  } else {
+    grid.innerHTML = "";
+  }
 }
 
 function renderInventory() {
@@ -262,12 +289,21 @@ function renderInventory() {
     : '<p class="empty-state">Nenhuma movimentação.</p>';
 }
 
-function renderAddOns() {
-  const selected = state.catalog.find((item) => item.sku === $("#catalog-select").value);
-  const field = $("#catalog-addons-field");
-  field.hidden = !selected?.allowsAddons;
-  $("#catalog-addons").innerHTML = selected?.allowsAddons
-    ? state.addOns.map((addon) => `<label class="check-option"><input type="checkbox" name="catalog-addon" value="${escapeHtml(addon.sku)}" /> ${escapeHtml(addon.name)} <span>${money(addon.price)}</span></label>`).join("")
+function openItemConfigDialog(sku) {
+  configuringProduct = state.catalog.find((item) => item.sku === sku);
+  if (!configuringProduct) return;
+  
+  $("#item-config-title").textContent = configuringProduct.name;
+  const addonsField = $("#item-config-addons-field");
+  
+  addonsField.hidden = !configuringProduct.allowsAddons;
+  $("#item-config-addons").innerHTML = configuringProduct.allowsAddons
+    ? state.addOns.map((addon) => `<label class="check-option"><input type="checkbox" name="item-addon" value="${escapeHtml(addon.sku)}" /> ${escapeHtml(addon.name)} <span>${money(addon.price)}</span></label>`).join("")
+    : "";
+    
+  $("#item-config-form").reset();
+  $("#item-config-dialog").showModal();
+}price)}</span></label>`).join("")
     : "";
 }
 
@@ -618,29 +654,47 @@ function wireTabs() {
 
 function wireCart() {
   $("#order-discount").addEventListener("input", renderOrderItems);
-  $("#catalog-select").addEventListener("change", renderAddOns);
-  $("#add-item").addEventListener("click", () => {
-    const selected = state.catalog.find((item) => item.sku === $("#catalog-select").value);
-    if (!selected) return;
+  
+  $("#item-config-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!configuringProduct) return;
+    const form = new FormData(e.target);
+    
     addOrAccumulateItem(
       state.orderItems,
-      selected,
-      $("#catalog-qty").value,
-      $("#catalog-notes").value,
-      $("#catalog-discount").value,
-      [...document.querySelectorAll('input[name="catalog-addon"]:checked')]
+      configuringProduct,
+      form.get("quantity"),
+      form.get("notes") || "",
+      form.get("discount") || "0",
+      [...document.querySelectorAll('input[name="item-addon"]:checked')]
         .map((input) => state.addOns.find((addon) => addon.sku === input.value))
         .filter(Boolean)
     );
-    $("#catalog-qty").value = "1";
-    $("#catalog-discount").value = "0";
-    $("#catalog-notes").value = "";
-    renderAddOns();
+    
+    $("#item-config-dialog").close();
+    configuringProduct = null;
     renderOrderItems();
   });
 
-    document.body.addEventListener("click", async (event) => {
-      const button = event.target.closest?.("button");
+  $("#close-item-config-dialog").addEventListener("click", () => {
+    $("#item-config-dialog").close();
+    configuringProduct = null;
+  });
+
+  document.body.addEventListener("click", async (event) => {
+    const tabBtn = event.target.closest?.(".tab-button[data-menu-category]");
+    if (tabBtn) {
+      activeMenuCategory = tabBtn.dataset.menuCategory;
+      renderCatalog();
+      return;
+    }
+    const configBtn = event.target.closest?.("button[data-config-item]");
+    if (configBtn) {
+      openItemConfigDialog(configBtn.dataset.configItem);
+      return;
+    }
+    
+    const button = event.target.closest?.("button");
       if (!button) return;
 
       if (button.dataset.integrationAccept) {
