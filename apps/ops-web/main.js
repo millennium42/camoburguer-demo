@@ -163,6 +163,58 @@ function printOrderTicket(order) {
   window.print();
 }
 
+function printShiftReport(shift, summary, entries, isDetailed) {
+  const printArea = document.getElementById("print-area");
+  if (!printArea) return;
+
+  const summaryHtml = Object.entries(summary.methodBalances)
+    .filter(([, amount]) => amount !== 0)
+    .map(([method, amount]) => `<div style="display: flex; justify-content: space-between;"><span>${paymentLabels[method] || method}</span><span>${money(amount / 100)}</span></div>`)
+    .join("");
+
+  const detailedHtml = isDetailed ? `
+    <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
+    <h3 style="text-align: center; font-size: 14px; margin: 0 0 10px 0;">Lançamentos Detalhados</h3>
+    ${entries.map(entry => `
+      <div style="margin-bottom: 6px; font-size: 11px;">
+        <div style="display: flex; justify-content: space-between;">
+          <strong>${escapeHtml(financeTypeLabels[entry.type] || entry.type)}</strong>
+          <span>${money(entry.amount)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; color: #555;">
+          <span>${formatWhen(entry.occurredAt).split(" ")[1]} - ${escapeHtml(paymentLabels[entry.paymentMethod] || entry.paymentMethod)}</span>
+          <span style="text-align: right;">${escapeHtml(entry.label).slice(0, 15)}</span>
+        </div>
+      </div>
+    `).join("")}
+  ` : "";
+
+  printArea.innerHTML = `
+    <div style="font-family: monospace; width: 300px; padding: 10px; color: black; background: white; font-size: 12px;">
+      <h2 style="text-align: center; margin: 0 0 10px 0;">CAMOBURGUER</h2>
+      <h3 style="text-align: center; margin: 0 0 10px 0;">FECHAMENTO DE CAIXA</h3>
+      <div style="border-bottom: 1px dashed black; margin-bottom: 10px;"></div>
+      <p style="margin: 4px 0;"><strong>Abertura:</strong> ${formatWhen(shift.openedAt)}</p>
+      <p style="margin: 4px 0;"><strong>Fechamento:</strong> ${shift.closedAt ? formatWhen(shift.closedAt) : "Aberto"}</p>
+      <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Abertura Base:</strong><span>${money(shift.openingAmount)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong>Total de Vendas:</strong><span>${money(summary.salesAmount / 100)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Cancelamentos:</strong><span>${money(summary.cancellationsAmount / 100)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Entradas (Reforço):</strong><span>${money(summary.cashReinforcementAmount / 100)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Saídas (Sangria):</strong><span>${money(summary.cashWithdrawalAmount / 100)}</span></div>
+      <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
+      <h3 style="font-size: 13px; margin: 0 0 5px 0;">Resumo por Forma de Pagamento</h3>
+      ${summaryHtml || "Nenhuma movimentação"}
+      <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="font-size: 14px;">Total Esperado:</strong><strong style="font-size: 14px;">${money(shift.expectedAmount)}</strong></div>
+      ${shift.declaredAmount !== null ? `<div style="display: flex; justify-content: space-between;"><span>Valor Contado:</span><span>${money(shift.declaredAmount)}</span></div>` : ""}
+      ${shift.differenceAmount !== null ? `<div style="display: flex; justify-content: space-between;"><strong>Diferença:</strong><strong>${money(shift.differenceAmount)}</strong></div>` : ""}
+      ${detailedHtml}
+    </div>
+  `;
+  window.print();
+}
+
 function formatWhen(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
@@ -467,6 +519,12 @@ function renderShifts() {
         <div>Esperado: ${money(item.expectedAmount)}</div>
         <div>Contado: ${item.declaredAmount == null ? "—" : money(item.declaredAmount)}</div>
         <div>Diferença: ${item.differenceAmount == null ? "—" : money(item.differenceAmount)}</div>
+        ${item.status === "closed" ? `
+          <div class="actions" style="margin-top: 12px;">
+            <button type="button" data-print-shift="${item.id}" data-print-type="summary">🖨️ Resumo</button>
+            <button type="button" data-print-shift="${item.id}" data-print-type="detailed">🖨️ Detalhado</button>
+          </div>
+        ` : ""}
       </div>
     `)
     .join("");
@@ -580,9 +638,31 @@ function wireCart() {
     renderOrderItems();
   });
 
-  document.body.addEventListener("click", async (event) => {
-    const button = event.target.closest?.("button");
-    if (!button) return;
+    document.body.addEventListener("click", async (event) => {
+      const button = event.target.closest?.("button");
+      if (!button) return;
+
+      if (button.dataset.printShift) {
+        button.disabled = true;
+        try {
+          const shiftId = button.dataset.printShift;
+          const isDetailed = button.dataset.printType === "detailed";
+          const shift = state.shifts.find(s => s.id === shiftId);
+          if (!shift) throw new Error("Caixa não encontrado.");
+          
+          const [summary, entriesResult] = await Promise.all([
+            api(`/finance/summary?shiftId=${shiftId}`),
+            api(`/finance/entries?shiftId=${shiftId}`)
+          ]);
+          printShiftReport(shift, summary, entriesResult.items, isDetailed);
+        } catch (error) {
+          notify(error.message, "error");
+        } finally {
+          button.disabled = false;
+        }
+        return;
+      }
+
     if (button.dataset.reversePayment) {
       const payload = { tabId: button.dataset.paymentTab, paymentId: button.dataset.reversePayment };
       state.paymentReversalAttempt = nextOrderAttempt(state.paymentReversalAttempt, payload);
