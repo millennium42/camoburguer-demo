@@ -43,15 +43,15 @@
                 <div class="grid two">
                   <label>Canal
                     <select name="source" required>
-                      <option value="counter">Balcão</option>
-                      <option value="whatsapp">WhatsApp</option>
+                      <option value="counter">🍔 Balcão</option>
+                      <option value="whatsapp">💬 WhatsApp</option>
                     </select>
                   </label>
                   <label>Modalidade
                     <select id="fulfillment-mode" name="fulfillmentMode" required>
-                      <option value="delivery">Delivery</option>
-                      <option value="pickup">Retirada</option>
-                      <option value="local" selected>Local</option>
+                      <option value="delivery">🛵 Delivery</option>
+                      <option value="pickup">🛍️ Retirada</option>
+                      <option value="local" selected>🍽️ Local</option>
                     </select>
                   </label>
                 </div>
@@ -62,11 +62,11 @@
                   <label>Cliente<input name="customerName" placeholder="Nome do cliente" /></label>
                   <label id="order-payment-field">Pagamento
                     <select name="paymentMethod" required>
-                      <option value="cash">Dinheiro</option>
-                      <option value="pix">Pix</option>
-                      <option value="credit_card">Crédito</option>
-                      <option value="debit_card">Débito</option>
-                      <option value="app_paid">Pago no app</option>
+                      <option value="cash">💵 Dinheiro</option>
+                      <option value="pix">💠 Pix</option>
+                      <option value="credit_card">💳 Crédito</option>
+                      <option value="debit_card">💳 Débito</option>
+                      <option value="app_paid">📱 Pago no app</option>
                     </select>
                   </label>
                 </div>
@@ -103,12 +103,12 @@
             </article>
 
             <article class="card" id="auth-queue-card" hidden>
-              <h2>Aguardando Autorização</h2>
+              <h2>⚠️ Integrações Aguardando</h2>
               <div id="auth-list" class="stack"></div>
             </article>
 
             <article class="card">
-              <h2>Fila de atendimento</h2>
+              <h2>🍔 Fila de Produção</h2>
               <div id="orders-list" class="stack"></div>
             </article>
           </div>
