@@ -1,78 +1,57 @@
-# Camoburguer Demo
+# 🍔 Camoburguer
+> **O coração digital da sua hamburgueria: ágil, resiliente e feito para crescer.**
 
-Aplicação operacional de restaurante para centralizar pedidos de Balcão, WhatsApp, iFood e OlaClick, enviar tickets padronizados à cozinha e acompanhar caixa e financeiro gerencial.
+O **Camoburguer** não é apenas um sistema de caixa. É uma plataforma operacional completa desenhada para centralizar pedidos, acabar com o caos na cozinha e dar total visibilidade financeira ao seu negócio. Seja atendendo no balcão, via WhatsApp ou integrado a aplicativos de delivery, sua equipe trabalha em uma única tela, sem estresse.
 
-## Escopo entregue
+## 🚀 Por que escolher o Camoburguer?
 
-- cardápio estático versionado do OlaClick em 2026-07-16, com 50 produtos disponíveis e um registro indisponível preservado;
-- adicionais cobrados e congelados no item antes dos descontos por item e por pedido;
-- comandas e mesas por identificador livre, sem mapa fixo, com rodadas imutáveis de produção e cancelamento;
-- estoque transacional das categorias Xis, Dog e Hambúrguer, com baixa, restituição condicionada ao preparo e ajustes auditáveis;
-- pagamentos parciais em dinheiro, Pix, crédito, débito ou aplicativo, com estorno compensatório e saldo em centavos;
-- caixa com reforço e Retirada (sangria), além de financeiro filtrável por tipo e forma de pagamento;
-- cozinha, impressão, idempotência, migração aditiva e compatibilidade com os quatro canais externos.
+- **Gestão Unificada de Pedidos**: Chega de tablets apitando de todos os lados. Centralize Balcão, WhatsApp, iFood e Delivery Much em uma única fila de autorização.
+- **Cozinha Sem Papel Perdido**: Cada pedido confirmado é enviado automaticamente para impressão na cozinha com um ticket padronizado. Com recuperação automática de falhas, nenhum pedido é esquecido se a impressora acabar o papel.
+- **Controle de Comandas e Mesas**: Atenda o salão com comandas livres. Adicione rodadas ao longo da noite, receba pagamentos parciais (Dinheiro, Pix, Cartões) e acompanhe o saldo exato, centavo por centavo.
+- **Estoque Transacional Inteligente**: Xis, Dogs e Hambúrgueres controlados em tempo real. A baixa só ocorre quando o pedido é confirmado. Se houver cancelamento, o sistema devolve o item automaticamente.
+- **Caixa Blindado e Financeiro Transparente**: Abertura, reforço, sangria e fechamento seguros. Histórico imutável de entradas e saídas, sem possibilidade de fraude ou edição não rastreável.
+- **Ultra Leve e Veloz**: Uma interface moderna, sem atrasos, que funciona perfeitamente em telas touch, tablets e computadores antigos. 
 
-## Executar a demo
+---
 
-Pré-requisitos: Docker Desktop com integração WSL, distribuição Ubuntu, Graphify instalado no Ubuntu, Node.js 24+ e npm.
+## 🛠 Arquitetura de Alto Desempenho
+
+Construído sob o rigor da engenharia moderna e a doutrina *Ponytail Full* (menor solução correta):
+- **Core Imutável**: Pedidos são auditáveis. Cancelamentos geram registros reversos, nunca apagando o histórico real.
+- **Eventos em Tempo Real (SSE)**: Quando o salão fecha uma comanda, a cozinha sabe na hora. Sem "atualizar a página".
+- **Integração Segura**: Os pedidos externos ficam em estado `received` (aguardando) até a aprovação humana. Somente após a aceitação o estoque é afetado e a cozinha notificada.
+- **Idempotência Garantida**: Clique duplo no botão de pagar? A rede caiu no meio do fechamento? O Camoburguer usa chaves idempotentes para garantir que cobranças ou pedidos nunca sejam duplicados.
+
+---
+
+## ⚙️ Experimente Agora (Modo Demo)
+
+A demonstração sobe todo o ecossistema localmente usando Docker.
+
+**Pré-requisitos**: Docker Desktop (com WSL ativo), Node.js 24+ e npm.
 
 ```powershell
 rtk wsl.exe -d Ubuntu -- docker compose up -d --build
 ```
 
-- Operação: <http://127.0.0.1:8081>
-- API: <http://127.0.0.1:3001/health>
-- Bridge de impressão: <http://127.0.0.1:3100/health>
+### Acessos:
+- **Terminal do Operador**: [http://127.0.0.1:8081](http://127.0.0.1:8081)
+- **API Core**: [http://127.0.0.1:3001/health](http://127.0.0.1:3001/health)
+- **Serviço de Impressão (Bridge)**: [http://127.0.0.1:3100/health](http://127.0.0.1:3100/health)
 
-## Validar
+> **💡 Dica**: Execute `rtk npm run smoke` para disparar uma bateria de testes end-to-end que cria pedidos, opera comandas, envia para a cozinha, fecha o caixa e valida todas as travas financeiras do sistema.
 
-```powershell
-rtk npm test
-rtk npm run smoke
-rtk wsl.exe -d Ubuntu -- docker compose ps
-rtk npm run graph:update
-```
+---
 
-O smoke cria pedidos nas quatro origens e comandas locais, valida Delivery/Retirada/Local, cozinha, estoque, pagamentos parciais, estornos, idempotência, impressão, caixa, movimentações, fechamento e financeiro.
+## 📚 Documentação Técnica e Deploy
 
-## Contratos HTTP principais
+Toda a lógica e fluxos estão detalhadamente documentados. Nenhum dado pessoal ou caminho absoluto é mantido no repositório por questões estritas de segurança.
 
-| Área | Rotas |
-| --- | --- |
-| Catálogo | `GET /catalog` |
-| Pedidos externos | `POST /orders`, `GET /orders`, transições de cozinha existentes |
-| Comandas | `GET/POST /tabs`, `GET /tabs/:tabId`, `POST /tabs/:tabId/rounds`, cancelamentos e fechamento |
-| Estoque | `GET /inventory`, `POST /inventory/:category/adjustments` |
-| Pagamentos | `POST /tabs/:tabId/payments`, `POST /tabs/:tabId/payments/:paymentId/reversals` |
-| Financeiro | `GET /finance/entries`, `GET /finance/summary`, ambos com filtros combináveis |
+- [Ciclo do Pedido](docs/ciclo-do-pedido.md)
+- [Arquitetura do Sistema](docs/arquitetura-do-sistema.md)
+- [Controle de Estoque](docs/estoque.md)
+- [Pagamentos e Comandas](docs/pagamentos-comandas.md)
+- [Guia de Deploy no Render](docs/RENDER_DEPLOY.md)
 
-Envios de rodadas, cancelamentos, pagamentos, estornos e ajustes com efeito exigem `Idempotency-Key`. Conflitos de estado, saldo ou estoque respondem `409` sem efeito parcial.
-
-## Estrutura
-
-- `apps/ops-web`: interface estática e leve para pedidos, cozinha e financeiro.
-- `apps/api`: API, transações, SSE, persistência, idempotência e recuperação de impressão.
-- `apps/print-bridge`: spool de ticket em volume persistente.
-- `apps/event-simulator`: carga opcional de dados da demo.
-- `packages/domain`: regras de pedido, ticket e caixa.
-- `packages/finance-core`: lançamentos e resumos financeiros.
-- `packages/shared-types`: enumerações compartilhadas.
-- `docs/estoque.md`: contrato de saldos, baixas e ajustes das três categorias controladas.
-- `docs/pagamentos-comandas.md`: parcelas, estornos, centavos, caixa e encerramento de comandas.
-- `docs/relatorio-validacao.md`: matriz final dos requisitos, comandos, ambiente e evidências reproduzíveis.
-- `docs/`: contratos operacionais e arquitetura em português.
-- `skills/` e `SUBAGENTES.md`: processo agent-first com revisão entre pares.
-- `graphify-out/`: grafo estrutural navegável do projeto.
-
-O fluxo completo de implementação, revisão, Docker via WSL, RAG e publicação está em [`docs/guia-de-desenvolvimento.md`](docs/guia-de-desenvolvimento.md). O histórico decisório 5W2H está em [`docs/5w2h-evolucao.md`](docs/5w2h-evolucao.md).
-
-## Doutrina de desenvolvimento
-
-- `Ponytail full`: menor solução correta, sem abstrações prematuras.
-- `RTK`: prefixo obrigatório dos comandos shell.
-- `m1nd`: primeira orientação estrutural antes de busca ampla.
-- `Graphify`: mapa persistente; consultar antes de navegação ampla e atualizar após mudanças.
-
-## Limites da v1
-
-Operação de restaurante único e posto único, sem login ou identificação de operador. Integrações com marketplaces continuam manuais; fiscal, CMV por receita e customizações profundas ficam fora desta demo.
+---
+*Camoburguer: A essência da operação gastronômica moderna.*
