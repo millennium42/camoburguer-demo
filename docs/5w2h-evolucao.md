@@ -205,3 +205,62 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 **Riscos:** a recriação sequencial dos containers pode deixar healthchecks antigos responderem enquanto o Compose ainda substitui a API. Mitigação: exigir todos os serviços saudáveis e estáveis por 15 segundos antes do smoke.
 
 **Rollback:** reverter CSS/teste/script/documentos desta PR sem tocar nos dados ou nas features anteriores; se o Graphify deixar de atualizar, os artefatos da branch-base continuam utilizáveis como snapshot até nova reconstrução.
+## PR 10 — Integração iFood e Delivery Much (Fase 1: Schema e Status)
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Tabelas channel_mappings, channel_events, channel_commands e fluxo de estados independentes (sync_status) para canais externos. |
+| Why | Isolar a máquina de estados de canais externos do núcleo de pedidos, permitindo enfileirar recebimentos sem afetar estoque ou caixa prematuramente. |
+| Where | Domínio (packages/shared-types), DB (pps/api/src/db.js), configurações, API e frontend (fila de autorização). |
+| When | Durante o fluxo de eventos webhook/polling dos agregadores. |
+| Who | API recebe e mapeia; operador visualiza em fila de autorização; frontend dispara aceitação. |
+| How | Tabela de mapeamento 1:1, status apartados (ccept_pending, etc) e botões de Aceitar/Recusar na UI segregando responsabilidade. |
+| How much | 3 novas tabelas (mappings, events, commands), 1 fila visual separada no frontend. |
+
+**Critérios de aceite:** Pedidos externos caem com status=received e não reduzem estoque nem imprimem até o aceite manual. UI possui cards destacados para aceite.
+
+**Evidências:** Criação de tabelas validadas por testes unitários, smoke tests end-to-end simulados e exibição correta na interface.
+
+**Riscos:** Inconsistência entre status do integrador e status interno. Mitigação: Uso de chaves idempotentes e webhook event sourcing.
+
+**Rollback:** Desativar a flag ENABLED nas variáveis de ambiente dos canais externos; os pedidos internos não são afetados.
+
+## PR 11 — Identidade Visual Premium (Black & Brown)
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Redesign completo do frontend (ops-web) utilizando fundo negro profundo, acentos em marrom/caramelo e glassmorphism. |
+| Why | Criar uma estética moderna, visualmente marcante ("wow factor") e adequada a ambientes de operação em baixa luminosidade (POS). |
+| Where | CSS nativo (pps/ops-web/styles.css) e estrutura HTML (pps/ops-web/index.html). |
+| When | Em todo carregamento da aplicação web. |
+| Who | Usuários do caixa, balcão e gerência de operações. |
+| How | Variáveis CSS remapeadas, introdução de opacidade, e emojis como micro-âncoras visuais nos formulários. |
+| How much | Alteração integral do stylesheet e ajuste de responsividade com Flexbox, sem novas dependências. |
+
+**Critérios de aceite:** UI deve parecer premium; formulários legíveis em monitores escuros; botões alinhados.
+
+**Evidências:** Testes unitários corrigidos para mapear novos emojis, grid responsivo (lex-wrap) validado em resolução estreita.
+
+**Riscos:** Contraste baixo para textos secundários. Mitigação: Uso de cores calculadas via HSL na raiz do CSS.
+
+**Rollback:** Reversão do commit de CSS (styles.css); sem risco estrutural.
+
+## PR 12 — Impressão Client-side (Cozinha e Caixas)
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Impressão de tickets de cozinha e relatórios de turno (resumido e detalhado) pelo navegador. |
+| Why | Permitir demonstração tátil e fluida usando janelas nativas de impressão, abandonando spooling em arquivo. |
+| Where | Função printOrderTicket, printShiftReport em main.js e regras de @media print no styles.css. |
+| When | Ao disparar produção da cozinha, re-impressão, ou no fechamento do caixa. |
+| Who | Operador comanda a ação e escolhe a impressora térmica instalada localmente no Windows. |
+| How | Injeção de HTML num <div id="print-area"> escondendo o resto da UI via CSS durante a impressão; endereço incluído dinamicamente em delivery. |
+| How much | Modificação focal de frontend sem dependência externa de spoolers complexos. |
+
+**Critérios de aceite:** Apenas o layout monocromático text-only deve ser impresso; dados cruciais obrigatoriamente preenchidos.
+
+**Evidências:** Interceptação pelo Windows Printer Dialog; resumo financeiro contabiliza Pix, Dinheiro, Sangrias corretamente no cupom.
+
+**Riscos:** Incompatibilidade de larguras. Mitigação: Uso de tipografia monospace clássica.
+
+**Rollback:** Remoção das funções client-side, voltando ao endpoint de dispatchPrintJob.

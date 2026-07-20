@@ -39,3 +39,8 @@ Comandas usam centavos inteiros: o consumo soma rodadas, o pago soma parcelas e 
 - horário de pico
 
 O filtro por forma de pagamento e tipo de lançamento é único para a tela: a mesma query alimenta listagem, cards, totais e distribuição por método. **Limpar filtro** restaura o consolidado completo.
+
+## Relatórios e Fechamento (Impressão)
+Turnos de caixa com o estado closed habilitam opções de impressão (Client-side, via window.print()):
+- **Resumo**: Fita consolidada (vendas, entradas, saídas, esperado vs. apurado).
+- **Detalhado**: Resumo financeiro acrescido de uma fita analítica listando cronologicamente todas as movimentações.

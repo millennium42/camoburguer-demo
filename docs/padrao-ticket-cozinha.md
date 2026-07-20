@@ -26,3 +26,6 @@
 ## Ticket corretivo
 
 Item já enviado nunca é apagado ou reimpresso como se fosse novo. O cancelamento gera ticket separado com `CANCELAMENTO / RETIRAR`, comanda, nova rodada, referência curta ao pedido original, quantidades canceladas e motivo. O ticket original permanece imutável.
+
+## Formato de Impressão (Client-Side)
+Os tickets da cozinha (normais e corretivos) agora são renderizados via HTML/CSS em um <div id="print-area"> escondido na UI principal e disparados via window.print(), removendo a necessidade de ler do spooler e delegando a impressão ao diálogo nativo do sistema operacional do operador para melhor demonstração tátil.
