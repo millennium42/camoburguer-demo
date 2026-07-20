@@ -137,6 +137,32 @@ function money(value) {
   }).format(Number(value || 0));
 }
 
+function printOrderTicket(order) {
+  const printArea = document.getElementById("print-area");
+  if (!printArea) return;
+  const itemsHtml = (order.items || []).map(item => `
+    <div style="margin-bottom: 8px;">
+      <strong>${item.quantity}x ${item.name}</strong>
+      ${item.addons && item.addons.length ? `<br><small>+ ${item.addons.map(a => a.name).join(", ")}</small>` : ""}
+      ${item.notes ? `<br><small>Obs: ${item.notes}</small>` : ""}
+    </div>
+  `).join("");
+  printArea.innerHTML = `
+    <div style="font-family: monospace; width: 300px; padding: 10px; color: black; background: white;">
+      <h2 style="text-align: center; margin: 0 0 10px 0;">CAMOBURGUER</h2>
+      <div style="border-bottom: 1px dashed black; margin-bottom: 10px;"></div>
+      <p><strong>Pedido:</strong> #${order.id.slice(0,6).toUpperCase()}</p>
+      <p><strong>Cliente:</strong> ${order.customerName || "Não informado"}</p>
+      <p><strong>Tipo:</strong> ${fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode}</p>
+      <div style="border-bottom: 1px dashed black; margin-bottom: 10px;"></div>
+      ${itemsHtml}
+      <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
+      <h3 style="text-align: right;">Total: ${money(order.total)}</h3>
+    </div>
+  `;
+  window.print();
+}
+
 function formatWhen(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
@@ -676,14 +702,16 @@ function wireCart() {
         const action = button.dataset.orderAction || button.dataset.status;
         
         if (["startPreparation", "ready"].includes(action)) {
-          // Ações de integração
           await api(`/orders/${orderId}/${action}`, {
             method: "POST",
             headers: { "Idempotency-Key": crypto.randomUUID() },
             body: "{}"
           });
+          if (action === "startPreparation") {
+            const order = state.orders.find(o => o.id === orderId);
+            if (order) printOrderTicket(order);
+          }
         } else {
-          // Status regular
           await api(`/orders/${orderId}/status`, {
             method: "PATCH",
             body: JSON.stringify({ status: action })
@@ -691,6 +719,8 @@ function wireCart() {
         }
         notify("Status do pedido atualizado.");
       } else if (button.dataset.reprint) {
+        const order = state.orders.find(o => o.id === button.dataset.reprint) || state.kitchen.find(o => o.id === button.dataset.reprint);
+        if (order) printOrderTicket(order);
         await api(`/orders/${button.dataset.reprint}/reprint`, { method: "POST", body: "{}" });
         notify("Reimpressão enviada para a cozinha.");
       }
@@ -835,14 +865,13 @@ function wireForms() {
 
   $("#order-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const form = event.currentTarget;
     if (!state.orderItems.length) {
       notify("Adicione pelo menos um item antes de finalizar.", "error");
       return;
     }
-    if (!form.reportValidity()) return;
+    if (!event.currentTarget.reportValidity()) return;
 
-    const formData = new FormData(form);
+    const formData = new FormData(event.currentTarget);
     const payload = {
       source: formData.get("source"),
       fulfillmentMode: formData.get("fulfillmentMode"),
@@ -855,18 +884,28 @@ function wireForms() {
     };
     state.orderAttempt = nextOrderAttempt(state.orderAttempt, payload);
 
-    const submit = form.querySelector('[type="submit"]');
+    const submit = event.currentTarget.querySelector('[type="submit"]');
     submit.disabled = true;
     submit.textContent = "Enviando...";
     try {
-      await api(state.activeTabId ? `/tabs/${state.activeTabId}/rounds` : "/orders", {
-        method: "POST",
-        headers: { "Idempotency-Key": state.orderAttempt.key },
-        body: JSON.stringify(payload)
-      });
+      if (state.activeTabId) {
+        await api(`/tabs/${state.activeTabId}/rounds`, {
+          method: "POST",
+          headers: { "Idempotency-Key": state.orderAttempt.key },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        const orderRes = await api("/orders", {
+          method: "POST",
+          headers: { "Idempotency-Key": state.orderAttempt.key },
+          body: JSON.stringify(payload)
+        });
+        const orderData = await orderRes.json();
+        if (orderData && orderData.order) printOrderTicket(orderData.order);
+      }
       state.orderItems = [];
       state.orderAttempt = null;
-      form.reset();
+      event.currentTarget.reset();
       syncDeliveryAddress();
       renderOrderItems();
       await refreshAll().catch((error) => {

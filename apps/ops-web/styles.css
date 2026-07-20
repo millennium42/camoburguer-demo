@@ -184,3 +184,9 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
   .addon-grid { grid-template-columns: 1fr; }
   .quantity-control { grid-template-columns: 48px 1fr 48px; }
 }
+
+@media print {
+  body * { display: none !important; }
+  #print-area, #print-area * { display: block !important; }
+  #print-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background: white; color: black; }
+}
