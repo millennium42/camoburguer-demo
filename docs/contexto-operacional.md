@@ -40,3 +40,7 @@ O Camoburguer opera como restaurante de pequeno porte com pedidos vindos de balc
 - O operador registra cada parcela de pagamento e confere o saldo antes de encerrar a comanda.
 - A retirada de numerário é apresentada como “Retirada (sangria)” e não compõe faturamento.
 - Adicionais são snapshots comerciais no item; não possuem estoque individual nesta versão.
+
+## Evoluções da Interface e Integrações
+- **Design System:** A aplicação adota o tema nativo "Black & Brown" focado em ergonomia visual para ambientes de baixa iluminação, combinando alto contraste com micro-interações via glassmorphism.
+- **Autorização de Integrações:** Os pedidos de canais externos (iFood, Delivery Much) não entram diretamente na fila da cozinha. Eles são estacionados em uma **Fila de Autorização** onde o operador deve explicitamente Aceitar ou Recusar o pedido, mantendo o controle total da aceitação sob demanda sem impactar o estoque ou impressoras prematuramente.
