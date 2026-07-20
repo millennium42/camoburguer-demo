@@ -46,7 +46,7 @@ test("UI expõe somente as modalidades válidas e não identifica operador", asy
   const modes = html.match(/<select id="fulfillment-mode"[\s\S]*?<\/select>/)?.[0] || "";
   assert.deepEqual(
     [...modes.matchAll(/<option value="([^"]+)"[^>]*>([^<]+)<\/option>/g)].map((match) => [match[1], match[2]]),
-    [["delivery", "Delivery"], ["pickup", "Retirada"], ["local", "Local"]]
+    [["delivery", "🛵 Delivery"], ["pickup", "🛍️ Retirada"], ["local", "🍽️ Local"]]
   );
   assert.match(html, /id="delivery-address-field" hidden/);
   assert.match(html, /id="catalog-discount"[^>]*min="0"[^>]*max="100"/);
