@@ -17,6 +17,7 @@
     "start:sim": "npm run start --workspace @camoburguer/event-simulator",
     "graph:update": "rtk wsl.exe -d Ubuntu -- bash -lc \"bash scripts/graphify-update-wsl.sh\"",
     "graph:extract": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify extract . --out .\"",
-    "graph:extract:code": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify extract . --out . --code-only\""
+    "graph:extract:code": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify extract . --out . --code-only\"",
+    "seed:demo": "node scripts/seed-demo.mjs"
   }
 }
