@@ -19,5 +19,8 @@
     "graph:extract": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify extract . --out .\"",
     "graph:extract:code": "rtk wsl.exe -d Ubuntu -- bash -lc \"graphify extract . --out . --code-only\"",
     "seed:demo": "node scripts/seed-demo.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.22.0"
   }
 }

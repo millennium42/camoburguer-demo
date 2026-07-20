@@ -11,22 +11,21 @@ async function seed() {
   // Limpar tabelas principais (cuidado: apaga tudo)
   await db.query(`
     TRUNCATE TABLE channel_mappings, channel_events, channel_commands, 
-    stock_movements, tab_payments, orders, service_tabs, 
-    cash_shift_adjustments, cash_shifts CASCADE;
+    stock_movements, finance_entries, orders, service_tabs, cash_shifts CASCADE;
   `);
   console.log("Tabelas limpas.");
 
   // 1. Abrir um turno
   const shiftId = crypto.randomUUID();
   await db.query(`
-    INSERT INTO cash_shifts (id, opened_at, expected_amount, status, metadata)
-    VALUES ($1, NOW() - INTERVAL '4 hours', 150.00, 'open', '{"openedBy": "Admin"}')
+    INSERT INTO cash_shifts (id, opened_at, expected_amount, opening_amount, status, notes)
+    VALUES ($1, NOW() - INTERVAL '4 hours', 150.00, 150.00, 'open', 'Opened by Admin')
   `, [shiftId]);
 
   // Suprimento inicial
   await db.query(`
-    INSERT INTO cash_shift_adjustments (id, shift_id, kind, amount_cents, reason)
-    VALUES ($1, $2, 'reinforcement', 15000, 'Troco inicial')
+    INSERT INTO finance_entries (id, shift_id, type, amount, payment_method, source, label, occurred_at)
+    VALUES ($1, $2, 'cash_reinforcement', 15000, 'cash', 'counter', 'Troco inicial', NOW())
   `, [crypto.randomUUID(), shiftId]);
 
   console.log("Turno criado.");

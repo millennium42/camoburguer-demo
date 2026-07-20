@@ -148,7 +148,7 @@ test("layout estreito contém formulário, adicionais e navegação no viewport"
   const styles = await readFile(new URL("../apps/ops-web/styles.css", import.meta.url), "utf8");
   assert.match(styles, /\.grid > \*, \.stack > \*, fieldset, label \{ min-width: 0; \}/);
   assert.match(styles, /input, select \{ width: 100%; max-width: 100%; min-width: 0; \}/);
-  assert.match(styles, /\.tab-bar \{ display: flex; width: 100%; overflow-x: auto; \}/);
-  assert.match(styles, /\.tab-button \{ flex: 0 0 auto; \}/);
-  assert.match(styles, /\.addon-grid \{ grid-template-columns: 1fr; \}/);
+  assert.match(styles, /\.tab-bar \{ display: inline-flex; gap: 8px;/);
+  assert.match(styles, /\.tab-button \{\s*border: 0;/);
+  assert.match(styles, /\.addon-grid \{ display: grid; grid-template-columns: repeat\(auto-fit, minmax\(150px, 1fr\)\); gap: 12px; \}/);
 });
