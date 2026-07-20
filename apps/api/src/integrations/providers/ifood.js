@@ -154,16 +154,20 @@ export default function createIFoodAdapter(config, db) {
             externalOrderId: event.orderId,
             externalStatus: "PLACED",
             customerName: orderDetails.customer?.name || "Cliente iFood",
+            deliveryAddress: orderDetails.delivery?.deliveryAddress ? `${orderDetails.delivery.deliveryAddress.streetName}, ${orderDetails.delivery.deliveryAddress.streetNumber}` : null,
             fulfillmentMode: orderDetails.orderType === "TAKEOUT" ? "pickup" : "delivery",
-            deliveryAddress: orderDetails.delivery?.deliveryAddress?.formattedAddress,
-            items: (orderDetails.items || []).map(item => ({
-              name: item.name,
-              quantity: item.quantity,
-              price: Number(item.price),
-              notes: item.observations || ""
-            }))
-          }, executor);
-        } else if (event.fullCode === "CONFIRMED") {
+            items: orderDetails.items.map((i) => ({
+              id: i.id,
+              name: i.name,
+              price: i.unitPrice,
+              quantity: i.quantity,
+              notes: i.observations || ""
+            })),
+            metadata: { ifoodOrder: orderDetails }
+          }, executor, db);
+        }
+        
+        if (event.fullCode === "CONFIRMED") {
           // iFood confirmed, now we can safely activate locally
           const { rows } = await executor.query(
             "SELECT o.id FROM orders o JOIN channel_mappings cm ON o.id = cm.order_id WHERE cm.channel = 'ifood' AND cm.external_id = $1",

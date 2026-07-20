@@ -1,4 +1,4 @@
-import { createDb } from "../../db.js";
+import { createDb } from "../db.js";
 import createDeliveryMuchAdapter from "./providers/deliverymuch.js";
 import createIFoodAdapter from "./providers/ifood.js";
 

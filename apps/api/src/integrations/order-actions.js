@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { getOrderWithMapping, updateChannelMapping, insertChannelCommand } from "./integration-repository.js";
-import { updateOrder, changeStock, reservePrintJob } from "../db.js";
-import { transitionOrder } from "domain";
+
+import { transitionOrder } from "@camoburguer/domain";
 
 export async function createOrderAction(orderId, action, payload, db) {
   return db.transaction(async (client) => {
@@ -52,10 +52,10 @@ export async function activateAcceptedOrder(orderId, db) {
     }
 
     const confirmed = transitionOrder(order, "confirmed");
-    const saved = await updateOrder(confirmed, "received", client);
-    await changeStock(saved, -1, "sale", client);
+    const saved = await db.updateOrder(confirmed, "received", client);
+    await db.changeStock(saved, -1, "sale", client);
 
-    const printJob = await reservePrintJob(saved, "confirmed", client);
+    const printJob = await db.reservePrintJob(saved, "confirmed", client);
     await updateChannelMapping(order.mapping.id, { syncStatus: "synchronized" }, client);
 
     return { saved, repeated: false, printJob };
