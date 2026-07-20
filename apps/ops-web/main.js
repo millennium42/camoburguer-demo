@@ -168,9 +168,9 @@ function printShiftReport(shift, summary, entries, isDetailed) {
   const printArea = document.getElementById("print-area");
   if (!printArea) return;
 
-  const summaryHtml = Object.entries(summary.methodBalances)
+  const summaryHtml = Object.entries(summary.paymentsByMethod || {})
     .filter(([, amount]) => amount !== 0)
-    .map(([method, amount]) => `<div style="display: flex; justify-content: space-between;"><span>${paymentLabels[method] || method}</span><span>${money(amount / 100)}</span></div>`)
+    .map(([method, amount]) => `<div style="display: flex; justify-content: space-between;"><span>${paymentLabels[method] || method}</span><span>${money(amount)}</span></div>`)
     .join("");
 
   const detailedHtml = isDetailed ? `
@@ -199,10 +199,10 @@ function printShiftReport(shift, summary, entries, isDetailed) {
       <p style="margin: 4px 0;"><strong>Fechamento:</strong> ${shift.closedAt ? formatWhen(shift.closedAt) : "Aberto"}</p>
       <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
       <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Abertura Base:</strong><span>${money(shift.openingAmount)}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong>Total de Vendas:</strong><span>${money(summary.salesAmount / 100)}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Cancelamentos:</strong><span>${money(summary.cancellationsAmount / 100)}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Entradas (Reforço):</strong><span>${money(summary.cashReinforcementAmount / 100)}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Saídas (Sangria):</strong><span>${money(summary.cashWithdrawalAmount / 100)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong>Total de Vendas:</strong><span>${money(summary.grossSales || 0)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Cancelamentos:</strong><span>${money(summary.cancellations || 0)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Entradas (Reforço):</strong><span>${money(summary.entriesByType?.['cash_reinforcement'] || 0)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Saídas (Sangria):</strong><span>${money(summary.entriesByType?.['cash_withdrawal'] || 0)}</span></div>
       <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
       <h3 style="font-size: 13px; margin: 0 0 5px 0;">Resumo por Forma de Pagamento</h3>
       ${summaryHtml || "Nenhuma movimentação"}
