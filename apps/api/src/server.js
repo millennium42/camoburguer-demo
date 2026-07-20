@@ -1166,6 +1166,11 @@ await recoverPrintJobs(true);
 // ponytail: retry fixo atende a demo single-instance; adotar backoff/fila quando houver volume real.
 setInterval(() => recoverPrintJobs().catch((error) => app.log.error(error)), 15_000).unref();
 
+db.updateOrder = updateOrder;
+db.changeStock = changeStock;
+db.reservePrintJob = reservePrintJob;
+db.insertOrder = insertOrder;
+
 startIntegrationPolling({ config, db });
 
 app.listen({ host: "0.0.0.0", port: config.port });

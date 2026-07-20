@@ -105,11 +105,13 @@ export default function createDeliveryMuchAdapter(config, db) {
           fulfillmentMode: "delivery", // simplistic mapping
           deliveryAddress: externalOrder.deliveryAddress?.formattedAddress,
           items: (externalOrder.items || []).map(item => ({
+            id: item.id || randomUUID(),
             name: item.name,
             quantity: item.quantity,
             price: Number(item.price),
+            notes: ""
           }))
-        }, executor);
+        }, executor, db);
 
         await markReceived(externalOrder.id);
       }

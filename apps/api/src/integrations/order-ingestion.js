@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
 import { findChannelMapping, insertChannelMapping } from "./integration-repository.js";
-import { insertOrder } from "../db.js";
 
-export async function ingestExternalOrder(input, executor) {
+
+export async function ingestExternalOrder(input, executor, db) {
   const mapping = await findChannelMapping({
     channel: input.source,
     merchantId: input.externalMerchantId,
@@ -37,7 +37,7 @@ export async function ingestExternalOrder(input, executor) {
     createdAt: new Date().toISOString()
   };
 
-  const savedOrder = await insertOrder(order, executor);
+  const savedOrder = await db.insertOrder(order, executor);
 
   await insertChannelMapping({
     id: randomUUID(),
