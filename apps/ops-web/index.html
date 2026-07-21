@@ -234,9 +234,10 @@
           <label id="delivery-address-field" hidden>Endereço para entrega
             <input id="delivery-address" name="deliveryAddress" autocomplete="street-address" placeholder="Rua, número e referência" />
           </label>
+
           <div class="grid two">
             <label id="order-payment-field">Pagamento
-              <select name="paymentMethod" required>
+              <select id="order-payment-method" name="paymentMethod" required>
                 <option value="cash">💵 Dinheiro</option>
                 <option value="pix">💠 Pix</option>
                 <option value="credit_card">💳 Crédito</option>
@@ -245,6 +246,17 @@
               </select>
             </label>
             <label>Observações do pedido<input name="notes" placeholder="Sem cebola, ponto da carne..." /></label>
+          </div>
+
+          <!-- PAINEL DE TROCO PARA PAGAMENTO EM DINHEIRO -->
+          <div id="cash-change-panel" class="grid two" hidden style="background: rgba(16, 185, 129, 0.08); padding: 14px 18px; border-radius: var(--radius-md); border: 1px dashed rgba(16, 185, 129, 0.3);">
+            <label>Valor Recebido do Cliente (R$)
+              <input id="cash-received" type="number" min="0" step="0.01" placeholder="Ex.: 50,00" inputmode="decimal" />
+            </label>
+            <div style="display: flex; flex-direction: column; justify-content: center; gap: 4px;">
+              <span style="font-size: 0.85rem; color: var(--muted); font-weight: 600;">Troco a Devolver</span>
+              <strong id="cash-change-due" style="font-size: 1.4rem; color: #34d399;">R$ 0,00</strong>
+            </div>
           </div>
 
           <div class="actions">
@@ -383,6 +395,6 @@
 
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js?v=16"></script>
+    <script type="module" src="./main.js?v=17"></script>
   </body>
 </html>

@@ -363,6 +363,7 @@ function renderOrderItems() {
       }
     }
   }
+  syncCashChange();
   renderActiveTab();
 }
 
@@ -744,9 +745,30 @@ function wireTabs() {
   });
 }
 
+function syncCashChange() {
+  const form = $("#order-form");
+  if (!form) return;
+  const paymentMethod = form.elements.paymentMethod?.value;
+  const panel = $("#cash-change-panel");
+  const paymentFieldVisible = !$("#order-payment-field")?.hidden;
+  const isCash = paymentMethod === "cash" && paymentFieldVisible;
+
+  if (panel) panel.hidden = !isCash;
+
+  if (isCash) {
+    const orderTotal = calculateOrderPreviewTotal(state.orderItems, $("#order-discount")?.value || 0);
+    const received = Number($("#cash-received")?.value || 0);
+    const change = received > orderTotal ? Math.round((received - orderTotal) * 100) / 100 : 0;
+    const changeEl = $("#cash-change-due");
+    if (changeEl) changeEl.textContent = money(change);
+  }
+}
+
 function wireCart() {
   $("#order-discount")?.addEventListener("input", renderOrderItems);
   $("#active-comanda-discount")?.addEventListener("input", renderOrderItems);
+  $("#order-payment-method")?.addEventListener("change", syncCashChange);
+  $("#cash-received")?.addEventListener("input", syncCashChange);
   
   $("#order-tab-select")?.addEventListener("change", (e) => {
     const val = e.target.value;
@@ -1353,6 +1375,9 @@ function wireForms() {
       state.activeTabId = null;
       state.isCreatingNewTabInOrder = false;
       form.reset();
+      const cashInput = $("#cash-received");
+      if (cashInput) cashInput.value = "";
+      syncCashChange();
       const newFields = $("#new-tab-fields");
       if (newFields) newFields.hidden = true;
       const newLabelInput = $("#new-tab-label");
