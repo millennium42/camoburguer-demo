@@ -580,18 +580,33 @@ function renderKitchen() {
 function renderFinanceSummary() {
   const summary = state.financeSummary;
   if (!summary) return;
-  $("#finance-summary").innerHTML = `
-    <div class="stat"><span>Vendas brutas</span><strong>${money(summary.grossSales)}</strong></div>
-    <div class="stat"><span>Vendas líquidas</span><strong>${money(summary.netSales)}</strong></div>
-    <div class="stat"><span>Pedidos concluídos</span><strong>${summary.totalOrders}</strong></div>
-    <div class="stat"><span>Ticket médio</span><strong>${money(summary.ticketAverage)}</strong></div>
-    <div class="stat"><span>Recebimentos por forma</span><strong>${Object.entries(summary.paymentsByMethod).map(([method, amount]) => `${escapeHtml(paymentLabels[method] || method)}: ${money(amount)}`).join(" · ") || "Sem vendas"}</strong></div>
-  `;
+  const mainSummary = $("#finance-summary");
+  if (mainSummary) {
+    mainSummary.innerHTML = `
+      <div class="stat"><span>Vendas brutas</span><strong>${money(summary.grossSales)}</strong></div>
+      <div class="stat"><span>Vendas líquidas</span><strong>${money(summary.netSales)}</strong></div>
+      <div class="stat"><span>Pedidos concluídos</span><strong>${summary.totalOrders}</strong></div>
+      <div class="stat"><span>Ticket médio</span><strong>${money(summary.ticketAverage)}</strong></div>
+      <div class="stat"><span>Recebimentos por forma</span><strong>${Object.entries(summary.paymentsByMethod).map(([method, amount]) => `${escapeHtml(paymentLabels[method] || method)}: ${money(amount)}`).join(" · ") || "Sem vendas"}</strong></div>
+    `;
+  }
+  const quickSummary = $("#quick-finance-summary");
+  if (quickSummary) {
+    quickSummary.innerHTML = `
+      <div class="stat"><span>Vendas Brutas</span><strong>${money(summary.grossSales)}</strong></div>
+      <div class="stat"><span>Vendas Líquidas</span><strong>${money(summary.netSales)}</strong></div>
+      <div class="stat"><span>Pedidos</span><strong>${summary.totalOrders}</strong></div>
+      <div class="stat"><span>Ticket Médio</span><strong>${money(summary.ticketAverage)}</strong></div>
+    `;
+  }
   const activeFilters = [
     state.financeFilters.paymentMethod ? paymentLabels[state.financeFilters.paymentMethod] : null,
     state.financeFilters.type ? financeTypeLabels[state.financeFilters.type] : null
   ].filter(Boolean);
-  $("#finance-filter-status").textContent = activeFilters.length ? `Filtro ativo: ${activeFilters.join(" · ")}` : "Consolidado sem filtros";
+  const filterStatus = $("#finance-filter-status");
+  if (filterStatus) {
+    filterStatus.textContent = activeFilters.length ? `Filtro ativo: ${activeFilters.join(" · ")}` : "Consolidado sem filtros";
+  }
 }
 
 function renderEntries() {

@@ -47,10 +47,15 @@
           <div class="grid two">
             <article class="card">
               <div class="section-heading">
-                <h2>Novo pedido</h2>
-                <button type="button" id="btn-open-order-modal" class="primary">+ Abrir Formulário de Pedido</button>
+                <h2>📊 Resumo Operacional</h2>
+                <button type="button" id="btn-open-order-modal" class="primary small">+ Novo Pedido</button>
               </div>
-              <p class="lede">Clique no botão acima ou no atalho superior para montar e enviar um novo pedido em popup.</p>
+              <div id="quick-finance-summary" class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+                <div class="stat"><span>Vendas Brutas</span><strong>R$ 0,00</strong></div>
+                <div class="stat"><span>Vendas Líquidas</span><strong>R$ 0,00</strong></div>
+                <div class="stat"><span>Pedidos</span><strong>0</strong></div>
+                <div class="stat"><span>Ticket Médio</span><strong>R$ 0,00</strong></div>
+              </div>
             </article>
 
             <article class="card">
@@ -395,6 +400,6 @@
 
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js?v=17"></script>
+    <script type="module" src="./main.js?v=18"></script>
   </body>
 </html>
