@@ -15,7 +15,8 @@ const state = {
   financeSummary: null,
   financeEntries: [],
   financeFilters: { paymentMethod: "", type: "" },
-  shifts: []
+  shifts: [],
+  activeCatalogCategory: null
 };
 
 const apiBase = typeof window === "undefined"
@@ -235,40 +236,87 @@ function notify(message, tone = "success") {
 }
 
 function renderCatalog() {
-  const select = $("#catalog-select");
+  const container = $("#catalog-modal-content");
+  if (!container) return;
   const balances = Object.fromEntries(state.inventory.balances.map((item) => [item.category, item.quantity]));
-  const categories = Object.groupBy(state.catalog, (item) => item.category);
-  select.innerHTML = Object.entries(categories)
-    .map(([category, items]) => `<optgroup label="${escapeHtml(category)}">${items
-      .map((item) => {
-        const inStock = !item.stockCategory || Number(balances[item.stockCategory]) > 0;
-        const sellable = item.available && inStock;
-        const availability = !item.available ? "Esgotado" : inStock ? money(item.price) : "Sem estoque";
-        return `<option value="${escapeHtml(item.sku)}" ${sellable ? "" : "disabled"}>${escapeHtml(item.name)} · ${availability}</option>`;
-      })
-      .join("")}</optgroup>`)
-    .join("");
-  $("#add-item").disabled = !state.catalog.some((item) => item.available && (!item.stockCategory || Number(balances[item.stockCategory]) > 0));
-  renderAddOns();
+  
+  const categories = state.catalog.reduce((acc, item) => {
+    (acc[item.category] = acc[item.category] || []).push(item);
+    return acc;
+  }, {});
+  
+  const categoryNames = Object.keys(categories);
+  if (!state.activeCatalogCategory && categoryNames.length > 0) {
+    state.activeCatalogCategory = categoryNames[0];
+  }
+
+  const tabsHtml = `
+    <nav class="tab-bar" style="margin-bottom: 16px;">
+      ${categoryNames.map(cat => `
+        <button type="button" class="tab-button ${state.activeCatalogCategory === cat ? 'active' : ''}" data-catalog-tab="${escapeHtml(cat)}">${escapeHtml(cat)}</button>
+      `).join("")}
+    </nav>
+  `;
+
+  const activeItems = categories[state.activeCatalogCategory] || [];
+  
+  const itemsHtml = activeItems.map((item) => {
+    const inStock = !item.stockCategory || Number(balances[item.stockCategory]) > 0;
+    const sellable = item.available && inStock;
+    const availability = !item.available ? "Esgotado" : inStock ? money(item.price) : "Sem estoque";
+    return `
+      <div class="menu-product-card" ${sellable ? "" : 'style="opacity: 0.6;"'}>
+        <div>
+          <h3>${escapeHtml(item.name)}</h3>
+          <p>${escapeHtml(item.description || "")}</p>
+          <div class="price">${availability}</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button type="button" class="primary" data-add-direct="${escapeHtml(item.sku)}" ${sellable ? "" : "disabled"}>Adicionar</button>
+          <button type="button" class="link" data-open-config="${escapeHtml(item.sku)}" ${sellable ? "" : "disabled"} style="padding: 0; font-size: 0.85rem; text-decoration: underline;">Adicionais / Desconto</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  container.innerHTML = tabsHtml + `<div class="menu-products-grid">${itemsHtml}</div>`;
+}
+
+function openItemConfig(sku) {
+  const item = state.catalog.find((i) => i.sku === sku);
+  if (!item) return;
+  
+  $("#config-item-sku").value = item.sku;
+  $("#config-item-name").textContent = item.name;
+  $("#config-item-price").textContent = money(item.price);
+  
+  const field = $("#config-addons-field");
+  field.hidden = !item.allowsAddons;
+  $("#config-addons").innerHTML = item.allowsAddons
+    ? state.addOns.map((addon) => `<label class="check-option"><input type="checkbox" name="config-addon" value="${escapeHtml(addon.sku)}" /> ${escapeHtml(addon.name)} <span>${money(addon.price)}</span></label>`).join("")
+    : "";
+    
+  $("#config-qty").value = "1";
+  $("#config-discount").value = "0";
+  $("#config-notes").value = "";
+  
+  $("#item-config-dialog").showModal();
 }
 
 function renderInventory() {
   const labels = { xis: "Xis", dog: "Dog", hamburguer: "Hambúrguer" };
-  $("#inventory-balances").innerHTML = state.inventory.balances
-    .map((item) => `<div class="stat"><span>${labels[item.category]}</span><strong>${item.quantity}</strong></div>`)
-    .join("");
-  $("#inventory-movements").innerHTML = state.inventory.movements.length
-    ? state.inventory.movements.map((item) => `<div class="entry-card"><div class="mini-meta"><span>${labels[item.category]}</span><span>${formatWhen(item.createdAt)}</span><span>${escapeHtml(item.reason)}</span></div><strong>${item.delta > 0 ? "+" : ""}${item.delta}</strong>${item.metadata?.note ? `<p>${escapeHtml(item.metadata.note)}</p>` : ""}</div>`).join("")
-    : '<p class="empty-state">Nenhuma movimentação.</p>';
-}
-
-function renderAddOns() {
-  const selected = state.catalog.find((item) => item.sku === $("#catalog-select").value);
-  const field = $("#catalog-addons-field");
-  field.hidden = !selected?.allowsAddons;
-  $("#catalog-addons").innerHTML = selected?.allowsAddons
-    ? state.addOns.map((addon) => `<label class="check-option"><input type="checkbox" name="catalog-addon" value="${escapeHtml(addon.sku)}" /> ${escapeHtml(addon.name)} <span>${money(addon.price)}</span></label>`).join("")
-    : "";
+  const balEl = $("#inventory-balances");
+  if (balEl && state.inventory.balances) {
+    balEl.innerHTML = state.inventory.balances
+      .map((item) => `<div class="stat"><span>${labels[item.category] || escapeHtml(item.category)}</span><strong>${item.quantity}</strong></div>`)
+      .join("");
+  }
+  const movEl = $("#inventory-movements");
+  if (movEl && state.inventory.movements) {
+    movEl.innerHTML = state.inventory.movements.length
+      ? state.inventory.movements.map((item) => `<div class="entry-card"><div class="mini-meta"><span>${labels[item.category] || escapeHtml(item.category)}</span><span>${formatWhen(item.createdAt)}</span><span>${escapeHtml(item.reason)}</span></div><strong>${item.delta > 0 ? "+" : ""}${item.delta}</strong>${item.metadata?.note ? `<p>${escapeHtml(item.metadata.note)}</p>` : ""}</div>`).join("")
+      : '<p class="empty-state">Nenhuma movimentação.</p>';
+  }
 }
 
 function renderOrderItems() {
@@ -310,15 +358,16 @@ function renderOrderItems() {
 
 function renderTabs() {
   $("#tabs-count").textContent = String(state.tabs.length);
-  $("#tabs-list").innerHTML = state.tabs.length
-    ? state.tabs.map((tab) => {
+  const sortedTabs = [...state.tabs].reverse();
+  $("#tabs-list").innerHTML = sortedTabs.length
+    ? sortedTabs.map((tab) => {
       const reversedPayments = new Set(tab.payments.filter((payment) => payment.kind === "reversal").map((payment) => payment.reversesPaymentId));
       return `<article class="order-card">
         <div class="section-heading"><strong>${escapeHtml(tab.kind === "table" ? `Mesa ${tab.label}` : `Comanda ${tab.label}`)}</strong><span>${money(tab.total)}</span></div>
         <div class="mini-meta"><span>${escapeHtml(tab.customerName || "Sem cliente")}</span><span>${tab.rounds.length} rodada(s)</span><span>${formatWhen(tab.openedAt)}</span></div>
         <div class="mini-meta"><span>Pago: ${money(tab.paid)}</span><strong>Restante: ${money(tab.balance)}</strong><span>${tab.paymentMethod ? paymentLabels[tab.paymentMethod] : "Não pago"}</span></div>
         <div class="tab-rounds">${tab.rounds.map((round) => `<div class="round-row ${round.roundKind === "cancellation" ? "cancellation" : ""}">
-          <strong>${round.roundKind === "cancellation" ? "Cancelamento" : `Rodada ${round.roundNumber}`}</strong>
+          <strong>${round.roundKind === "cancellation" ? "Cancelamento" : `Rodada ${round.roundNumber}`} ${round.roundKind === "production" && !["ifood", "deliverymuch", "olaclick"].includes(round.source) ? `<button type="button" data-edit-discount-order="${escapeHtml(round.id)}" data-current-discount="${round.discountPercent || 0}" class="small link-primary">Desconto (${round.discountPercent || 0}%)</button>` : ""}</strong>
           ${(round.items || []).map((item) => {
             const cancelled = tab.rounds.filter((candidate) => candidate.reversesOrderId === round.id)
               .flatMap((candidate) => candidate.items || [])
@@ -341,6 +390,47 @@ function renderActiveTab() {
   const tab = state.tabs.find((item) => item.id === state.activeTabId);
   if (state.activeTabId && !tab) state.activeTabId = null;
   const active = Boolean(tab);
+
+  const activeCard = $("#active-comanda-card");
+  if (activeCard) {
+    activeCard.hidden = !active;
+    if (active) {
+      $("#active-comanda-title").textContent = `Lançando rodada ${tab.rounds.length + 1} para ${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label}`;
+      const cartList = $("#active-comanda-cart");
+      if (cartList) {
+        if (!state.orderItems.length) {
+          cartList.innerHTML = '<li class="empty-state">Nenhum produto adicionado a esta rodada ainda. Clique no botão abaixo para escolher itens do cardápio.</li>';
+        } else {
+          cartList.innerHTML = state.orderItems
+            .map((item, index) => `
+              <li class="order-card cart-row">
+                <div>
+                  <strong>${escapeHtml(item.name)}</strong>
+                  <div class="mini-meta">
+                    <span>${money(item.price)} cada</span>
+                    <span>${escapeHtml(item.notes || "Sem observação")}</span>
+                  </div>
+                  ${(item.addons || []).length ? `<div class="addon-list">${item.addons.map((addon) => `+ ${escapeHtml(addon.name)} (${money(addon.price)})`).join(" · ")}</div>` : ""}
+                </div>
+                <div class="quantity-control">
+                  <button type="button" data-decrease-item="${index}">−</button>
+                  <input type="number" min="1" value="${item.quantity}" data-item-quantity="${index}" />
+                  <button type="button" data-increase-item="${index}">+</button>
+                </div>
+                <strong>${money(calculateOrderPreviewTotal([item]))}</strong>
+                <button type="button" data-remove-item="${index}" class="link-danger">Remover</button>
+              </li>
+            `).join("");
+        }
+      }
+      const totalEl = $("#active-comanda-total");
+      if (totalEl) {
+        const discountVal = Number($("#active-comanda-discount")?.value || 0);
+        totalEl.textContent = money(calculateOrderPreviewTotal(state.orderItems, discountVal));
+      }
+    }
+  }
+
   $("#active-tab-banner").hidden = !active;
   $("#order-payment-field").hidden = active;
   $("#active-tab-label").textContent = active
@@ -398,7 +488,8 @@ function renderOrders() {
     return;
   }
   
-  list.innerHTML = normalOrders
+  const sortedNormalOrders = [...normalOrders].reverse();
+  list.innerHTML = sortedNormalOrders
     .map((order) => `
       <div class="order-card">
         <div class="order-meta">
@@ -429,7 +520,8 @@ function renderKitchen() {
     list.innerHTML = '<p class="empty-state">A cozinha está sem pedidos pendentes.</p>';
     return;
   }
-  list.innerHTML = state.kitchen
+  const sortedKitchen = [...state.kitchen].reverse();
+  list.innerHTML = sortedKitchen
     .map((order) => `
       <div class="order-card kitchen-card ${order.roundKind === "cancellation" ? "cancellation" : ""}">
         <div class="order-meta">
@@ -542,7 +634,10 @@ async function api(path, options = {}) {
   } catch {
     payload = text;
   }
-  if (!response.ok) throw new Error(payload?.message || payload || "Falha na API");
+  if (!response.ok) {
+    const errorMsg = typeof payload === "string" ? payload : (payload?.message || payload?.error || (typeof payload === "object" ? JSON.stringify(payload) : "Falha na API"));
+    throw new Error(errorMsg);
+  }
   return payload;
 }
 
@@ -618,30 +713,67 @@ function wireTabs() {
 
 function wireCart() {
   $("#order-discount").addEventListener("input", renderOrderItems);
-  $("#catalog-select").addEventListener("change", renderAddOns);
-  $("#add-item").addEventListener("click", () => {
-    const selected = state.catalog.find((item) => item.sku === $("#catalog-select").value);
+  $("#active-comanda-discount")?.addEventListener("input", renderOrderItems);
+  
+  $("#btn-open-catalog")?.addEventListener("click", () => {
+    $("#catalog-modal").showModal();
+  });
+  
+  $("#close-catalog-modal")?.addEventListener("click", () => {
+    $("#catalog-modal").close();
+  });
+  
+  $("#close-item-config-dialog")?.addEventListener("click", () => {
+    $("#item-config-dialog").close();
+  });
+  
+  $("#item-config-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const sku = $("#config-item-sku").value;
+    const selected = state.catalog.find((item) => item.sku === sku);
     if (!selected) return;
+    
     addOrAccumulateItem(
       state.orderItems,
       selected,
-      $("#catalog-qty").value,
-      $("#catalog-notes").value,
-      $("#catalog-discount").value,
-      [...document.querySelectorAll('input[name="catalog-addon"]:checked')]
+      $("#config-qty").value,
+      $("#config-notes").value,
+      $("#config-discount").value,
+      [...document.querySelectorAll('input[name="config-addon"]:checked')]
         .map((input) => state.addOns.find((addon) => addon.sku === input.value))
         .filter(Boolean)
     );
-    $("#catalog-qty").value = "1";
-    $("#catalog-discount").value = "0";
-    $("#catalog-notes").value = "";
-    renderAddOns();
+    
     renderOrderItems();
+    $("#item-config-dialog").close();
+    $("#catalog-modal").close();
   });
 
     document.body.addEventListener("click", async (event) => {
-      const button = event.target.closest?.("button");
+      const target = event.target;
+      const button = target.closest ? target.closest("button") : null;
       if (!button) return;
+
+      if (button.dataset.catalogTab) {
+        state.activeCatalogCategory = button.dataset.catalogTab;
+        renderCatalog();
+        return;
+      }
+
+      if (button.dataset.addDirect) {
+        const selected = state.catalog.find((item) => item.sku === button.dataset.addDirect);
+        if (selected) {
+          addOrAccumulateItem(state.orderItems, selected, 1, "", 0, []);
+          renderOrderItems();
+          notify(`${selected.name} adicionado ao carrinho.`);
+        }
+        return;
+      }
+
+      if (button.dataset.openConfig) {
+        openItemConfig(button.dataset.openConfig);
+        return;
+      }
 
       if (button.dataset.integrationAccept) {
         button.disabled = true;
@@ -747,8 +879,95 @@ function wireCart() {
     }
     if (button.dataset.useTab) {
       state.activeTabId = button.dataset.useTab;
+      state.orderItems = [];
       renderActiveTab();
-      showPanel("pedidos");
+      const tab = state.tabs.find((item) => item.id === state.activeTabId);
+      if (tab) {
+        const form = $("#order-form");
+        if (form.elements.customerName && !form.elements.customerName.value) {
+          form.elements.customerName.value = tab.customerName || `Comanda ${tab.label}`;
+        }
+        if (form.elements.fulfillmentMode) {
+          form.elements.fulfillmentMode.value = "local";
+        }
+      }
+      $("#catalog-modal").showModal();
+      return;
+    }
+    if (button.id === "btn-cancel-active-comanda") {
+      state.activeTabId = null;
+      state.orderItems = [];
+      renderActiveTab();
+      renderOrderItems();
+      return;
+    }
+    if (button.id === "btn-open-catalog-comanda") {
+      $("#catalog-modal").showModal();
+      return;
+    }
+    if (button.id === "btn-submit-comanda-round") {
+      if (!state.activeTabId) return;
+      const tab = state.tabs.find(t => t.id === state.activeTabId && t.status === "open");
+      if (!tab) {
+        state.activeTabId = null;
+        renderActiveTab();
+        notify("A comanda selecionada não está mais aberta. Selecione uma comanda aberta.", "error");
+        return;
+      }
+      if (!state.orderItems.length) {
+        notify("Adicione ao menos um produto antes de enviar a rodada.", "error");
+        return;
+      }
+      button.disabled = true;
+      try {
+        const discountPercent = Number($("#active-comanda-discount")?.value || 0);
+        await api(`/tabs/${state.activeTabId}/rounds`, {
+          method: "POST",
+          headers: { "Idempotency-Key": crypto.randomUUID() },
+          body: JSON.stringify({
+            items: state.orderItems,
+            discountPercent
+          })
+        });
+        notify(`Rodada lançada com sucesso para ${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label}!`);
+        state.orderItems = [];
+        state.activeTabId = null;
+        await refreshAll();
+      } catch (error) {
+        if (error.message.includes("não encontrada")) {
+          state.activeTabId = null;
+          renderActiveTab();
+        }
+        notify(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+      return;
+    }
+    if (button.dataset.editDiscountOrder) {
+      const orderId = button.dataset.editDiscountOrder;
+      const currentDiscount = button.dataset.currentDiscount || "0";
+      const val = prompt("Informe a porcentagem de desconto para esta rodada (0 a 100):", currentDiscount);
+      if (val !== null) {
+        const discountPercent = Number(val);
+        if (Number.isFinite(discountPercent) && discountPercent >= 0 && discountPercent <= 100) {
+          button.disabled = true;
+          try {
+            await api(`/orders/${orderId}/discount`, {
+              method: "PATCH",
+              body: JSON.stringify({ discountPercent })
+            });
+            notify(`Desconto de ${discountPercent}% aplicado à rodada com sucesso.`);
+            await refreshAll();
+          } catch (error) {
+            notify(error.message, "error");
+          } finally {
+            button.disabled = false;
+          }
+        } else {
+          notify("Desconto inválido. Informe um valor numérico entre 0 e 100.", "error");
+        }
+      }
       return;
     }
     const removeIndex = button.dataset.removeItem;
@@ -818,21 +1037,13 @@ function wireCart() {
         const orderId = button.dataset.orderId || button.dataset.orderStatus; // fallback para botões velhos
         const action = button.dataset.orderAction || button.dataset.status;
         
-        if (["startPreparation", "ready"].includes(action)) {
-          await api(`/orders/${orderId}/${action}`, {
-            method: "POST",
-            headers: { "Idempotency-Key": crypto.randomUUID() },
-            body: "{}"
-          });
-          if (action === "startPreparation") {
-            const order = state.orders.find(o => o.id === orderId);
-            if (order) printOrderTicket(order);
-          }
-        } else {
-          await api(`/orders/${orderId}/status`, {
-            method: "PATCH",
-            body: JSON.stringify({ status: action })
-          });
+        await api(`/orders/${orderId}/status`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: action })
+        });
+        if (action === "in_preparation") {
+          const order = state.orders.find(o => o.id === orderId);
+          if (order) printOrderTicket(order);
         }
         notify("Status do pedido atualizado.");
       } else if (button.dataset.reprint) {
@@ -982,13 +1193,14 @@ function wireForms() {
 
   $("#order-form").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const form = event.currentTarget;
     if (!state.orderItems.length) {
       notify("Adicione pelo menos um item antes de finalizar.", "error");
       return;
     }
-    if (!event.currentTarget.reportValidity()) return;
+    if (!form.reportValidity()) return;
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(form);
     const payload = {
       source: formData.get("source"),
       fulfillmentMode: formData.get("fulfillmentMode"),
@@ -1001,28 +1213,33 @@ function wireForms() {
     };
     state.orderAttempt = nextOrderAttempt(state.orderAttempt, payload);
 
-    const submit = event.currentTarget.querySelector('[type="submit"]');
+    const submit = form.querySelector('[type="submit"]');
     submit.disabled = true;
     submit.textContent = "Enviando...";
     try {
       if (state.activeTabId) {
+        const tab = state.tabs.find((item) => item.id === state.activeTabId && item.status === "open");
+        if (!tab) {
+          state.activeTabId = null;
+          renderActiveTab();
+          throw new Error("A comanda selecionada não está mais aberta");
+        }
         await api(`/tabs/${state.activeTabId}/rounds`, {
           method: "POST",
           headers: { "Idempotency-Key": state.orderAttempt.key },
           body: JSON.stringify(payload)
         });
       } else {
-        const orderRes = await api("/orders", {
+        const orderData = await api("/orders", {
           method: "POST",
           headers: { "Idempotency-Key": state.orderAttempt.key },
           body: JSON.stringify(payload)
         });
-        const orderData = await orderRes.json();
-        if (orderData && orderData.order) printOrderTicket(orderData.order);
+        if (orderData && orderData.id) printOrderTicket(orderData);
       }
       state.orderItems = [];
       state.orderAttempt = null;
-      event.currentTarget.reset();
+      form.reset();
       syncDeliveryAddress();
       renderOrderItems();
       await refreshAll().catch((error) => {

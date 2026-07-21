@@ -8,6 +8,7 @@ import {
   CATALOG_CAPTURED_AT,
   CATALOG_SOURCE_URL,
   buildKitchenTicket,
+  calculateOrderTotal,
   calculateStockRequirements,
   closeCashShift,
   createCashShift,
@@ -67,7 +68,7 @@ async function insertOrder(order, executor = db) {
       order.deliveryAddress,
       order.promisedAt,
       order.notes,
-      order.paymentMethod,
+      order.paymentMethod || (order.tabId ? null : (["ifood", "deliverymuch"].includes(order.source) ? "app_paid" : "cash")),
       order.total,
       order.discountPercent,
       JSON.stringify(order.items),
@@ -899,6 +900,11 @@ app.post("/tabs/:tabId/close", async (request, reply) => {
        WHERE id = $1 AND status = 'open' RETURNING *`,
       [tab.id, view.total, new Date().toISOString()]
     );
+    await client.query(
+      `UPDATE orders SET status = 'completed', updated_at = $2
+       WHERE tab_id = $1 AND status IN ('confirmed', 'in_preparation', 'ready')`,
+      [tab.id, new Date().toISOString()]
+    );
     return { saved: await tabView(mapTab(rows[0]), client) };
   });
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
@@ -1022,6 +1028,35 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
     order: result.saved
   });
 
+  return result.saved;
+});
+
+app.patch("/orders/:orderId/discount", async (request, reply) => {
+  const discountPercent = Number(request.body?.discountPercent ?? 0);
+  if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+    return reply.code(400).send({ message: "Desconto inválido: informe um valor entre 0 e 100" });
+  }
+
+  const result = await db.transaction(async (client) => {
+    const order = await getOrder(request.params.orderId, client, true);
+    if (!order) return { notFound: true };
+    if (["ifood", "deliverymuch", "olaclick"].includes(order.source)) {
+      return { forbiddenApp: true };
+    }
+    const updated = {
+      ...order,
+      discountPercent,
+      total: calculateOrderTotal(order.items, discountPercent),
+      updatedAt: new Date().toISOString()
+    };
+    const saved = await updateOrder(updated, order.status, client);
+    return { saved };
+  });
+
+  if (result.notFound) return reply.code(404).send({ message: "Pedido não encontrado" });
+  if (result.forbiddenApp) return reply.code(400).send({ message: "Desconto não pode ser alterado em pedidos de aplicativos externos" });
+
+  emitOrderEvent("order.updated", result.saved);
   return result.saved;
 });
 

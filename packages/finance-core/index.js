@@ -3,6 +3,7 @@ import { toMoney } from "../shared-types/index.js";
 
 export function buildEntriesFromOrder({ order, previousStatus, nextStatus, shiftId = null }) {
   const now = new Date().toISOString();
+  const paymentMethod = order.paymentMethod || (["ifood", "deliverymuch"].includes(order.source) ? "app_paid" : "cash");
   if (previousStatus !== "completed" && nextStatus === "completed") {
     return [
       {
@@ -11,7 +12,7 @@ export function buildEntriesFromOrder({ order, previousStatus, nextStatus, shift
         shiftId,
         type: "sale",
         amount: toMoney(order.total),
-        paymentMethod: order.paymentMethod,
+        paymentMethod,
         source: order.source,
         label: `Venda do pedido ${order.id.slice(0, 8)}`,
         occurredAt: now,
@@ -27,7 +28,7 @@ export function buildEntriesFromOrder({ order, previousStatus, nextStatus, shift
         shiftId,
         type: "cancellation",
         amount: toMoney(-order.total),
-        paymentMethod: order.paymentMethod,
+        paymentMethod,
         source: order.source,
         label: `Cancelamento do pedido ${order.id.slice(0, 8)}`,
         occurredAt: now,

@@ -76,20 +76,9 @@
                   </label>
                 </div>
                 <label>Observações do pedido<input name="notes" placeholder="Sem cebola, ponto da carne..." /></label>
-                <fieldset class="stack catalog-picker">
-                  <legend>Adicionar item</legend>
-                  <label>Item do cardápio<select id="catalog-select"></select></label>
-                  <fieldset id="catalog-addons-field" hidden>
-                    <legend>Adicionais</legend>
-                    <div id="catalog-addons" class="addon-grid"></div>
-                  </fieldset>
-                  <div class="inline">
-                    <label>Quantidade<input type="number" id="catalog-qty" min="1" step="1" value="1" inputmode="numeric" /></label>
-                    <label>Desconto do item (%)<input type="number" id="catalog-discount" min="0" max="100" step="0.01" value="0" inputmode="decimal" /></label>
-                    <label>Observação do item<input id="catalog-notes" placeholder="Detalhe do item" /></label>
-                    <button type="button" id="add-item">Adicionar</button>
-                  </div>
-                </fieldset>
+                <div class="actions">
+                  <button type="button" id="btn-open-catalog" class="primary">Adicionar Produto</button>
+                </div>
                 <div>
                   <div class="section-heading">
                     <h3>Itens do pedido</h3>
@@ -134,6 +123,25 @@
         </section>
 
         <section class="tab-panel" id="tab-comandas">
+          <div id="active-comanda-card" class="card active-comanda-box" hidden>
+            <div class="section-heading">
+              <h2 id="active-comanda-title">Lançando itens na comanda</h2>
+              <button type="button" id="btn-cancel-active-comanda" class="link-danger">Cancelar Lançamento</button>
+            </div>
+            <div class="active-comanda-body">
+              <ul id="active-comanda-cart" class="stack cart-list"></ul>
+              <div class="active-comanda-controls">
+                <button type="button" id="btn-open-catalog-comanda" class="primary">+ Adicionar Produto do Cardápio</button>
+                <label class="discount-label">Desconto (%)
+                  <input type="number" id="active-comanda-discount" min="0" max="100" step="0.01" value="0" placeholder="0%" />
+                </label>
+                <div class="comanda-total-preview">
+                  Total da Rodada: <strong id="active-comanda-total">R$ 0,00</strong>
+                </div>
+                <button type="button" id="btn-submit-comanda-round" class="success">Enviar Rodada para a Cozinha</button>
+              </div>
+            </div>
+          </div>
           <div class="grid two">
             <article class="card">
               <h2>Abrir comanda</h2>
@@ -252,8 +260,50 @@
       </form>
     </dialog>
 
+    <dialog id="catalog-modal" aria-labelledby="catalog-title">
+      <div class="stack">
+        <div class="section-heading">
+          <h2 id="catalog-title">Selecionar Produto</h2>
+          <button type="button" id="close-catalog-modal" class="icon-button" aria-label="Fechar">×</button>
+        </div>
+        <div id="catalog-modal-content" style="max-height: 70vh; overflow-y: auto;">
+          <!-- Items injected dynamically -->
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="item-config-dialog" aria-labelledby="item-config-title">
+      <form id="item-config-form" class="stack">
+        <div class="section-heading">
+          <h2 id="item-config-title">Configurar Item</h2>
+          <button type="button" id="close-item-config-dialog" class="icon-button" aria-label="Fechar">×</button>
+        </div>
+        <input type="hidden" id="config-item-sku" />
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <strong id="config-item-name" style="font-size: 1.1rem;"></strong>
+          <span id="config-item-price" class="price"></span>
+        </div>
+        <div id="config-addons-field">
+          <label style="font-weight: 500; margin-bottom: 4px; display: block;">Adicionais</label>
+          <div id="config-addons" class="addon-grid"></div>
+        </div>
+        <div class="grid two">
+          <label>Quantidade
+            <input type="number" id="config-qty" min="1" step="1" value="1" inputmode="numeric" required />
+          </label>
+          <label>Desconto (%)
+            <input type="number" id="config-discount" min="0" max="100" step="0.01" value="0" inputmode="decimal" />
+          </label>
+        </div>
+        <label>Observação do item
+          <input id="config-notes" placeholder="Sem cebola, ponto da carne..." />
+        </label>
+        <button type="submit" class="primary">Adicionar ao pedido</button>
+      </form>
+    </dialog>
+
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js"></script>
+    <script type="module" src="./main.js?v=10"></script>
   </body>
 </html>

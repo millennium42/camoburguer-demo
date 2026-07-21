@@ -169,6 +169,12 @@ button.danger:hover:not(:disabled) { background: rgba(239, 68, 68, 0.2); }
 .feedback.error { background: var(--danger-soft); color: #fca5a5; border-color: rgba(239, 68, 68, 0.2); }
 
 dialog { width: min(460px, calc(100% - 32px)); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 32px; color: var(--text); background: #0f172a; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); }
+#catalog-modal { width: min(840px, calc(100% - 32px)); max-width: 840px; }
+.menu-products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 4px 0; }
+.menu-product-card { padding: 16px; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
+.menu-product-card h3 { font-size: 1.05rem; margin: 0 0 4px 0; color: var(--text); }
+.menu-product-card p { font-size: 0.85rem; color: var(--muted); margin: 0 0 8px 0; line-height: 1.3; }
+.menu-product-card .price { font-weight: 600; color: var(--accent); }
 dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
 .icon-button { border: 0; padding: 8px 12px; font-size: 1.5rem; background: transparent; border-radius: var(--radius-sm); }
 .icon-button:hover { background: rgba(255,255,255,0.05); }
@@ -186,6 +192,14 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
   .addon-grid { grid-template-columns: 1fr; }
   .quantity-control { grid-template-columns: 48px 1fr 48px; }
 }
+
+.active-comanda-box { border: 2px solid var(--accent); background: rgba(59, 130, 246, 0.08); margin-bottom: 24px; }
+.active-comanda-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); }
+.comanda-total-preview { font-size: 1.1rem; color: var(--text); }
+.comanda-total-preview strong { color: var(--accent); font-size: 1.3rem; }
+.small { padding: 4px 8px; font-size: 0.8rem; }
+.link-primary { background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 0; }
+.link-primary:hover { color: var(--accent-hover); }
 
 @media print {
   body * { display: none !important; }
