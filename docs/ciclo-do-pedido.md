@@ -4,9 +4,13 @@
 
 Uma comanda livre identifica consumo local sem exigir cadastro fixo de mesas. O operador abre `tab` ou `table`, monta o carrinho existente e envia uma rodada. Cada rodada continua sendo um pedido confirmado do núcleo único, com `tabId`, número sequencial e ticket próprio. Pedidos de canais externos permanecem sem comanda.
 
-Rodadas não carregam forma de pagamento e não geram venda ao concluir a cozinha. A comanda recebe parcelas independentes até zerar o saldo em centavos; só então pode ser encerrada, mesmo que tickets da cozinha ainda estejam em outro estado.
+Rodadas criadas diretamente na comanda não capturam forma de pagamento e não geram venda ao concluir a cozinha. Um pedido vinculado posteriormente pode preservar a forma originalmente capturada apenas como histórico, sem efeito na liquidação ou no financeiro da comanda. A comanda recebe parcelas independentes até zerar o saldo em centavos; só então pode ser encerrada, mesmo que tickets da cozinha ainda estejam em outro estado.
 
 Itens do rascunho podem ser alterados livremente. Depois do envio, toda correção referencia a linha estável da rodada original e cria uma rodada negativa de cancelamento, com ticket próprio. Cancelamentos parciais respeitam a quantidade ainda não cancelada e não sobrescrevem pedido ou ticket original.
+
+Um pedido local já confirmado pode ser vinculado uma única vez a comanda aberta, existente ou criada atomicamente com o vínculo. São elegíveis apenas rodadas de produção sem comanda, sem integração efetiva, sem pagamento no aplicativo ou lançamento financeiro, nos estados `confirmed`, `in_preparation` ou `ready`. `received`, `completed`, `cancelled`, delivery, retirada, corretivos e pedidos integrados são bloqueados.
+
+O vínculo atribui `tabId`, próximo `roundNumber` e metadados auditáveis sem alterar itens, total, status, estoque, forma de pagamento histórica ou ticket emitido. A liquidação futura passa a ocorrer pelas parcelas da comanda. Não há transferência entre comandas nesta versão.
 
 ## Estados
 
@@ -27,6 +31,7 @@ Itens do rascunho podem ser alterados livremente. Depois do envio, toda correç�
 - `order.status.changed`
 - `order.completed`
 - `order.cancelled`
+- `order.tab.assigned`
 - `tab.payment.recorded`
 - `tab.payment.reversed`
 - `tab.closed`
@@ -41,6 +46,7 @@ Itens do rascunho podem ser alterados livremente. Depois do envio, toda correç�
 - Finalizar confirma o pedido e dispara a geração e impressão do ticket para a cozinha; falha de impressão não pode apagar o pedido.
 - Repetir a mesma finalização devolve o pedido existente sem repetir impressão ou lançamento financeiro.
 - Cozinha trabalha sobre a fila operacional, não sobre o canal.
+- Itens `direct_handoff` aparecem no mesmo ticket como entrega direta e não governam o preparo; pedidos sem item de cozinha avançam diretamente para `ready`.
 - Ao concluir, o pedido pode gerar movimento financeiro automático.
 - Ao cancelar depois de concluído, o sistema gera reversão financeira.
 

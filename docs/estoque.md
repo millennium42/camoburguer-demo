@@ -4,6 +4,8 @@
 
 A v1 controla unidades prontas para venda em três categorias: `xis`, `dog` e `hamburguer`. Bebidas, fritas, adicionais e ingredientes não entram neste saldo. Cada categoria inicia em zero; a quantidade real é informada por carga inicial auditada.
 
+A linha do pedido congela `stockCategory` no momento da confirmação. Editar, pausar ou arquivar o item do catálogo depois da venda não altera baixa ou restituição histórica. Pedidos legados sem esse campo usam somente o snapshot base como fallback.
+
 ## Fluxo
 
 1. Entrada ou retirada manual exige inteiro, motivo e `Idempotency-Key`.

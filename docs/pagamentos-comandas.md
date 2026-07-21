@@ -6,6 +6,8 @@ Uma comanda pode receber quantas parcelas forem necessárias até que seu saldo 
 
 O total comercial continua sendo calculado pelas rodadas de produção menos os tickets corretivos. Os pagamentos não alteram pedidos nem tickets de cozinha.
 
+Quando um pedido elegível é vinculado posteriormente, nenhum lançamento é criado ou removido. A forma de pagamento originalmente capturada permanece histórica, mas a liquidação futura passa a ser calculada exclusivamente pelas parcelas da comanda; pedidos já concluídos, pagos no aplicativo ou com lançamento financeiro não podem ser vinculados.
+
 ## Valores e idempotência
 
 - `amount_cents` é inteiro; não há cálculo monetário em ponto flutuante no saldo.

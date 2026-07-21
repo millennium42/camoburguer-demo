@@ -2,6 +2,8 @@
 
 `service_tabs` é o agregado comercial de consumo local. `orders` permanece o núcleo operacional e representa cada rodada enviada à cozinha; o vínculo é opcional para preservar os quatro canais externos. O frontend reutiliza o mesmo carrinho e apenas troca o endpoint de confirmação quando existe comanda ativa.
 
+`catalog_items` materializa uma vez o snapshot base e passa a ser a fonte operacional para pedidos manuais. Alterações não reescrevem linhas já congeladas em `orders`. `order_tab_assignments` registra de forma append-only e idempotente o vínculo tardio de um pedido local com uma comanda, sem criar outro pedido ou efeito de impressão.
+
 `stock_balances` guarda o estado mínimo das três categorias e `stock_movements` guarda a trilha append-only. A baixa faz parte da mesma transação que cria `orders` e `print_jobs`, portanto a cozinha nunca recebe ticket de item sem saldo confirmado.
 
 `tab_payments` compõe o saldo financeiro da comanda em centavos e preserva parcelas/estornos como eventos append-only. Cada parcela gera um `finance_entries` ligado por `tab_id` e `payment_id`; somente dinheiro atualiza o esperado do turno. O ciclo financeiro da comanda é independente do ciclo de preparo das rodadas.
@@ -75,6 +77,8 @@ flowchart LR
 | `tab_payments` | parcelas e compensações em centavos | valor positivo, saldo não excedido e original preservado |
 | `finance_entries` | livro gerencial de venda, caixa e pagamento | vínculo opcional a comanda/parcela e lançamento append-only |
 | `print_jobs` | entrega recuperável do ticket | um job por efeito e spool idempotente |
+| `catalog_items` | catálogo operacional derivado do snapshot base | SKU imutável, arquivamento lógico e classificação de preparo |
+| `order_tab_assignments` | auditoria do vínculo tardio | uma atribuição por pedido e chave idempotente global |
 
 ## Caixa
 
@@ -89,6 +93,7 @@ flowchart LR
 - `packages/domain`: valida estados e invariantes puras de pedido e caixa.
 - `packages/finance-core`: deriva lançamentos de eventos confirmados, sem depender da interface.
 - `apps/print-bridge`: recebe o contrato estável do ticket e grava spool idempotente por `jobId`, sem consultar ou alterar pedidos. A API recupera jobs interrompidos na inicialização e repete falhas periodicamente.
+- Reimpressão replica o conteúdo persistido no job original, inclusive após vínculo tardio com comanda.
 - Novos canais entram por adapters que normalizam para o mesmo comando de pedido; não criam fluxos paralelos na UI ou no domínio.
 
 ## Fronteira de integração externa
@@ -110,6 +115,7 @@ flowchart LR
 ## Eventos internos
 
 - `order.created`, `order.confirmed`, `order.completed`, `order.cancelled`
+- `order.tab.assigned`
 - `ticket.printed`, `ticket.print.failed`
 - `cash.shift.opened`, `cash.adjustment.created`, `cash.shift.closed`
 - `finance.entry.created`
