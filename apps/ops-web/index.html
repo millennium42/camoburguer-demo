@@ -194,6 +194,12 @@
             <button type="button" id="clear-active-tab">Sair da comanda</button>
           </div>
           <div class="grid two">
+            <label>Vincular Comanda / Mesa (opcional)
+              <select id="order-tab-select" name="tabAssociation">
+                <option value="">(Nenhuma - Pedido Avulso / Balcão)</option>
+                <option value="new">➕ Criar Nova Comanda / Mesa...</option>
+              </select>
+            </label>
             <label>Canal
               <select name="source" required>
                 <option value="counter">🏪 Balcão</option>
@@ -201,6 +207,21 @@
                 <option value="olaclick">🍔 OlaClick</option>
               </select>
             </label>
+          </div>
+
+          <div id="new-tab-fields" class="grid two" hidden style="background: rgba(245, 158, 11, 0.05); padding: 14px; border-radius: var(--radius-md); border: 1px dashed var(--accent-soft);">
+            <label>Tipo da Nova Comanda
+              <select id="new-tab-kind" name="newTabKind">
+                <option value="tab">Comanda</option>
+                <option value="table">Mesa</option>
+              </select>
+            </label>
+            <label>Identificador (Nº ou Nome)*
+              <input id="new-tab-label" name="newTabLabel" placeholder="Ex.: 12, Mesa 5, Balcão Ana" />
+            </label>
+          </div>
+
+          <div class="grid two">
             <label>Modalidade
               <select id="fulfillment-mode" name="fulfillmentMode" required>
                 <option value="delivery">🛵 Delivery</option>
@@ -208,12 +229,12 @@
                 <option value="local" selected>🍽️ Local</option>
               </select>
             </label>
+            <label>Cliente<input name="customerName" placeholder="Nome do cliente" /></label>
           </div>
           <label id="delivery-address-field" hidden>Endereço para entrega
             <input id="delivery-address" name="deliveryAddress" autocomplete="street-address" placeholder="Rua, número e referência" />
           </label>
           <div class="grid two">
-            <label>Cliente<input name="customerName" placeholder="Nome do cliente" /></label>
             <label id="order-payment-field">Pagamento
               <select name="paymentMethod" required>
                 <option value="cash">💵 Dinheiro</option>
@@ -223,8 +244,8 @@
                 <option value="app_paid">📱 Pago no app</option>
               </select>
             </label>
+            <label>Observações do pedido<input name="notes" placeholder="Sem cebola, ponto da carne..." /></label>
           </div>
-          <label>Observações do pedido<input name="notes" placeholder="Sem cebola, ponto da carne..." /></label>
 
           <div class="actions">
             <button type="button" id="btn-open-catalog" class="primary">+ Selecionar Produtos do Cardápio</button>
@@ -362,6 +383,6 @@
 
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js?v=15"></script>
+    <script type="module" src="./main.js?v=16"></script>
   </body>
 </html>

@@ -16,7 +16,8 @@ const state = {
   financeEntries: [],
   financeFilters: { paymentMethod: "", type: "" },
   shifts: [],
-  activeCatalogCategory: null
+  activeCatalogCategory: null,
+  isCreatingNewTabInOrder: false
 };
 
 const apiBase = typeof window === "undefined"
@@ -445,6 +446,23 @@ function renderActiveTab() {
   $("#active-tab-label").textContent = active
     ? `${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label} · rodada ${tab.rounds.length + 1}`
     : "";
+
+  const tabSelect = $("#order-tab-select");
+  if (tabSelect) {
+    const options = [
+      '<option value="">(Nenhuma - Pedido Avulso / Balcão)</option>',
+      '<option value="new">➕ Criar Nova Comanda / Mesa...</option>',
+      ...state.tabs.map((t) => `<option value="${escapeHtml(t.id)}">${t.kind === "table" ? "Mesa" : "Comanda"} ${escapeHtml(t.label)}${t.customerName ? ` (${escapeHtml(t.customerName)})` : ""}</option>`)
+    ];
+    tabSelect.innerHTML = options.join("");
+    if (state.isCreatingNewTabInOrder) {
+      tabSelect.value = "new";
+    } else if (state.activeTabId) {
+      tabSelect.value = state.activeTabId;
+    } else {
+      tabSelect.value = "";
+    }
+  }
 }
 
 function orderActions(order) {
@@ -730,6 +748,26 @@ function wireCart() {
   $("#order-discount")?.addEventListener("input", renderOrderItems);
   $("#active-comanda-discount")?.addEventListener("input", renderOrderItems);
   
+  $("#order-tab-select")?.addEventListener("change", (e) => {
+    const val = e.target.value;
+    if (val === "new") {
+      state.activeTabId = null;
+      state.isCreatingNewTabInOrder = true;
+      const fields = $("#new-tab-fields");
+      if (fields) fields.hidden = false;
+      const labelInput = $("#new-tab-label");
+      if (labelInput) labelInput.required = true;
+    } else {
+      state.isCreatingNewTabInOrder = false;
+      const fields = $("#new-tab-fields");
+      if (fields) fields.hidden = true;
+      const labelInput = $("#new-tab-label");
+      if (labelInput) labelInput.required = false;
+      state.activeTabId = val || null;
+    }
+    renderActiveTab();
+  });
+
   $("#btn-open-catalog")?.addEventListener("click", () => {
     $("#catalog-modal")?.showModal();
   });
@@ -1278,13 +1316,25 @@ function wireForms() {
     submit.disabled = true;
     submit.textContent = "Enviando...";
     try {
-      if (state.activeTabId) {
-        const tab = state.tabs.find((item) => item.id === state.activeTabId && item.status === "open");
-        if (!tab) {
-          state.activeTabId = null;
-          renderActiveTab();
-          throw new Error("A comanda selecionada não está mais aberta");
+      if (state.isCreatingNewTabInOrder) {
+        const newKind = formData.get("newTabKind") || "tab";
+        const newLabel = String(formData.get("newTabLabel") || "").trim();
+        if (!newLabel) {
+          throw new Error("Informe o identificador da nova comanda/mesa");
         }
+        const createdTab = await api("/tabs", {
+          method: "POST",
+          body: JSON.stringify({
+            kind: newKind,
+            label: newLabel,
+            customerName: formData.get("customerName") || ""
+          })
+        });
+        state.activeTabId = createdTab.id;
+        state.isCreatingNewTabInOrder = false;
+      }
+
+      if (state.activeTabId) {
         await api(`/tabs/${state.activeTabId}/rounds`, {
           method: "POST",
           headers: { "Idempotency-Key": state.orderAttempt.key },
@@ -1300,7 +1350,13 @@ function wireForms() {
       }
       state.orderItems = [];
       state.orderAttempt = null;
+      state.activeTabId = null;
+      state.isCreatingNewTabInOrder = false;
       form.reset();
+      const newFields = $("#new-tab-fields");
+      if (newFields) newFields.hidden = true;
+      const newLabelInput = $("#new-tab-label");
+      if (newLabelInput) newLabelInput.required = false;
       $("#order-modal")?.close();
       syncDeliveryAddress();
       renderOrderItems();
