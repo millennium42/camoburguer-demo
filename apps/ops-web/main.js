@@ -321,6 +321,18 @@ function renderInventory() {
       ? state.inventory.movements.map((item) => `<div class="entry-card"><div class="mini-meta"><span>${labels[item.category] || escapeHtml(item.category)}</span><span>${formatWhen(item.createdAt)}</span><span>${escapeHtml(item.reason)}</span></div><strong>${item.delta > 0 ? "+" : ""}${item.delta}</strong>${item.metadata?.note ? `<p>${escapeHtml(item.metadata.note)}</p>` : ""}</div>`).join("")
       : '<p class="empty-state">Nenhuma movimentação.</p>';
   }
+  const quickEl = $("#quick-bread-inventory");
+  if (quickEl && state.inventory.balances) {
+    const breadLabels = { xis: "Pão de Xis", dog: "Pão de Dog", hamburguer: "Pão Hamburguer" };
+    const order = ["xis", "dog", "hamburguer"];
+    const balancesMap = Object.fromEntries((state.inventory.balances || []).map((b) => [b.category, b.quantity]));
+    quickEl.innerHTML = order.map((cat) => `
+      <div class="stat" style="padding: 10px; text-align: center;">
+        <span style="font-size: 0.78rem;">${breadLabels[cat] || cat}</span>
+        <strong style="font-size: 1.15rem;">${balancesMap[cat] ?? 0} un</strong>
+      </div>
+    `).join("");
+  }
 }
 
 function renderOrderItems() {

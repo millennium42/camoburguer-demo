@@ -46,15 +46,30 @@
           </article>
           <div class="grid two">
             <article class="card">
-              <div class="section-heading">
-                <h2>📊 Resumo Operacional</h2>
+              <div class="section-heading" style="margin-bottom: 16px;">
+                <h2>📊 Painel Operacional</h2>
                 <button type="button" id="btn-open-order-modal" class="primary small">+ Novo Pedido</button>
               </div>
-              <div id="quick-finance-summary" class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
-                <div class="stat"><span>Vendas Brutas</span><strong>R$ 0,00</strong></div>
-                <div class="stat"><span>Vendas Líquidas</span><strong>R$ 0,00</strong></div>
-                <div class="stat"><span>Pedidos</span><strong>0</strong></div>
-                <div class="stat"><span>Ticket Médio</span><strong>R$ 0,00</strong></div>
+
+              <!-- FINANÇAS DO DIA -->
+              <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; font-weight: 600;">Desempenho Financeiro</h3>
+                <div id="quick-finance-summary" class="grid two" style="gap: 12px;">
+                  <div class="stat" style="padding: 12px 14px;"><span style="font-size: 0.8rem;">Vendas Brutas</span><strong style="font-size: 1.25rem; color: var(--text);">R$ 0,00</strong></div>
+                  <div class="stat" style="padding: 12px 14px;"><span style="font-size: 0.8rem;">Vendas Líquidas</span><strong style="font-size: 1.25rem; color: var(--ok);">R$ 0,00</strong></div>
+                  <div class="stat" style="padding: 12px 14px;"><span style="font-size: 0.8rem;">Pedidos Concluídos</span><strong style="font-size: 1.25rem; color: var(--accent);">0</strong></div>
+                  <div class="stat" style="padding: 12px 14px;"><span style="font-size: 0.8rem;">Ticket Médio</span><strong style="font-size: 1.25rem; color: var(--text);">R$ 0,00</strong></div>
+                </div>
+              </div>
+
+              <!-- ESTOQUE DE PÃES -->
+              <div>
+                <h3 style="font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; font-weight: 600;">Estoque de Pães / Insumos</h3>
+                <div id="quick-bread-inventory" class="stats-grid" style="grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                  <div class="stat" style="padding: 10px; text-align: center;"><span style="font-size: 0.78rem;">Pão de Xis</span><strong style="font-size: 1.15rem;">0 un</strong></div>
+                  <div class="stat" style="padding: 10px; text-align: center;"><span style="font-size: 0.78rem;">Pão de Dog</span><strong style="font-size: 1.15rem;">0 un</strong></div>
+                  <div class="stat" style="padding: 10px; text-align: center;"><span style="font-size: 0.78rem;">Pão Hamburguer</span><strong style="font-size: 1.15rem;">0 un</strong></div>
+                </div>
               </div>
             </article>
 
@@ -400,6 +415,6 @@
 
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js?v=18"></script>
+    <script type="module" src="./main.js?v=19"></script>
   </body>
 </html>
