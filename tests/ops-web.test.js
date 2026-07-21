@@ -95,6 +95,7 @@ test("UI expõe comandas e reutiliza o formulário de pedidos", async () => {
   assert.match(html, /id="active-tab-banner"/);
   assert.match(script, /\/tabs\?status=open/);
   assert.match(script, /`\/tabs\/\$\{state\.activeTabId\}\/rounds`/);
+  assert.match(script, /\$\("#order-modal"\)\?\.showModal\(\)/);
 });
 
 test("UI corrige rodada enviada por diálogo e endpoint de cancelamento", async () => {

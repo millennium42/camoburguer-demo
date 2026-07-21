@@ -1328,10 +1328,11 @@ function wireForms() {
         body: JSON.stringify({ kind: data.get("kind"), label: data.get("label"), customerName: data.get("customerName") })
       });
       state.activeTabId = tab.id;
+      state.isCreatingNewTabInOrder = false;
       form.reset();
       $("#tab-modal")?.close();
       await refreshAll();
-      showPanel("pedidos");
+      $("#order-modal")?.showModal();
       notify("Comanda aberta. Adicione os itens da primeira rodada.");
     } catch (error) {
       notify(error.message, "error");
