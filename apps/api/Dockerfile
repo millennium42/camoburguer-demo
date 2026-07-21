@@ -4,6 +4,7 @@ WORKDIR /app/apps/api
 
 COPY packages /app/packages
 COPY apps/api /app/apps/api
+COPY scripts /app/scripts
 
 RUN npm install --omit=dev
 

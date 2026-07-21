@@ -76,9 +76,10 @@ export function createOrder(input) {
       return { ...addon, quantity: 1 };
     });
     const quantity = Number(item.quantity ?? 1);
-    const price = Number(item.price ?? 0);
+    const price = Number(catalogItem?.price ?? item.price ?? 0);
     const discountPercent = normalizeDiscountPercent(item.discountPercent, "Desconto do item");
-    if (!String(item.name || "").trim() || !Number.isFinite(quantity) || quantity <= 0) {
+    const name = String(catalogItem?.name || item.name || "").trim();
+    if (!name || !Number.isInteger(quantity) || quantity <= 0) {
       throw new Error("Item de pedido inválido");
     }
     if (!Number.isFinite(price) || price < 0) throw new Error("Preço de item inválido");
@@ -86,8 +87,8 @@ export function createOrder(input) {
       id: item.id || randomUUID(),
       reversesItemId: item.reversesItemId || null,
       sku: item.sku || null,
-      name: String(item.name).trim(),
-      category: item.category || "custom",
+      name,
+      category: catalogItem?.category || item.category || "custom",
       quantity,
       price: toMoney(price),
       addons,

@@ -1,179 +1,130 @@
-# 🚀 Guia de Deploy no Render
+# Deploy da demo no Render
 
-> **Deploy automatizado do Camoburguer via Blueprint em 1 clique.**
+## Limite de uso
 
----
+O Blueprint publica uma **demo com dados sintéticos**. Ele não adiciona login ao painel/API e o bridge hospedado não alcança a impressora da cozinha. Não habilite iFood/Delivery Much nem grave dados reais antes dos gates da [auditoria técnica](auditoria-tecnica-2026-07-21.md).
 
-## Arquitetura no Render
+## Recursos
 
-```
-                           ┌─────────────────────────┐
-                           │   GITHUB REPOSITÓRIO    │
-                           │   (render.yaml)         │
-                           └────────────┬────────────┘
-                                        │ Blueprint
-                                        ▼
-                ┌───────────────────────────────────────────────┐
-                │                 RENDER PAAS                   │
-                └───────┬───────────────┬───────────────┬───────┘
-                        │               │               │
-                        ▼               ▼               ▼
-               ┌─────────────────┐ ┌─────────┐ ┌─────────────────┐
-               │  PostgreSQL DB  │ │ API Core│ │ Print-Bridge    │
-               │ camoburguer-db  │ │ Fastify │ │ Fastify         │
-               └─────────────────┘ └────┬────┘ └─────────────────┘
-                                        │
-                                        ▼
-                               ┌─────────────────┐
-                               │ Ops Web Static  │
-                               │ (CDN + Headers) │
-                               └─────────────────┘
-```
-
-### Serviços Provisionados
-
-| Serviço | Tipo | URL Pública |
+| Recurso | Tipo | Função |
 |---|---|---|
-| `camoburguer-db` | PostgreSQL gerenciado | (interno) |
-| `camoburguer-api` | Web Service Node.js | `https://camoburguer-api.onrender.com` |
-| `camoburguer-bridge` | Web Service Node.js | `https://camoburguer-bridge.onrender.com` |
-| `camoburguer-ops-web` | Static Site (CDN) | `https://camoburguer-ops-web.onrender.com` |
+| `camoburguer-db` | PostgreSQL gerenciado | dados da demo |
+| `camoburguer-api` | web service Node | API, schema, SSE e pollers desabilitados |
+| `camoburguer-bridge` | web service Node | spool remoto demonstrativo |
+| `camoburguer-ops-web` | static site | interface do operador |
 
----
+URLs esperadas:
 
-## Passo a Passo
+- `https://camoburguer-ops-web.onrender.com`
+- `https://camoburguer-api.onrender.com`
+- `https://camoburguer-bridge.onrender.com`
 
-### 1. Preparar o Repositório
+## O que o Blueprint protege
 
-Garantir que `render.yaml` está na raiz e o repositório está atualizado no GitHub.
+- health checks explícitos da API e bridge;
+- CORS limitado ao domínio do `ops-web`;
+- headers CSP, frame, referrer, permissions e `nosniff` no site;
+- `PRINT_BRIDGE_TOKEN` aleatório gerado no bridge e referenciado pela API;
+- comunicação API → bridge pelo hostname privado do Render;
+- `DEMO_ADMIN_TOKEN` gerado para seed/anonimização;
+- bridge recusa startup em produção sem token.
 
-### 2. Criar Blueprint no Render
+O Render recomenda segredos gerados ou fornecidos fora do repositório e permite copiar uma env var por `fromService.envVarKey`: [Blueprint YAML Reference](https://render.com/docs/blueprint-spec).
 
-1. Acesse [render.com](https://render.com/) → **New +** → **Blueprint**
-2. Conecte o repositório `camoburguer-demo`
-3. Defina o nome do grupo (ex: `camoburguer-demo`)
-4. O Render identifica os 4 serviços do `render.yaml`
-5. Clique em **Apply**
+## Aplicação do Blueprint
 
-### 3. Acompanhar o Build
+1. Revisar/commitar/pushar as mudanças desejadas.
+2. No Render, criar ou sincronizar um Blueprint apontando para `render.yaml`.
+3. Confirmar banco e três serviços.
+4. Aguardar todos os health checks.
+5. Verificar os logs do primeiro boot.
+6. Confirmar que o frontend servido contém o commit esperado.
 
-- O Render cria o banco PostgreSQL e compila os Web Services
-- Em ~2-3 minutos, todos os serviços ficam **Live**
-- A API executa migrações do schema automaticamente no boot
+Não presuma que editar `render.yaml` altera serviços existentes imediatamente. Em Blueprint já criado, revisar o diff de sincronização e as variáveis no Dashboard.
 
-### 4. Dados de Demonstração
+## Variáveis da API
 
-A API detecta banco vazio automaticamente e executa o seed:
+| Variável | Configuração | Observação |
+|---|---|---|
+| `DATABASE_URL` | `fromDatabase` | conexão privada gerenciada |
+| `PORT` | `3001` | Render pode expor porta dinamicamente; o processo lê env |
+| `NODE_ENV` | `production` | ativa exigências de segurança do bridge correspondente |
+| `PRINT_BRIDGE_URL` | `fromService.hostport` | `config.js` acrescenta `http://` ao host privado |
+| `PRINT_BRIDGE_TOKEN` | `fromService.envVarKey` | mesmo segredo gerado no bridge |
+| `CORS_ORIGINS` | URL exata do ops web | lista separada por vírgula |
+| `DEMO_ADMIN_TOKEN` | `generateValue: true` | não expor no frontend |
+| `AUTO_SEED` | `true` na demo | só roda quando não existe turno |
 
-```
-Banco de dados vazio detectado. Executando seed de demonstração automaticamente...
-```
+## Variáveis da bridge
 
-> A variável `AUTO_SEED=true` está configurada no `render.yaml`. Para desabilitar, remova ou defina como `false`.
+| Variável | Configuração | Observação |
+|---|---|---|
+| `NODE_ENV` | `production` | token passa a ser obrigatório |
+| `PRINT_BRIDGE_TOKEN` | `generateValue: true` | API o referencia, não hardcode |
+| `PORT` | `3100` | health em `/health` |
 
----
+O filesystem de um web service pode ser efêmero. O arquivo de spool demonstra idempotência, não persistência de impressão nem integração física.
 
-## Variáveis de Ambiente
+## Seed
 
-### API (`camoburguer-api`)
+Com `AUTO_SEED=true`, um banco sem turnos recebe dados sintéticos uma vez. O seed:
 
-| Variável | Origem | Descrição | Valor |
-|---|---|---|---|
-| `DATABASE_URL` | Automático (Blueprint) | Conexão PostgreSQL | `postgres://...` |
-| `PORT` | Predefinido | Porta da API | `3001` |
-| `NODE_ENV` | Predefinido | Ambiente | `production` |
-| `PRINT_BRIDGE_URL` | Predefinido | URL do Print Bridge | `https://camoburguer-bridge.onrender.com` |
-| `DEFAULT_PRINTER` | Predefinido | Impressora padrão | `cozinha-principal` |
-| `AUTO_SEED` | Predefinido | Seed automático no boot | `true` |
+- executa em transação;
+- trunca tabelas operacionais da demo;
+- zera estoque;
+- registra abertura de R$ 150,00;
+- usa nomes e endereços explicitamente demonstrativos.
 
-### Integrações Opcionais (iFood / Delivery Much)
+`POST /demo/seed` fica desabilitado sem `DEMO_ADMIN_TOKEN` e exige bearer ou `x-admin-token`. Não use essa rota em ambiente com dados que devam ser preservados.
+
+## Integrações externas
+
+Mantenha:
 
 ```env
-# Delivery Much
-DELIVERYMUCH_ENABLED=true
-DELIVERYMUCH_AUTH_URL=https://auth.deliverymuch.com.br
-DELIVERYMUCH_API_URL=https://api.deliverymuch.com.br
-DELIVERYMUCH_CLIENT_ID=seu_client_id
-DELIVERYMUCH_CLIENT_SECRET=seu_client_secret
-DELIVERYMUCH_USERNAME=seu_usuario
-DELIVERYMUCH_PASSWORD=sua_senha
-DELIVERYMUCH_COMPANY_UUID=seu_company_uuid
-
-# iFood Merchant API
-IFOOD_ENABLED=true
-IFOOD_API_URL=https://merchant-api.ifood.com.br
-IFOOD_CLIENT_ID=seu_client_id
-IFOOD_CLIENT_SECRET=seu_client_secret
-IFOOD_MERCHANT_ID=seu_merchant_id
+IFOOD_ENABLED=false
+DELIVERYMUCH_ENABLED=false
 ```
 
----
+O processo falha cedo se uma integração habilitada estiver sem campos obrigatórios. Antes de ligar uma flag, cumprir os gates de autenticação da API, fixtures e sandbox descritos no roteiro de produção.
 
-## Conectividade Frontend ↔ API
+## Verificação somente leitura
 
-O frontend (`ops-web`) determina automaticamente a URL da API:
+No Ubuntu/WSL:
 
-```js
-// Produção: camoburguer-ops-web → camoburguer-api
-const apiBase = hostname.replace('ops-web', 'api');
-
-// Local: http://localhost:3001
+```bash
+rtk proxy curl --fail https://camoburguer-api.onrender.com/health
+rtk proxy curl --fail https://camoburguer-api.onrender.com/catalog
+rtk proxy curl --fail https://camoburguer-bridge.onrender.com/health
 ```
 
-> **Importante**: O naming convention dos serviços no `render.yaml` deve manter o padrão `camoburguer-ops-web` / `camoburguer-api` para que a detecção automática funcione.
+No navegador:
 
----
-
-## Segurança
-
-### Headers (Static Site)
-
-```yaml
-headers:
-  - path: /*
-    name: X-Frame-Options
-    value: DENY
-```
-
-### API
-
-- **Helmet**: Headers de segurança em todas as respostas
-- **Rate Limit**: 1000 req/min (configurável)
-- **CORS**: `origin: true` (aceita qualquer origem)
-- **Logs sanitizados**: Tokens de integração nunca vazam nos logs
-
----
+- confirmar o hash/versão implantada nos logs;
+- navegar por pedidos, comandas, estoque, cozinha e financeiro;
+- confirmar que “Reconectando atualizações...” volta para conectado;
+- conferir console e network sem erro de CORS/CSP;
+- não executar seed/anonimização em banco a preservar.
 
 ## Troubleshooting
 
-| Problema | Causa Provável | Solução |
+| Sintoma | Diagnóstico | Ação segura |
 |---|---|---|
-| "Failed to fetch" no frontend | Cache do JS antigo | `Ctrl+Shift+R` para forçar reload |
-| "Not Found" em `/catalog` | apiBase apontando para ops-web | Verificar se deploy do ops-web está atualizado |
-| API retorna 404 na raiz | Versão antiga sem health check | Fazer deploy do commit mais recente |
-| Banco vazio após deploy | AUTO_SEED desabilitado | Verificar variável ou rodar seed manualmente |
-| CORS bloqueado | Plugin não registrado | Verificar `@fastify/cors` no server.js |
-
-### Verificação Manual
-
-```bash
-# Testar API diretamente
-curl https://camoburguer-api.onrender.com/health
-curl https://camoburguer-api.onrender.com/catalog
-
-# Testar no console do navegador
-fetch('https://camoburguer-api.onrender.com/health')
-  .then(r => r.json())
-  .then(console.log)
-```
-
----
+| API falha com `seed-demo.mjs` | imagem/commit anterior ao Dockerfile corrigido | redeploy do commit auditado |
+| Bridge falha no boot por token | `PRINT_BRIDGE_TOKEN` não foi gerado/referenciado | sincronizar Blueprint e conferir env vars |
+| API não alcança bridge | host privado/secret divergente | conferir `fromService`, health e logs, sem publicar token |
+| Frontend fica reconectando | SSE/CORS ou deploy antigo | inspecionar header ACAO e commit implantado |
+| Financeiro mostra R$ 15.000 | seed antigo | não truncar automaticamente; migrar/corrigir dados conscientemente |
+| `401` no bridge | bearer ausente/divergente | corrigir segredo compartilhado; não desabilitar auth |
+| CORS no domínio customizado | origem não está em `CORS_ORIGINS` | adicionar origem exata e redeployar API |
 
 ## Rollback
 
-- **Migrações aditivas**: Reverter para commit anterior sem perder dados
-- **Manual Deploy**: No Render → Service → Manual Deploy → selecionar commit
-- **Banco preservado**: Schema só adiciona; nunca remove colunas ou tabelas
+1. selecionar o deploy anterior no Render;
+2. não executar seed durante rollback;
+3. verificar compatibilidade do schema antes de voltar código;
+4. preservar logs e snapshot/backup do banco;
+5. executar health e fluxo somente leitura;
+6. registrar causa e decisão.
 
----
-*Para mais detalhes da arquitetura técnica, consulte a [Documentação Central](DOCUMENTACAO_CENTRAL.md).*
+O schema atual ainda é aplicado no boot e não oferece downgrade formal. Migrations versionadas e restore testado são pré-requisitos de produção.

@@ -1,5 +1,5 @@
 import Fastify from "fastify";
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
@@ -40,6 +40,7 @@ const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_pa
 
 await app.register(helmet, {
   contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   global: true
 });
 
@@ -48,7 +49,32 @@ await app.register(rateLimit, {
   timeWindow: '1 minute'
 });
 
-await app.register(cors, { origin: true });
+await app.register(cors, {
+  origin(origin, callback) {
+    callback(null, !origin || config.corsOrigins.includes(origin));
+  },
+  strictPreflight: true
+});
+
+function equalSecret(actual, expected) {
+  const left = Buffer.from(String(actual || ""));
+  const right = Buffer.from(String(expected || ""));
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
+function requireDemoAdmin(request, reply) {
+  if (!config.demoAdminToken) {
+    reply.code(503).send({ error: "Operação administrativa desabilitada" });
+    return false;
+  }
+  const bearer = String(request.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  const supplied = bearer || request.headers["x-admin-token"];
+  if (!equalSecret(supplied, config.demoAdminToken)) {
+    reply.code(401).send({ error: "Não autorizado" });
+    return false;
+  }
+  return true;
+}
 
 app.setErrorHandler((error, request, reply) => {
   const clientError = Boolean(error.validation) || (!error.code && /inválid|obrigatóri|deve ter|transição|item|preço|valor/i.test(error.message));
@@ -468,7 +494,10 @@ async function dispatchPrintJob(job) {
   try {
     const response = await fetch(`${config.printBridgeUrl}/print-jobs`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(config.printBridgeToken ? { authorization: `Bearer ${config.printBridgeToken}` } : {})
+      },
       signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
         jobId: job.id,
@@ -536,7 +565,15 @@ function emitFinanceEvent(type, payload) {
   sse.publish("finance", { type, payload, at: new Date().toISOString() });
 }
 
-app.get("/health", async () => ({ ok: true, service: "api" }));
+app.get("/health", async (_request, reply) => {
+  try {
+    await db.query("SELECT 1");
+    return { ok: true, service: "api", database: "reachable" };
+  } catch (error) {
+    app.log.error(error, "Database health check failed");
+    return reply.code(503).send({ ok: false, service: "api", database: "unreachable" });
+  }
+});
 app.get("/", async (request, reply) => ({ status: "ok" }));
 // HEAD route removed – Fastify automatically supports HEAD for GET routes
 app.get("/catalog", async () => ({
@@ -1192,33 +1229,41 @@ app.post("/cash-shifts/:shiftId/close", async (request, reply) => {
 });
 
 app.post("/lgpd/anonymize", async (request, reply) => {
-  const { searchTerm } = request.body;
-  if (!searchTerm || typeof searchTerm !== "string" || searchTerm.length < 3) {
+  if (!requireDemoAdmin(request, reply)) return reply;
+  const searchTerm = String(request.body?.searchTerm || "").trim();
+  if (searchTerm.length < 3) {
     return reply.code(400).send({ error: "Termo de busca (min 3 chars) obrigatorio para anonimizacao" });
   }
   const result = await db.anonymizeCustomerData(searchTerm);
   return { success: true, ...result };
 });
 
-app.get("/events/orders", async (_, reply) => {
+function openEventStream(request, reply, channel) {
+  const origin = request.headers.origin;
+  if (origin && config.corsOrigins.includes(origin)) {
+    reply.raw.setHeader("access-control-allow-origin", origin);
+    reply.raw.setHeader("vary", "Origin");
+  }
   reply.raw.setHeader("content-type", "text/event-stream");
   reply.raw.setHeader("cache-control", "no-cache");
   reply.raw.setHeader("connection", "keep-alive");
-  reply.raw.write("\n");
-  sse.subscribe("orders", reply);
+  reply.raw.setHeader("x-accel-buffering", "no");
+  reply.raw.flushHeaders();
+  reply.raw.write("retry: 3000\n\n");
+  sse.subscribe(channel, reply);
   return reply;
+}
+
+app.get("/events/orders", async (request, reply) => {
+  return openEventStream(request, reply, "orders");
 });
 
-app.get("/events/finance", async (_, reply) => {
-  reply.raw.setHeader("content-type", "text/event-stream");
-  reply.raw.setHeader("cache-control", "no-cache");
-  reply.raw.setHeader("connection", "keep-alive");
-  reply.raw.write("\n");
-  sse.subscribe("finance", reply);
-  return reply;
+app.get("/events/finance", async (request, reply) => {
+  return openEventStream(request, reply, "finance");
 });
 
 app.post("/demo/seed", async (request, reply) => {
+  if (!requireDemoAdmin(request, reply)) return reply;
   try {
     await runSeedDemo(db);
     return { ok: true, message: "Banco de dados preenchido com dados de demonstração." };
@@ -1227,11 +1272,11 @@ app.post("/demo/seed", async (request, reply) => {
   }
 });
 
-await app.register(integrationRoutes);
+await app.register(integrationRoutes, { db, sse, config });
 
 await db.init();
 
-if (process.env.AUTO_SEED !== "false") {
+if (config.autoSeed) {
   try {
     const { rows } = await db.query("SELECT COUNT(*) FROM cash_shifts");
     if (Number(rows[0]?.count || 0) === 0) {
@@ -1251,6 +1296,6 @@ db.changeStock = changeStock;
 db.reservePrintJob = reservePrintJob;
 db.insertOrder = insertOrder;
 
-startIntegrationPolling({ config, db });
+startIntegrationPolling({ config, db, sse });
 
-app.listen({ host: "0.0.0.0", port: config.port });
+await app.listen({ host: "0.0.0.0", port: config.port });

@@ -7,6 +7,7 @@ const state = {
   inventoryAttempt: null,
   paymentAttempt: null,
   paymentReversalAttempt: null,
+  integrationAttempts: {},
   tabs: [],
   activeTabId: null,
   inventory: { balances: [], movements: [] },
@@ -135,38 +136,30 @@ export function nextOrderAttempt(previous, payload, makeKey = () => crypto.rando
     : { key: makeKey(), fingerprint };
 }
 
+function integrationAttempt(orderId, action, payload = {}) {
+  const slot = `${orderId}:${action}`;
+  const attempt = nextOrderAttempt(state.integrationAttempts[slot], { orderId, action, payload });
+  state.integrationAttempts[slot] = attempt;
+  return { slot, key: attempt.key };
+}
+
+async function chooseCancellationReason(orderId) {
+  const result = await api(`/orders/${orderId}/cancellation-reasons`);
+  const reasons = result.reasons || [];
+  if (!reasons.length) throw new Error("Canal não ofereceu motivo de cancelamento");
+  const options = reasons.map((reason) => `${reason.id} — ${reason.name}`).join("\n");
+  const selected = window.prompt(`Informe o código do cancelamento:\n\n${options}`, reasons[0].id);
+  if (selected === null) return null;
+  const reason = reasons.find((item) => String(item.id) === String(selected).trim());
+  if (!reason) throw new Error("Motivo de cancelamento inválido");
+  return reason.id;
+}
+
 function money(value) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL"
   }).format(Number(value || 0));
-}
-
-function printOrderTicket(order) {
-  const printArea = document.getElementById("print-area");
-  if (!printArea) return;
-  const itemsHtml = (order.items || []).map(item => `
-    <div style="margin-bottom: 8px;">
-      <strong>${item.quantity}x ${item.name}</strong>
-      ${item.addons && item.addons.length ? `<br><small>+ ${item.addons.map(a => a.name).join(", ")}</small>` : ""}
-      ${item.notes ? `<br><small>Obs: ${item.notes}</small>` : ""}
-    </div>
-  `).join("");
-  printArea.innerHTML = `
-    <div style="font-family: monospace; width: 300px; padding: 10px; color: black; background: white;">
-      <h2 style="text-align: center; margin: 0 0 10px 0;">CAMOBURGUER</h2>
-      <div style="border-bottom: 1px dashed black; margin-bottom: 10px;"></div>
-      <p><strong>Pedido:</strong> #${order.id.slice(0,6).toUpperCase()}</p>
-      <p><strong>Cliente:</strong> ${order.customerName || "Não informado"}</p>
-      <p><strong>Tipo:</strong> ${fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode}</p>
-      ${order.fulfillmentMode === 'delivery' && order.deliveryAddress ? `<p><strong>Endereço:</strong> ${order.deliveryAddress}</p>` : ''}
-      <div style="border-bottom: 1px dashed black; margin-bottom: 10px;"></div>
-      ${itemsHtml}
-      <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
-      <h3 style="text-align: right;">Total: ${money(order.total)}</h3>
-    </div>
-  `;
-  window.print();
 }
 
 function printShiftReport(shift, summary, entries, isDetailed) {
@@ -175,7 +168,7 @@ function printShiftReport(shift, summary, entries, isDetailed) {
 
   const summaryHtml = Object.entries(summary.paymentsByMethod || {})
     .filter(([, amount]) => amount !== 0)
-    .map(([method, amount]) => `<div style="display: flex; justify-content: space-between;"><span>${paymentLabels[method] || method}</span><span>${money(amount)}</span></div>`)
+    .map(([method, amount]) => `<div style="display: flex; justify-content: space-between;"><span>${escapeHtml(paymentLabels[method] || method)}</span><span>${money(amount)}</span></div>`)
     .join("");
 
   const detailedHtml = isDetailed ? `
@@ -243,7 +236,7 @@ function renderCatalog() {
   const container = $("#catalog-modal-content");
   if (!container) return;
   const balances = Object.fromEntries(state.inventory.balances.map((item) => [item.category, item.quantity]));
-  
+
   const categories = state.catalog.reduce((acc, item) => {
     (acc[item.category] = acc[item.category] || []).push(item);
     return acc;
@@ -263,7 +256,7 @@ function renderCatalog() {
   `;
 
   const activeItems = categories[state.activeCatalogCategory] || [];
-  
+
   const itemsHtml = activeItems.map((item) => {
     const inStock = !item.stockCategory || Number(balances[item.stockCategory]) > 0;
     const sellable = item.available && inStock;
@@ -289,21 +282,21 @@ function renderCatalog() {
 function openItemConfig(sku) {
   const item = state.catalog.find((i) => i.sku === sku);
   if (!item) return;
-  
+
   $("#config-item-sku").value = item.sku;
   $("#config-item-name").textContent = item.name;
   $("#config-item-price").textContent = money(item.price);
-  
+
   const field = $("#config-addons-field");
   field.hidden = !item.allowsAddons;
   $("#config-addons").innerHTML = item.allowsAddons
     ? state.addOns.map((addon) => `<label class="check-option"><input type="checkbox" name="config-addon" value="${escapeHtml(addon.sku)}" /> ${escapeHtml(addon.name)} <span>${money(addon.price)}</span></label>`).join("")
     : "";
-    
+
   $("#config-qty").value = "1";
   $("#config-discount").value = "0";
   $("#config-notes").value = "";
-  
+
   $("#item-config-dialog").showModal();
 }
 
@@ -504,7 +497,7 @@ function renderOrders() {
         <div class="integration-meta">
           <strong>${escapeHtml(sourceLabels[order.source] || order.source)}</strong>
           <span>Aguardando autorização</span>
-          ${order.syncStatus ? `<span>(Sincronização: ${order.syncStatus})</span>` : ""}
+          ${order.syncStatus ? `<span>(Sincronização: ${escapeHtml(order.syncStatus)})</span>` : ""}
         </div>
         <div class="order-meta">
           <span>${escapeHtml(fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode)}</span>
@@ -528,7 +521,7 @@ function renderOrders() {
     list.innerHTML = '<p class="empty-state">Nenhum pedido registrado.</p>';
     return;
   }
-  
+
   const sortedNormalOrders = [...normalOrders].sort((a, b) => {
     const isAFinished = ["completed", "cancelled"].includes(a.status);
     const isBFinished = ["completed", "cancelled"].includes(b.status);
@@ -545,7 +538,7 @@ function renderOrders() {
           <span>${escapeHtml(order.customerName || "Cliente")}</span>
           <span class="pill ${order.status === 'completed' ? 'open' : order.status === 'cancelled' ? 'danger' : ''}">${escapeHtml(statusLabels[order.status] || order.status)}</span>
           <span>${formatWhen(order.createdAt)}</span>
-          ${order.syncStatus && order.syncStatus !== 'synced' ? `<span class="pill warning">Sync: ${order.syncStatus}</span>` : ""}
+          ${order.syncStatus && order.syncStatus !== 'synchronized' ? `<span class="pill warning">Sync: ${escapeHtml(order.syncStatus)}</span>` : ""}
           ${order.discountPercent ? `<span>Desconto ${order.discountPercent}%</span>` : ""}
           <strong>${money(order.total)}</strong>
         </div>
@@ -821,7 +814,7 @@ function wireCart() {
   $("#active-comanda-discount")?.addEventListener("input", renderOrderItems);
   $("#order-payment-method")?.addEventListener("change", syncCashChange);
   $("#cash-received")?.addEventListener("input", syncCashChange);
-  
+
   $("#order-tab-select")?.addEventListener("change", (e) => {
     const val = e.target.value;
     if (val === "new") {
@@ -845,7 +838,7 @@ function wireCart() {
   $("#btn-open-catalog")?.addEventListener("click", () => {
     $("#catalog-modal")?.showModal();
   });
-  
+
   $("#btn-quick-new-order")?.addEventListener("click", () => {
     $("#order-modal")?.showModal();
   });
@@ -884,21 +877,21 @@ function wireCart() {
   $("#btn-open-inventory-modal")?.addEventListener("click", () => {
     $("#inventory-modal")?.showModal();
   });
-  
+
   $("#close-catalog-modal")?.addEventListener("click", () => {
     $("#catalog-modal")?.close();
   });
-  
+
   $("#close-item-config-dialog")?.addEventListener("click", () => {
     $("#item-config-dialog")?.close();
   });
-  
+
   $("#item-config-form")?.addEventListener("submit", (e) => {
     e.preventDefault();
     const sku = $("#config-item-sku").value;
     const selected = state.catalog.find((item) => item.sku === sku);
     if (!selected) return;
-    
+
     addOrAccumulateItem(
       state.orderItems,
       selected,
@@ -909,7 +902,7 @@ function wireCart() {
         .map((input) => state.addOns.find((addon) => addon.sku === input.value))
         .filter(Boolean)
     );
-    
+
     renderOrderItems();
     $("#item-config-dialog")?.close();
     notify(`${selected.name} adicionado.`);
@@ -942,13 +935,15 @@ function wireCart() {
       }
 
       if (button.dataset.integrationAccept) {
+        const attempt = integrationAttempt(button.dataset.integrationAccept, "accept");
         button.disabled = true;
         try {
           await api(`/orders/${button.dataset.integrationAccept}/accept`, {
             method: "POST",
-            headers: { "Idempotency-Key": crypto.randomUUID() },
+            headers: { "Idempotency-Key": attempt.key },
             body: "{}"
           });
+          delete state.integrationAttempts[attempt.slot];
           notify("Pedido aceito na integração.");
           await refreshAll();
         } catch (error) {
@@ -962,11 +957,16 @@ function wireCart() {
       if (button.dataset.integrationCancel) {
         button.disabled = true;
         try {
+          const reasonId = await chooseCancellationReason(button.dataset.integrationCancel);
+          if (!reasonId) return;
+          const payload = { reasonId };
+          const attempt = integrationAttempt(button.dataset.integrationCancel, "cancel", payload);
           await api(`/orders/${button.dataset.integrationCancel}/cancel`, {
             method: "POST",
-            headers: { "Idempotency-Key": crypto.randomUUID() },
-            body: JSON.stringify({ reasonId: "501" })
+            headers: { "Idempotency-Key": attempt.key },
+            body: JSON.stringify(payload)
           });
+          delete state.integrationAttempts[attempt.slot];
           notify("Cancelamento enviado para a integração.");
           await refreshAll();
         } catch (error) {
@@ -984,7 +984,7 @@ function wireCart() {
           const isDetailed = button.dataset.printType === "detailed";
           const shift = state.shifts.find(s => s.id === shiftId);
           if (!shift) throw new Error("Caixa não encontrado.");
-          
+
           const [summary, entriesResult] = await Promise.all([
             api(`/finance/summary?shiftId=${shiftId}`),
             api(`/finance/entries?shiftId=${shiftId}`)
@@ -1158,68 +1158,40 @@ function wireCart() {
       return;
     }
 
-    if (button.dataset.openConfig) {
-      openItemConfig(button.dataset.openConfig);
-      return;
-    }
-
-    if (button.dataset.integrationAccept) {
-      button.disabled = true;
-      const orderId = button.dataset.integrationAccept;
-      try {
-        await api(`/orders/${orderId}/accept`, {
-          method: "POST",
-          headers: { "Idempotency-Key": crypto.randomUUID() },
-          body: "{}"
-        });
-        notify("Aceitação enviada. O pedido aparecerá na Fila de atendimento em breve.");
-        await refreshAll();
-      } catch (error) {
-        notify(error.message, "error");
-      } finally {
-        button.disabled = false;
-      }
-      return;
-    }
-
-    if (button.dataset.integrationCancel) {
-      button.disabled = true;
-      const orderId = button.dataset.integrationCancel;
-      try {
-        await api(`/orders/${orderId}/cancel`, {
-          method: "POST",
-          headers: { "Idempotency-Key": crypto.randomUUID() },
-          body: JSON.stringify({ reasonId: "501" }) // Hardcoded para a demo
-        });
-        notify("Cancelamento enviado para a plataforma.");
-        await refreshAll();
-      } catch (error) {
-        notify(error.message, "error");
-      } finally {
-        button.disabled = false;
-      }
-      return;
-    }
-
     if (!button.dataset.orderAction && !button.dataset.reprint && !button.dataset.orderStatus) return;
     button.disabled = true;
     try {
       if (button.dataset.orderAction || button.dataset.orderStatus) {
         const orderId = button.dataset.orderId || button.dataset.orderStatus; // fallback para botões velhos
         const action = button.dataset.orderAction || button.dataset.status;
-        
-        await api(`/orders/${orderId}/status`, {
-          method: "PATCH",
-          body: JSON.stringify({ status: action })
-        });
-        if (action === "in_preparation") {
-          const order = state.orders.find(o => o.id === orderId);
-          if (order) printOrderTicket(order);
+        const order = state.orders.find((item) => item.id === orderId);
+        const channelAction = action === "cancelled"
+          ? "cancel"
+          : action === "in_preparation" && order?.source === "ifood"
+            ? "start-preparation"
+            : action === "ready" && ["ifood", "deliverymuch"].includes(order?.source)
+              ? "ready"
+              : null;
+
+        if (channelAction) {
+          const reasonId = channelAction === "cancel" ? await chooseCancellationReason(orderId) : null;
+          if (channelAction === "cancel" && !reasonId) return;
+          const payload = channelAction === "cancel" ? { reasonId } : {};
+          const attempt = integrationAttempt(orderId, channelAction, payload);
+          await api(`/orders/${orderId}/${channelAction}`, {
+            method: "POST",
+            headers: { "Idempotency-Key": attempt.key },
+            body: JSON.stringify(payload)
+          });
+          delete state.integrationAttempts[attempt.slot];
+        } else {
+          await api(`/orders/${orderId}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({ status: action })
+          });
         }
         notify("Status do pedido atualizado.");
       } else if (button.dataset.reprint) {
-        const order = state.orders.find(o => o.id === button.dataset.reprint) || state.kitchen.find(o => o.id === button.dataset.reprint);
-        if (order) printOrderTicket(order);
         await api(`/orders/${button.dataset.reprint}/reprint`, { method: "POST", body: "{}" });
         notify("Reimpressão enviada para a cozinha.");
       }
@@ -1416,12 +1388,11 @@ function wireForms() {
           body: JSON.stringify(payload)
         });
       } else {
-        const orderData = await api("/orders", {
+        await api("/orders", {
           method: "POST",
           headers: { "Idempotency-Key": state.orderAttempt.key },
           body: JSON.stringify(payload)
         });
-        if (orderData && orderData.id) printOrderTicket(orderData);
       }
       state.orderItems = [];
       state.orderAttempt = null;
@@ -1539,6 +1510,9 @@ function wireSse() {
   const financeEvents = new EventSource(`${apiBase}/events/finance`);
   orderEvents.onmessage = refreshSafe;
   financeEvents.onmessage = refreshSafe;
+  orderEvents.onopen = financeEvents.onopen = () => {
+    $("#api-status").textContent = "API conectada";
+  };
   orderEvents.onerror = financeEvents.onerror = () => {
     $("#api-status").textContent = "Reconectando atualizações...";
   };

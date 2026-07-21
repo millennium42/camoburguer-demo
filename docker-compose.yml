@@ -21,7 +21,10 @@ services:
       PORT: 3001
       DATABASE_URL: postgres://camoburguer:camoburguer@db:5432/camoburguer
       PRINT_BRIDGE_URL: http://print-bridge:3100
+      PRINT_BRIDGE_TOKEN: local-print-bridge-token
       DEFAULT_PRINTER: cozinha-principal
+      AUTO_SEED: "false"
+      CORS_ORIGINS: http://localhost:8081,http://127.0.0.1:8081
     ports:
       - "3001:3001"
     depends_on:
@@ -43,6 +46,7 @@ services:
       PORT: 3100
       PRINT_BRIDGE_MODE: filesystem
       PRINT_SPOOL_DIR: /data/spool
+      PRINT_BRIDGE_TOKEN: local-print-bridge-token
     ports:
       - "3100:3100"
     volumes:

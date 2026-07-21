@@ -1,71 +1,75 @@
 {
   "apps/api/src/config.js": {
-    "mtime": 1784605802134.6357,
-    "hash": "591dcd018db5589e72370cd8d1c70f97"
+    "mtime": 1784668369868.6382,
+    "hash": "4211ba0ede063a3a9c382630c84609c1"
   },
   "apps/api/src/db.js": {
-    "mtime": 1784611226359.1128,
-    "hash": "867558a9072c913e0bce89ba35709e05"
+    "mtime": 1784671378301.433,
+    "hash": "69796ee17921afc0e5dd79cc6778fef1"
   },
   "apps/api/src/integrations/http-client.js": {
     "mtime": 1784605802304.9377,
     "hash": "d6e2751537f920df73aeb93130ee2fb5"
   },
   "apps/api/src/integrations/integration-repository.js": {
-    "mtime": 1784605802375.5918,
-    "hash": "5e93d5a4064b4cce822b95e454205310"
+    "mtime": 1784670817121.9658,
+    "hash": "c302df8253bde210114916fdacf35902"
   },
   "apps/api/src/integrations/integration-routes.js": {
-    "mtime": 1784605802601.1274,
-    "hash": "b3f1214f18b50c6dd927b01e64624fc2"
+    "mtime": 1784671378301.433,
+    "hash": "d5b31ee108a4e9c62072b3abf335d4d0"
   },
   "apps/api/src/integrations/order-actions.js": {
-    "mtime": 1784605803059.7278,
-    "hash": "45b9820e417f6ee0cfa9dca71182e983"
+    "mtime": 1784668942554.3867,
+    "hash": "a84615b3a6003e5f595decf894ebf686"
   },
   "apps/api/src/integrations/order-ingestion.js": {
-    "mtime": 1784605803156.7659,
-    "hash": "97cce187f781a2c0ae43304b87978ec1"
+    "mtime": 1784667760794.3503,
+    "hash": "c8c72bcc12685530994ea0a9d39a279d"
   },
   "apps/api/src/integrations/polling-runner.js": {
-    "mtime": 1784605803289.2,
-    "hash": "5f284724eea4d189df55b4857f49a46f"
+    "mtime": 1784668725034.8694,
+    "hash": "5e5f8e95ceaa015d07c1640626b47270"
   },
   "apps/api/src/integrations/providers/deliverymuch.js": {
-    "mtime": 1784605803475.3086,
-    "hash": "5cf68c4e17b4ccd538c84766ea7d6ae0"
+    "mtime": 1784670717769.9624,
+    "hash": "0144c9f726d54750ccf5c5e4a740887c"
   },
   "apps/api/src/integrations/providers/ifood.js": {
-    "mtime": 1784605803506.6624,
-    "hash": "93335e0384eb24a9b68d9b1cbe05730b"
+    "mtime": 1784670696727.7861,
+    "hash": "dd9a86a0722395e0f8ea4a05d6e8a20c"
   },
   "apps/api/src/server.js": {
-    "mtime": 1784615971563.0476,
-    "hash": "a518637bcf0bfe40994a20427dcd5696"
+    "mtime": 1784671378301.433,
+    "hash": "fe2e8af3bcab30f7a2df80eabd48c883"
   },
   "apps/api/src/sse.js": {
-    "mtime": 1784605803742.8247,
-    "hash": "2fe0c6984359c7155999942da50f05f3"
+    "mtime": 1784667705099.961,
+    "hash": "f48c926d4e0af42d3a517eab214bae62"
   },
   "apps/event-simulator/src/seed.js": {
     "mtime": 1784605804073.1052,
     "hash": "43f63ae4ef8f5b1240c6aebf9b4930b2"
   },
   "apps/ops-web/main.js": {
-    "mtime": 1784616690710.322,
-    "hash": "17efcab97220d6a9b762d2ffbfaed239"
+    "mtime": 1784671569276.9177,
+    "hash": "8ad31c074176c3820f445bdeeb8b322f"
   },
   "apps/print-bridge/src/server.js": {
-    "mtime": 1784605804760.2358,
-    "hash": "a69fc733da2de02c6a4467fd284591a3"
+    "mtime": 1784671378301.433,
+    "hash": "d7258905d4e5f9cdd94cf52fd96cc7d2"
+  },
+  "apps/print-bridge/src/validation.js": {
+    "mtime": 1784668829834.6335,
+    "hash": "b249a22afbd5d15bfecb7f70a153ba73"
   },
   "packages/domain/catalog.js": {
     "mtime": 1784605808157.1982,
     "hash": "28eb95568993b9c4ae945a2c93c429b3"
   },
   "packages/domain/index.js": {
-    "mtime": 1784605808184.878,
-    "hash": "d063f4602d1f89411406497854f5dd11"
+    "mtime": 1784668425061.243,
+    "hash": "20e1249d37a953cfd61002c6ce157166"
   },
   "packages/finance-core/index.js": {
     "mtime": 1784611240862.432,
@@ -75,113 +79,133 @@
     "mtime": 1784605808691.507,
     "hash": "bde70fa6280245b6053048272952704c"
   },
+  "scripts/check-syntax.mjs": {
+    "mtime": 1784669472170.2925,
+    "hash": "835db31acb3730f645750d1a24fe73f0"
+  },
   "scripts/seed-demo.mjs": {
-    "mtime": 1784614982301.029,
-    "hash": "db91faa2dd3d83eb7cfe34b498ab009c"
+    "mtime": 1784668977005.3354,
+    "hash": "e9f8321de0cd3d911d2698cf3949e158"
   },
   "scripts/simulate-order.mjs": {
     "mtime": 1784605809444.3845,
     "hash": "19d103c406f6141c3e6dc95a4e860b62"
   },
   "tests/domain.test.js": {
-    "mtime": 1784605812690.4624,
-    "hash": "dce2b7ba13217876c8fe2ad994a987c8"
+    "mtime": 1784668806584.2468,
+    "hash": "f77ea1869d793175ff1e38021fa0d3e7"
   },
   "tests/finance.test.js": {
     "mtime": 1784605812743.7424,
     "hash": "2d2f4f5c3912720935076cb92deedbb8"
   },
+  "tests/integrations.test.js": {
+    "mtime": 1784670606715.9707,
+    "hash": "e9d75feecba7e6ec65d55e1d14abf252"
+  },
   "tests/ops-web.test.js": {
-    "mtime": 1784611240865.4324,
-    "hash": "87d41e3814fd85574c0634b298048fa8"
+    "mtime": 1784657217491.4155,
+    "hash": "66a56b32482bbecf66dea261e5265650"
+  },
+  "tests/print-bridge.test.js": {
+    "mtime": 1784668890721.8489,
+    "hash": "684e7c849ecc1597258e7955269b6842"
   },
   "tests/smoke.mjs": {
-    "mtime": 1784605812956.8416,
-    "hash": "1a9bfad56b058e744a722e6aa1b1e5ea"
+    "mtime": 1784671448847.5608,
+    "hash": "13e6d9bda45c703886089b58300ba3f5"
   },
   "AGENTS.md": {
     "mtime": 1784605801919.7646,
     "hash": "2f1d4500c17e656e80d5b3a709f5eb24"
   },
   "README.md": {
-    "mtime": 1784617716102.9878,
-    "hash": "18d54d68a42ebedc07058dcd84994853"
+    "mtime": 1784671621027.8574,
+    "hash": "8a4ab1606fc3b38bb880ac222d53d5d6"
   },
   "SUBAGENTES.md": {
-    "mtime": 1784605801980.9104,
-    "hash": "10865084044de0fbf19731ab37d79cc3"
+    "mtime": 1784670118848.926,
+    "hash": "0878c3dd7dc040c41015cddc423d8268"
   },
   "apps/ops-web/index.html": {
-    "mtime": 1784612570513.256,
-    "hash": "e94a745b9326dbd7edd2915de1a3917b"
+    "mtime": 1784656598760.2761,
+    "hash": "0428c4eb2c9384d2bde9139917679333"
   },
   "docker-compose.yml": {
-    "mtime": 1784605804771.525,
-    "hash": "cc906d98f92925a92b4bfe3e94ceadaf"
+    "mtime": 1784668339281.7827,
+    "hash": "94468be21764a22071a9ee48f4c073e1"
   },
   "docs/5w2h-evolucao.md": {
     "mtime": 1784617784844.0967,
     "hash": "e90ec754f653209cbe8707db4cf85561"
   },
   "docs/DOCUMENTACAO_CENTRAL.md": {
-    "mtime": 1784617823053.327,
-    "hash": "4b3e309b24d1e933bb484bf1ecf02d9c"
+    "mtime": 1784671621043.4795,
+    "hash": "59496d589c02389d0b8f6052acdc76ca"
   },
   "docs/RENDER_DEPLOY.md": {
-    "mtime": 1784617911320.1248,
-    "hash": "9e100d13b6a5185ba49ba600210d8ff2"
+    "mtime": 1784670275084.474,
+    "hash": "0e582545d5196510a72bdfdfeeac06b7"
   },
   "docs/arquitetura-do-sistema.md": {
-    "mtime": 1784605805672.406,
-    "hash": "d101fa662eec166349931b763423a9c4"
+    "mtime": 1784670166197.7534,
+    "hash": "71a6b4a36a2b718313c9f1c556c88cd4"
+  },
+  "docs/auditoria-commit-a-commit.md": {
+    "mtime": 1784670018787.7625,
+    "hash": "bf3076c2cc165c5fbafaffdffa088284"
+  },
+  "docs/auditoria-tecnica-2026-07-21.md": {
+    "mtime": 1784672289820.5928,
+    "hash": "932327ccb0fc4973131f0ebb63fb05ba"
   },
   "docs/automacoes-por-cenario.md": {
-    "mtime": 1784605805983.0742,
-    "hash": "de9f8faadcc70cf6282419c9b6675ec1"
+    "mtime": 1784670187617.1682,
+    "hash": "6d67832c8f7c0829c047bdb215779de9"
   },
   "docs/canais-e-captura.md": {
-    "mtime": 1784605805990.588,
-    "hash": "390bd3079f5e32d18ebd7299aa2051ac"
+    "mtime": 1784670178383.5242,
+    "hash": "01980cef3bca0f014e0c99a9cb1462c5"
   },
   "docs/ciclo-do-pedido.md": {
-    "mtime": 1784605806120.1648,
-    "hash": "c6c302776833b2c8ee699aff01d72218"
+    "mtime": 1784670207739.1138,
+    "hash": "282da3baf0c5cf4caf6d2b40e649fe9f"
   },
   "docs/ciclo-financeiro.md": {
     "mtime": 1784605806553.6226,
     "hash": "9bf593aa1e26ae7c19cf8d53c218f2ba"
   },
   "docs/contexto-operacional.md": {
-    "mtime": 1784605806750.7522,
-    "hash": "54adf031decb2f3682dbca7c5de83846"
+    "mtime": 1784670194719.5344,
+    "hash": "468bb83dbbf1317473e96c1741714259"
   },
   "docs/estoque.md": {
     "mtime": 1784605806807.3784,
     "hash": "637dc3c1f2be98b9b9a6adcd8ccbe98b"
   },
   "docs/guia-de-desenvolvimento.md": {
-    "mtime": 1784617873429.5564,
-    "hash": "868313423c0a899bb6fcf73ea5c3698c"
+    "mtime": 1784671621043.4795,
+    "hash": "0609329018a441044a2b3b88c630c3cf"
   },
   "docs/padrao-ticket-cozinha.md": {
-    "mtime": 1784605807100.382,
-    "hash": "20c05ae38793289687aaed85d20db261"
+    "mtime": 1784670128800.7842,
+    "hash": "35d27f74f728aeebf2b99f82f1effd34"
   },
   "docs/pagamentos-comandas.md": {
     "mtime": 1784605807174.7087,
     "hash": "7e825e8d84c898969b04e0ccb7da267a"
   },
   "docs/relatorio-validacao.md": {
-    "mtime": 1784605807310.0498,
-    "hash": "2fa0b4404261ec0e7ed739f53d9d60c4"
+    "mtime": 1784672289822.5935,
+    "hash": "a2c2e5144c28e5420f9e00094a5a45ab"
   },
   "docs/roteiro-fase2-producao.md": {
-    "mtime": 1784605807488.5671,
-    "hash": "0f8828f272b88aba4366004f0baa85d7"
+    "mtime": 1784670236796.7803,
+    "hash": "615073c6aeb06b84858dac9dbe899280"
   },
   "render.yaml": {
-    "mtime": 1784615024567.1128,
-    "hash": "2c5538aaf318ace776d379638f4f97e9"
+    "mtime": 1784668355850.5637,
+    "hash": "cdac75971df04c8300239e6fa0f9da3e"
   },
   "skills/architecture-gate-review/SKILL.md": {
     "mtime": 1784605809573.4597,

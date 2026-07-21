@@ -1,12 +1,18 @@
 import { randomUUID } from "crypto";
+import { createOrder } from "@camoburguer/domain";
 import { findChannelMapping, insertChannelMapping } from "./integration-repository.js";
 
 
 export async function ingestExternalOrder(input, executor, db) {
+  const externalMerchantId = String(input.externalMerchantId || "").trim();
+  const externalOrderId = String(input.externalOrderId || "").trim();
+  if (!externalMerchantId || !externalOrderId) {
+    throw new Error("Pedido externo exige merchantId e orderId");
+  }
   const mapping = await findChannelMapping({
     channel: input.source,
-    merchantId: input.externalMerchantId,
-    externalId: input.externalOrderId
+    merchantId: externalMerchantId,
+    externalId: externalOrderId
   }, executor);
 
   if (mapping) {
@@ -16,26 +22,24 @@ export async function ingestExternalOrder(input, executor, db) {
     };
   }
 
-  const orderId = randomUUID();
-  const idempotencyKey = [input.source, input.externalMerchantId, input.externalOrderId].join(":");
-
-  const totalCents = Math.round(
-    input.items.reduce((acc, item) => acc + (item.price * item.quantity), 0) * 100
-  );
-
-  const order = {
-    id: orderId,
+  const idempotencyKey = [input.source, externalMerchantId, externalOrderId].join(":");
+  const order = createOrder({
+    id: randomUUID(),
     source: input.source,
     fulfillmentMode: input.fulfillmentMode,
     customerName: input.customerName,
     deliveryAddress: input.deliveryAddress || null,
-    discountPercent: input.discountPercent || 0,
-    paymentMethod: input.paymentMethod || null,
-    status: "received",
-    items: input.items,
+    discountPercent: input.discountPercent ?? 0,
+    paymentMethod: input.paymentMethod || "app_paid",
+    items: input.items || [],
     idempotencyKey,
-    createdAt: new Date().toISOString()
-  };
+    createdAt: input.createdAt,
+    metadata: {
+      ...(input.metadata || {}),
+      externalMerchantId,
+      externalOrderId
+    }
+  });
 
   const savedOrder = await db.insertOrder(order, executor);
 
@@ -43,8 +47,8 @@ export async function ingestExternalOrder(input, executor, db) {
     id: randomUUID(),
     orderId: savedOrder.id,
     channel: input.source,
-    merchantId: input.externalMerchantId,
-    externalId: input.externalOrderId,
+    merchantId: externalMerchantId,
+    externalId: externalOrderId,
     externalStatus: input.externalStatus,
     syncStatus: "synchronized",
     metadata: input.metadata || {}

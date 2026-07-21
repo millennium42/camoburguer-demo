@@ -1,6 +1,38 @@
 # Relatório de Validação
 
-Linha de base herdada de `codex/descontos-por-item-e-pedido` (`9174d61`), revisada em 2026-07-16. Cada incremento posterior acrescenta sua própria evidência antes da promoção.
+> As seções antigas abaixo são histórico e não representam o release atual. A decisão “sem P0/P1” foi supersedida pela auditoria de 2026-07-21, que encontrou bloqueadores de produção.
+
+## Auditoria e correção — 2026-07-21
+
+| Gate | Ambiente | Resultado |
+|---|---|---|
+| histórico Git | Ubuntu/WSL | 82 commits em todas as refs; 77 no `HEAD`, 5 laterais |
+| estrutura | `m1nd` + Graphify | núcleo/dependências mapeados; grafo final 221 nós/332 relações/16 comunidades; consulta por caminho corrigida |
+| sintaxe | Node 22/WSL | arquivos alterados válidos; script `npm run check` adicionado |
+| unitário/contrato/UI | Node test runner | 36/36 aprovados |
+| dependências | `npm audit --omit=dev` | 0 vulnerabilidades conhecidas no snapshot |
+| segredos/histórico | padrões de alta confiança em `git log --all` | 0 ocorrências; `.env` fora do Git e do contexto Docker |
+| build | Docker Compose `camoburguer-audit` | API, web e bridge reconstruídos |
+| serviços | PostgreSQL/API/bridge/web | DB/API/bridge saudáveis; web ativo |
+| seed | container da API | transacional; abertura `opening = 150` |
+| smoke | host WSL contra Compose | aprovado; quatro origens, caixa esperado 128,40 e replay do spool |
+| segurança local | HTTP | seed sem token `503`; bridge sem bearer `401` |
+| SSE | HTTP com Origin local | `200`, ACAO correto, retry e stream |
+| navegador local | Chrome | painel renderizado, API conectada e console sem entradas |
+| aplicação pública | Chrome/curl somente leitura | versão anterior; API pública, SSE reconectando e seed financeiro incorreto |
+
+Decisão atual:
+
+- demo local corrigida: **aprovada**;
+- redeploy das correções: **não executado**;
+- integrações reais: **reprovadas até autenticação + sandbox**;
+- produção: **reprovada**.
+
+Detalhes: [auditoria-tecnica-2026-07-21.md](auditoria-tecnica-2026-07-21.md) e [auditoria-commit-a-commit.md](auditoria-commit-a-commit.md).
+
+## Histórico anterior
+
+Linha de base herdada de `codex/descontos-por-item-e-pedido` (`9174d61`), revisada em 2026-07-16. Cada incremento posterior acrescentou sua evidência à época.
 
 ## Gates executados
 

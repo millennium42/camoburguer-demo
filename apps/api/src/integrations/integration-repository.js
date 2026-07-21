@@ -1,5 +1,33 @@
 import { mapChannelMapping, mapChannelEvent, mapChannelCommand, mapOrder } from "../db.js";
 
+const MAPPING_COLUMNS = {
+  externalStatus: "external_status",
+  syncStatus: "sync_status",
+  syncError: "sync_error",
+  metadata: "metadata"
+};
+
+const EVENT_COLUMNS = {
+  status: "status",
+  error: "error",
+  processedAt: "processed_at",
+  payload: "payload"
+};
+
+const COMMAND_COLUMNS = {
+  status: "status",
+  attempts: "attempts",
+  nextAttemptAt: "next_attempt_at",
+  responsePayload: "response_payload",
+  error: "error",
+  completedAt: "completed_at"
+};
+
+function columnFor(columns, key) {
+  if (!columns[key]) throw new Error(`Campo de atualização não permitido: ${key}`);
+  return columns[key];
+}
+
 export async function findChannelMapping({ channel, merchantId, externalId }, executor) {
   const { rows } = await executor.query(
     "SELECT * FROM channel_mappings WHERE channel = $1 AND merchant_id = $2 AND external_id = $3",
@@ -30,12 +58,13 @@ export async function insertChannelMapping(mapping, executor) {
 }
 
 export async function updateChannelMapping(id, updates, executor) {
+  if (!Object.keys(updates).length) throw new Error("Atualização de mapping vazia");
   const setClauses = [];
   const values = [];
   let i = 1;
 
   for (const [key, value] of Object.entries(updates)) {
-    const column = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    const column = columnFor(MAPPING_COLUMNS, key);
     setClauses.push(`${column} = $${i}`);
     if (key === 'metadata') {
       values.push(JSON.stringify(value));
@@ -86,14 +115,15 @@ export async function insertChannelEvent(event, executor) {
 }
 
 export async function updateChannelEvent(id, updates, executor) {
+  if (!Object.keys(updates).length) throw new Error("Atualização de evento vazia");
   const setClauses = [];
   const values = [];
   let i = 1;
 
   for (const [key, value] of Object.entries(updates)) {
-    const column = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    const column = columnFor(EVENT_COLUMNS, key);
     setClauses.push(`${column} = $${i}`);
-    values.push(value);
+    values.push(key === "payload" ? JSON.stringify(value) : value);
     i++;
   }
 
@@ -132,12 +162,13 @@ export async function findChannelCommand({ channel, idempotencyKey }, executor) 
 }
 
 export async function updateChannelCommand(id, updates, executor) {
+  if (!Object.keys(updates).length) throw new Error("Atualização de comando vazia");
   const setClauses = [];
   const values = [];
   let i = 1;
 
   for (const [key, value] of Object.entries(updates)) {
-    const column = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    const column = columnFor(COMMAND_COLUMNS, key);
     setClauses.push(`${column} = $${i}`);
     if (key === 'responsePayload') {
       values.push(JSON.stringify(value));

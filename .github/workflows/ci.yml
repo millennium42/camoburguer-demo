@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm audit --omit=dev
+      - run: docker compose -p camoburguer-ci up -d --build --wait --wait-timeout 120
+      - run: docker compose -p camoburguer-ci exec -T api node /app/scripts/seed-demo.mjs
+      - run: npm run smoke
+        env:
+          PRINT_BRIDGE_TOKEN: local-print-bridge-token
+      - if: always()
+        run: docker compose -p camoburguer-ci down -v

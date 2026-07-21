@@ -4,6 +4,7 @@ import pg from "pg";
 const apiBase = process.env.API_BASE_URL || "http://127.0.0.1:3001";
 const webBase = process.env.WEB_BASE_URL || "http://127.0.0.1:8081";
 const printBase = process.env.PRINT_BRIDGE_URL || "http://127.0.0.1:3100";
+const printBridgeToken = process.env.PRINT_BRIDGE_TOKEN || "";
 const runId = Date.now().toString(36);
 
 async function request(base, path, { method = "GET", body, headers = {}, expected = [200] } = {}) {
@@ -24,6 +25,7 @@ const web = await fetch(webBase);
 assert.equal(web.status, 200);
 assert.match(await web.text(), /Pedidos, cozinha e financeiro/);
 assert.equal((await api("/health")).ok, true);
+assert.equal((await api("/health")).database, "reachable");
 const catalog = await api("/catalog");
 assert.equal(catalog.capturedAt, "2026-07-16");
 assert.equal(catalog.items.length, 51);
@@ -528,10 +530,28 @@ const bridgePayload = {
   reason: "smoke",
   content: "Pedido smoke\nHorário: 12:34\n2x Burger"
 };
-const firstPrint = await request(printBase, "/print-jobs", { method: "POST", body: bridgePayload, expected: [201] });
-const repeatedPrint = await request(printBase, "/print-jobs", { method: "POST", body: bridgePayload, expected: [201] });
+const printHeaders = printBridgeToken ? { authorization: `Bearer ${printBridgeToken}` } : {};
+const firstPrint = await request(printBase, "/print-jobs", {
+  method: "POST",
+  body: bridgePayload,
+  headers: printHeaders,
+  expected: [201]
+});
+const repeatedPrint = await request(printBase, "/print-jobs", {
+  method: "POST",
+  body: bridgePayload,
+  headers: printHeaders,
+  expected: [200]
+});
 assert.equal(firstPrint.id, bridgeJob);
 assert.equal(repeatedPrint.id, bridgeJob);
+assert.equal(repeatedPrint.repeated, true);
+await request(printBase, "/print-jobs", {
+  method: "POST",
+  body: { ...bridgePayload, content: "Conteúdo divergente para a mesma chave" },
+  headers: printHeaders,
+  expected: [409]
+});
 
 console.log(JSON.stringify({
   ok: true,

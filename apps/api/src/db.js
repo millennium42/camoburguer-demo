@@ -315,28 +315,37 @@ export function createDb(connectionString) {
       }
     },
     async anonymizeCustomerData(searchTerm) {
-      const term = `%${searchTerm}%`;
+      const term = String(searchTerm || "").trim();
       const anonymizedText = "[DADO ANONIMIZADO LGPD]";
       const ordersQuery = `
         UPDATE orders 
         SET customer_name = $2, delivery_address = $2
-        WHERE customer_name ILIKE $1 OR delivery_address ILIKE $1
+        WHERE POSITION(LOWER($1) IN LOWER(customer_name)) > 0
+           OR POSITION(LOWER($1) IN LOWER(COALESCE(delivery_address, ''))) > 0
         RETURNING id;
       `;
       const tabsQuery = `
         UPDATE service_tabs 
         SET customer_name = $2
-        WHERE customer_name ILIKE $1
+        WHERE POSITION(LOWER($1) IN LOWER(COALESCE(customer_name, ''))) > 0
         RETURNING id;
       `;
-      const [ordersRes, tabsRes] = await Promise.all([
-        pool.query(ordersQuery, [term, anonymizedText]),
-        pool.query(tabsQuery, [term, anonymizedText])
-      ]);
-      return {
-        anonymizedOrders: ordersRes.rowCount,
-        anonymizedTabs: tabsRes.rowCount
-      };
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const ordersRes = await client.query(ordersQuery, [term, anonymizedText]);
+        const tabsRes = await client.query(tabsQuery, [term, anonymizedText]);
+        await client.query("COMMIT");
+        return {
+          anonymizedOrders: ordersRes.rowCount,
+          anonymizedTabs: tabsRes.rowCount
+        };
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
     },
     async close() {
       await pool.end();

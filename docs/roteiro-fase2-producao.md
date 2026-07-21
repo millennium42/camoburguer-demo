@@ -1,64 +1,107 @@
-# Roteiro de Implementação: Fase 2 e Integrações (Production-Ready)
+# Roteiro da demo à produção
 
-Este documento descreve detalhadamente as lacunas arquiteturais e os próximos passos necessários para evoluir o sistema da versão de demonstração (v1) para um ambiente de produção "Full-Scale", com foco especial nas integrações de canais externos (APIs) e resiliência de infraestrutura.
+Este roteiro é ordenado por risco e dependência. Não introduza Redis, fila, Kubernetes ou ficha técnica antes de uma métrica ou requisito provar a necessidade.
 
-## 1. Integração Bidirecional: iFood (API v2)
+## Gate 0 — fechar a exposição pública (P0)
 
-A infraestrutura atual provê as tabelas de mapeamento (`channel_mappings`), eventos (`channel_events`) e comandos (`channel_commands`), além de uma máquina de estados na camada de apresentação (fila de autorização). Para o funcionamento pleno em produção, os seguintes componentes de back-end devem ser implementados:
+Critérios:
 
-### 1.1. Autenticação e Gestão de Tokens (OAuth2)
-- **Implementação:** Desenvolver um serviço/worker (`apps/workers/ifood-auth`) que realize o grant flow de OAuth2 (`client_credentials` ou `authorization_code`) via endpoint `https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token`.
-- **Persistência:** Armazenamento seguro de access tokens e refresh tokens em cache distribuído (ex: Redis) ou em tabela encriptada do PostgreSQL, com job cronometrado para renovação preventiva antes da expiração (tempo de vida usual: 1 a 6 horas).
+- autenticação real do operador diante de API e SSE;
+- autorização separada para seed, anonimização, ajustes, caixa e reprocessamento;
+- nenhuma chave embutida no frontend estático;
+- auditoria de quem fez cada ação sensível;
+- política de sessão, revogação e recuperação documentada;
+- teste que prova `401/403` em todas as rotas protegidas.
 
-### 1.2. Ingestão de Eventos (Webhooks vs. Polling)
-- **Polling:** Implementar um loop assíncrono (usando `setInterval` ou message queue como RabbitMQ/BullMQ) consultando o endpoint `/order/v1.0/events:polling`.
-- **Armazenamento Seguro (Event Sourcing):** Inserção imutável de todo evento recebido (ex: `PLC` - Placed, `CAN` - Cancelled) na tabela `channel_events`. 
-- **Acknowledgment (ACK):** Disparar chamadas HTTP POST para `/order/v1.0/events/acknowledgment` imediatamente após o persist, garantindo a semântica "at-least-once" e destravando a fila do iFood.
+Opção Ponytail recomendada: colocar o painel e a API atrás de um proxy/identity-aware access já suportado pelo provedor. Se isso não atender identidade por ação, criar um BFF/login pequeno, sem espalhar auth pelo domínio.
 
-### 1.3. Handshake e Mapeamento de Catálogo
-- **Matching de SKUs:** Implementar rotinas para correlacionar os UUIDs/External IDs dos produtos do JSON do iFood com os IDs numéricos locais do `catalog-snapshot`.
-- **Conversão de Payload:** Mapeamento do objeto estruturado do agregador para o contrato interno (`source`, `fulfillmentMode`, `deliveryAddress`, `items`, `paymentMethod`). Os pedidos devem ser inseridos na base com `sync_status = 'accept_pending'`.
+## Gate 1 — dados e operação recuperável
 
-### 1.4. Despacho de Comandos (Outbound)
-- **Aceite/Rejeição:** Quando a UI disparar a chamada `POST /orders/:id/accept`, o back-end deve acionar o endpoint do iFood (`/order/v1.0/orders/{id}/confirm`) paralelamente à transição de estado interno. Em caso de recusa, usar `/order/v1.0/orders/{id}/requestCancellation`.
-- **Despacho (Dispatch):** Acionamento do endpoint de dispatch quando o pedido for concluído na cozinha.
+- extrair o `schemaSql` para migrations numeradas e testadas em banco vazio e banco legado;
+- configurar backup/PITR no PostgreSQL;
+- executar e registrar teste de restore;
+- separar seed de demo de qualquer ambiente com dados reais;
+- criar retenção/anonymização LGPD com aprovação e dry-run;
+- padronizar timezone operacional como `America/Sao_Paulo`.
 
-## 2. Integração Bidirecional: Delivery Much
+## Gate 2 — homologação iFood
 
-Similar ao iFood, a API da Delivery Much requer uma topologia de integração robusta:
+Referências oficiais a reconfirmar na data da implementação:
 
-### 2.1. Webhooks de Notificação
-- Exposição de uma rota REST pública e autenticada (ex: via API Key estática no header) para recepção push-based dos pedidos da Delivery Much.
-- Conversão da árvore estrutural (que difere do formato do iFood) para o schema canonizado do domínio local.
-- Uso mandatório de filas (Pub/Sub) para absorver picos de I/O em horários de janta (High-Throughput), evitando perda de payloads por timeouts no webhook receiver.
+- [autenticação centralizada](https://developer.ifood.com.br/en-US/docs/guides/modules/authentication/centralized/);
+- [polling do módulo Events](https://developer.ifood.com.br/en-US/docs/guides/modules/events/polling-overview/);
+- [eventos do módulo Order](https://developer.ifood.com.br/en-US/docs/guides/modules/order/events/).
 
-## 3. Topologia de Infraestrutura e Resiliência (Cloud)
+Plano:
 
-A atual stack via `docker-compose` atende ao escopo de demonstração. Para cloud, as seguintes abstrações são mandatórias:
+1. obter credenciais de sandbox e merchant de teste;
+2. capturar fixtures sanitizadas de token, evento, detalhe e erro;
+3. testar polling a cada 30 s, `x-polling-merchants`, duplicata e fora de ordem;
+4. provar commit local antes do ACK e retry quando ACK falha;
+5. provar aceite, cancelamento, início de preparo e pronto;
+6. reconciliar comando `failed` e evento desconhecido;
+7. medir lag e taxa de erro;
+8. habilitar flag somente no staging.
 
-### 3.1. Roteamento Edge e Terminação TLS
-- **API Gateway/Reverse Proxy:** Substituir o binding direto de portas (8081/3001) por um Nginx/Traefik ou Cloudflare Tunnel.
-- **TLS/SSL:** Configuração de certificados X.509 (Let's Encrypt / Certbot) para criptografia em trânsito (HTTPS/WSS) em todos os fluxos.
+## Gate 3 — homologação Delivery Much
 
-### 3.2. Banco de Dados (PostgreSQL)
-- Migração de instâncias efêmeras em container para um RDS (Relational Database Service) gerenciado (ex: AWS RDS, Supabase, Neon).
-- Implementação de replicação de leitura (Read Replicas) caso as queries dos dashboards financeiros saturem os IOPS de disco primário.
-- Jobs automatizados de `pg_dump` (Point-in-Time Recovery - PITR).
+A referência pública é [Orientações gerais de integração](https://developer.deliverymuch.com.br/specs/orientacoes.pdf); os endpoints detalhados exigem acesso privado.
 
-### 3.3. Alta Disponibilidade (Stateless API)
-- A API Node.js deve manter estado restrito ao banco de dados. Sessões, chaves de idempotência e rate limits devem migrar da memória RAM do Node para Redis (`ioredis`).
-- Scaling horizontal (múltiplos containers da API via Kubernetes ou AWS ECS) por meio de um Load Balancer (Round Robin).
+Plano:
 
-## 4. Evoluções de Domínio (V2)
+1. obter Postman/OpenAPI/portal oficial do contrato da conta;
+2. substituir qualquer endpoint presumido pela rota documentada;
+3. congelar fixtures de autenticação, lista, receive/read, accept, ready e cancel;
+4. validar moeda, complementos, endereço, retirada e status reais;
+5. testar deduplicação `pedido:status`, reentrega e retry;
+6. decidir por polling ou webhook conforme o contrato, sem adicionar broker por antecipação;
+7. habilitar apenas após sandbox e reconciliação operacional.
 
-### 4.1. Gestão Ativa de Catálogo (Backoffice)
-- Substituir o arquivo estático gerado do snapshot `OlaClick` (`apps/api/src/catalog-snapshot.json`) por CRUD completo (Tabelas `products`, `categories`, `addons`).
-- Relacionamento complexo para gestão de grade de produtos (tamanhos, variações de blend de carne).
+## Gate 4 — worker/outbox observável
 
-### 4.2. Estoque Estrito de Ficha Técnica (CMV)
-- Tabelas de `ingredients` (Pão, Carne 150g, Cheddar) e `recipes` associadas aos SKUs.
-- Engine transacional avançada que debita componentes (em gramas/unidades) a cada conclusão de pedido, prevenindo desvios operacionais.
+O poller em processo serve à demo. Separá-lo quando pelo menos uma condição ocorrer: múltiplas réplicas, deploy interrompendo polling, lag mensurável, necessidade de reprocessamento ou SLA do parceiro.
 
-### 4.3. Impressão via Local Network (Print Bridge)
-- Para o POS (Ponto de Venda) em cloud, a UI client-side soluciona a impressão local. Contudo, impressões de comandas para a ilha de preparo ("boqueta" da cozinha) requerem um driver TCP/IP.
-- O daemon `print-bridge` deve ser evoluído de um leitor de File System spooler para um microserviço WebSockets (Socket.io) ou Long-Polling que receba comandos da API na Nuvem e injete pacotes ESC/POS direto via rede LAN (IP:Porta) ou porta Serial/USB local da impressora térmica.
+Requisitos mínimos:
+
+- lease/advisory lock por canal;
+- outbox persistente para comandos;
+- backoff com jitter e limite;
+- dead-letter/reprocessamento manual;
+- correlação por `channel`, `merchantId`, `externalOrderId`, `eventId`, `commandId`;
+- métricas de último poll, lag, ACK, retries e falhas;
+- alerta e runbook.
+
+## Gate 5 — impressão real
+
+O bridge em nuvem apenas grava spool remoto. Para cozinha:
+
+1. inventariar impressora/interface/SO/rede;
+2. escolher agente local outbound-only autenticado;
+3. manter o texto de `buildKitchenTicket()` como contrato;
+4. implementar ESC/POS/driver atrás do bridge;
+5. provar idempotência, queda de internet, reinício, papel ausente e reprint;
+6. documentar contingência manual.
+
+## Gate 6 — release operacional
+
+- CI verde e smoke em ambiente limpo;
+- teste visual desktop/390 px;
+- sandbox dos dois parceiros aprovado ou flags desligadas;
+- carga representativa do pico de jantar;
+- dashboards/alertas e plantão definido;
+- backup/restore recente;
+- checklist de rollback e comunicação;
+- aprovação explícita do responsável operacional.
+
+## Depois da estabilização
+
+Somente com demanda comprovada:
+
+- catálogo administrável;
+- estoque por ingrediente/ficha técnica;
+- fiscal/nota;
+- múltiplas lojas/operadores/perfis;
+- Redis ou broker;
+- scaling horizontal.
+
+Esses itens mudam o produto e não fazem parte do financeiro gerencial v1.

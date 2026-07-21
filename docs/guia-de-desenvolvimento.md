@@ -1,219 +1,289 @@
-# Guia de Desenvolvimento
+# Guia de desenvolvimento assistido por IA
 
-## Objetivo
+## Finalidade
 
-Este guia é o contrato executável para evoluir o Camoburguer Demo. Toda mudança deve preservar o núcleo único de pedidos, o ticket da cozinha, os efeitos financeiros idempotentes e a operação local por comandas.
+Este é o contrato de trabalho para humanos e agentes de IA evoluírem o Camoburguer sem criar um segundo núcleo de pedidos, quebrar o ticket da cozinha ou confundir uma demo funcional com produção homologada.
 
----
+Leia, nesta ordem:
 
-## Pré-requisitos
+1. `AGENTS.md` — regras operacionais do repositório;
+2. este guia;
+3. `docs/arquitetura-do-sistema.md`;
+4. o documento de domínio afetado;
+5. `docs/auditoria-tecnica-2026-07-21.md` para riscos conhecidos;
+6. `SUBAGENTES.md` somente se a entrega justificar papéis especializados.
 
-| Ferramenta | Versão | Uso |
-|---|---|---|
-| Node.js | 22+ | Runtime e testes |
-| PostgreSQL | 16+ | Banco de dados |
-| Docker + Compose | Qualquer recente | Stack completa local |
-| Git | 2.40+ | Controle de versão |
+## Estado que o agente deve assumir
 
----
+- A versão é uma **demo**, sem login de operador.
+- iFood e Delivery Much ficam desabilitados até homologação.
+- O deploy público pode estar atrás do `HEAD`; comprovar versão antes de diagnosticar.
+- `orders` é o único núcleo operacional; uma comanda é uma coleção comercial de rodadas.
+- O contrato textual do ticket é estável e precede mudanças de implementação.
+- Financeiro é gerencial v1: sem fiscal, ficha técnica ou CMV por receita.
 
-## Setup Rápido
+## Ambiente padrão: Ubuntu no WSL
 
-```bash
-# Instalar dependências
-npm install
+Pré-requisitos: WSL 2/Ubuntu, Node.js 22+, npm, Git, Docker Desktop com integração WSL, PostgreSQL 16 via Compose, `rtk`, `m1nd` e Graphify.
 
-# Copiar variáveis de ambiente
-cp .env.example .env
-
-# Subir stack completa
-docker compose up -d --build
-
-# Popular banco com dados demo
-npm run seed:demo
-
-# Rodar testes
-npm test
-```
-
----
-
-## Arquitetura de Desenvolvimento
-
-### Monorepo com Workspaces
-
-```
-camoburguer-demo/
-├── apps/api/           → API Fastify (núcleo)
-├── apps/ops-web/       → Frontend operacional (HTML + JS + CSS)
-├── apps/print-bridge/  → Bridge de impressão
-├── apps/event-simulator/ → Simulador de eventos
-├── packages/domain/    → Regras de negócio puras
-├── packages/finance-core/ → Lançamentos e agregação
-├── packages/shared-types/ → Enums e contratos
-├── tests/              → Testes unitários e smoke
-└── scripts/            → Utilitários de seed e simulação
-```
-
-### Princípios de Implementação
-
-- **Núcleo único**: Reutilizar `packages/domain` para regras e `orders` para rodadas; canais não ganham núcleos paralelos.
-- **Migrações idempotentes**: O `schemaSql` aceita banco vazio e populado; colunas novas usam defaults compatíveis.
-- **Transações atômicas**: Pedido + estoque + ticket na mesma transação. Nunca persistir pela metade.
-- **Append-only**: Correções geram cancelamento, reversão ou ajuste compensatório — nunca exclusão.
-- **Frontend sem framework**: HTML nativo, CSS e JavaScript enquanto a interface permanecer pequena.
-- **Ticket primeiro**: Atualizar `docs/padrao-ticket-cozinha.md` quando o contrato impresso mudar.
-
----
-
-## Validação
-
-### Testes Unitários (30 testes)
+Abra o Ubuntu/WSL e trabalhe pelo path Linux do repositório:
 
 ```bash
-npm test
+cd /mnt/c/Users/milla/Documents/Projetos/Git/camoburguer-demo
+rtk npm ci
+rtk npm run check
+rtk npm test
 ```
 
-Cobre: domínio (descontos, adicionais, cálculos), financeiro (caixa, turnos, lançamentos) e UI (escapeHtml, renderização, carrinho).
-
-### Smoke Test End-to-End
+Stack completa e isolada:
 
 ```bash
-npm run smoke
+rtk proxy docker compose -p camoburguer-dev up -d --build
+rtk proxy docker compose -p camoburguer-dev exec -T api node /app/scripts/seed-demo.mjs
+rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token npm run smoke
+rtk proxy docker compose -p camoburguer-dev down
 ```
 
-Simula operação completa: abertura de turno, pedidos multicanal, comandas com rodadas, pagamentos, sangria, estorno e fechamento.
+Use `down -v` somente em projeto de teste explicitamente nomeado e quando a exclusão do volume fizer parte da intenção. Nunca apague o volume padrão para “tentar de novo”.
 
-### Validação Visual
+## Orientação antes de editar
 
-Após mudanças no frontend, verificar:
-- Desktop (1920×1080)
-- Tela estreita (390px) — sem overflow horizontal
-- Console do navegador — sem erros ou warnings
+### Tarefa leve
 
----
+Texto, typo ou ajuste local sem impacto de contrato:
 
-## Protocolo Git
+1. `rtk git status --short`;
+2. ler o arquivo e o teste diretamente relacionado;
+3. aplicar a menor mudança;
+4. executar o teste proporcional;
+5. `rtk git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check`.
 
-### Convenção de Commits
+### Tarefa estrutural
 
-```
-tipo(escopo): descrição curta
-
-Tipos: feat | fix | docs | refactor | test | style | chore
-Escopo: api | ops-web | domain | finance | render | docs
-```
-
-### Fluxo de Trabalho
-
-1. Garantir árvore limpa e testes passando
-2. Implementar com documentação e testes no mesmo diff
-3. Commitar com mensagem descritiva
-4. Verificar: `npm test` + `git diff --check`
-5. Push para `main`
-
-### Checklist Pré-Push
-
-- [ ] `npm test` — 30/30 verdes
-- [ ] `git diff --check` — sem whitespace errors
-- [ ] Documentação atualizada (se aplicável)
-- [ ] 5W2H registrado para features novas
-- [ ] Frontend conferido em navegador
-
----
-
-## Desenvolvimento com IA
-
-O Camoburguer foi projetado para evolução assistida por agentes de IA. As regras estão em `AGENTS.md` e o pipeline de agentes em `SUBAGENTES.md`.
-
-### Doutrina Ponytail Full
-
-> Preferir o caminho mais curto, recursos nativos da plataforma e o menor número de peças móveis.
-
-### Contexto Estável (Prompt Prefix)
-
-O contexto para qualquer implementação assistida por IA deve seguir esta ordem:
-
-1. `AGENTS.md` — regras operacionais
-2. `docs/guia-de-desenvolvimento.md` — este guia
-3. `docs/arquitetura-do-sistema.md` — decisões e fronteiras
-4. Skill do papel atual (se aplicável)
-
-### Ferramentas de Orientação
+Arquitetura, integrações, domínio, banco, financeiro, impressão, segurança ou deploy:
 
 ```bash
-# Análise estrutural rápida (primeira ação em tarefas não-triviais)
-rtk m1nd agent first-minute --repo . --query "o que vou mudar" --json
+rtk proxy m1nd agent first-minute --repo . --query "descreva a mudança" --json
+rtk graphify query "onde vive e quem depende do conceito afetado?"
+rtk graphify path "origem" "destino"
+rtk graphify explain "conceito"
+```
 
-# Consultar grafo do projeto
-rtk graphify query "como funciona o estoque?"
-rtk graphify path "orders" "finance_entries"
-rtk graphify explain "tab_payments"
+Depois, confirme no código. Grafo é mapa, não evidência final; arquivos homônimos podem ser associados incorretamente.
 
-# Atualizar grafo após mudanças de código
+Antes de editar, registre mentalmente ou no plano:
+
+- requisito e fora de escopo;
+- invariantes afetadas;
+- tabelas/rotas/eventos/tickets tocados;
+- blast radius;
+- teste que falharia antes da correção;
+- rollback seguro.
+
+## Ordem de implementação
+
+1. **Contrato/documento** — se ticket, payload público, estado ou regra operacional mudar.
+2. **Teste de regressão/contrato** — fixture mínima que representa o risco.
+3. **Domínio puro** — validação, cálculo e transição sem I/O.
+4. **Persistência** — transação, lock, unicidade e migration.
+5. **Adapter/API** — traduzir I/O para o contrato interno.
+6. **UI** — apresentar estado; não duplicar regra de negócio.
+7. **Observabilidade** — erro acionável, correlação e status de sync.
+8. **Documentação e grafo**.
+9. **Gates completos**.
+
+Se uma etapa não se aplica, declare isso no handoff em vez de inventar artefato.
+
+## Invariantes que toda IA deve preservar
+
+### Pedido e comanda
+
+- Um pedido finalizado nasce confirmado numa única transação.
+- `Idempotency-Key` de criação é reutilizada em retry do mesmo payload.
+- Rodada enviada é imutável do ponto de vista operacional; correção cria rodada compensatória.
+- `delivery` exige endereço; `pickup` e `local` não persistem endereço irrelevante.
+- SKU conhecido usa nome/preço do snapshot canônico, nunca os valores enviados pelo navegador.
+
+### Estoque
+
+- Baixa, pedido e `print_job` compartilham transação.
+- Saldo nunca fica negativo e locks são obtidos em ordem determinística.
+- Cancelamento/restituição precisa respeitar o estágio de preparo documentado.
+- Não introduzir ingredientes/receitas na v1 sem decisão explícita.
+
+### Financeiro
+
+- Valores de comanda usam centavos inteiros na fronteira de pagamento.
+- Lançamentos são compensados, não apagados.
+- Forma não monetária altera faturamento, não numerário do caixa.
+- Filtro de resumo e listagem deve ser o mesmo.
+
+### Integração
+
+- Evento externo é persistido de forma idempotente antes do ACK.
+- ACK só ocorre depois do commit.
+- ID externo é campo explícito; nunca derivar de UUID/chave local.
+- Ação não suportada falha de forma visível; não marcar como concluída.
+- Retry preserva a chave e tem limite/backoff observável.
+- Canal é adapter: não criar tela, tabela ou máquina de estados paralela.
+
+### Impressão
+
+- Atualize `docs/padrao-ticket-cozinha.md` antes de mudar conteúdo/formato.
+- Cozinha usa apenas `print_jobs` → API → bridge; navegador não dispara cópia paralela.
+- Mesmo `jobId` gera um único arquivo.
+- Bridge valida autenticação, tamanho e IDs; não revela filesystem.
+
+### Segurança
+
+- CORS e rate limit não são autenticação.
+- Nunca habilitar canal real enquanto API/SSE operacionais estiverem públicos.
+- Segredos ficam em ambiente/secret manager, nunca em HTML, commit ou log.
+- Fallback demonstrativo nunca se apresenta como resposta de parceiro habilitado.
+- Rotas destrutivas são fechadas por padrão e exigem autenticação separada.
+- Renderização HTML de qualquer dado externo passa por `escapeHtml` ou `textContent`.
+
+## Integrações: protocolo obrigatório
+
+Para iFood/Delivery Much, o agente deve:
+
+1. consultar documentação oficial atual;
+2. registrar URL/versão/data consultada;
+3. obter fixture sanitizada do payload real;
+4. escrever teste de contrato para token, evento, detalhe e comando;
+5. testar duplicata, fora de ordem, timeout, `401`, `429` e `5xx`;
+6. provar persistência antes de ACK;
+7. validar reconciliação manual e dead-letter;
+8. manter feature flag desligada até o gate sandbox.
+
+Não adivinhe endpoint privado da Delivery Much. Pare no gate e solicite acesso/fixture.
+
+## Gates de qualidade
+
+### Gate 0 — diff e sintaxe
+
+```bash
+rtk npm run check
+rtk git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check
+rtk git diff --stat
+```
+
+O sinalizador `cr-at-eol` trata o CRLF do checkout Windows como terminador de linha, mas ainda acusa espaços/tabs realmente excedentes.
+
+### Gate 1 — unitário/contrato
+
+```bash
+rtk npm test
+rtk npm audit --omit=dev
+```
+
+### Gate 2 — stack real
+
+```bash
+rtk proxy docker compose -p camoburguer-check up -d --build
+rtk proxy docker compose -p camoburguer-check ps
+rtk proxy docker compose -p camoburguer-check exec -T api node /app/scripts/seed-demo.mjs
+rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token npm run smoke
+```
+
+Verifique logs de API/bridge e só depois remova o projeto isolado:
+
+```bash
+rtk proxy docker compose -p camoburguer-check down -v
+```
+
+### Gate 3 — interface
+
+- desktop operacional;
+- viewport 390 × 844 sem overflow;
+- teclado/foco/modais;
+- console sem erro;
+- SSE sai de “reconectando” quando abre;
+- nenhum ticket de cozinha duplicado.
+
+### Gate 4 — parceiro/produção
+
+- sandbox e fixture real aprovados;
+- autenticação de operador implantada;
+- backup e restore provados;
+- monitoramento/alerta e runbook;
+- impressora física/contingência;
+- aprovação explícita de release.
+
+Sem Gate 4, use a expressão “demo validada”, nunca “production-ready”.
+
+## Atualização do Graphify
+
+Após código ou documentação central:
+
+```bash
 rtk graphify update .
+rtk graphify query "o que mudou no fluxo afetado?"
 ```
 
-### Pipeline de Agentes
+Se o update incremental travar em NTFS, use o script versionado:
 
-O desenvolvimento segue uma cadeia de 14 agentes especializados (detalhes em `SUBAGENTES.md`):
-
-```
-po_processo → revisor → arquiteto → revisor → dominio_db → revisor →
-backend_core → revisor → frontend_ops → revisor → impressao_infra → revisor →
-qa_validacao → revisor_final
+```bash
+rtk proxy bash scripts/graphify-update-wsl.sh
 ```
 
-Cada agente entrega: paths tocados, artefatos gerados, riscos, premissas, evidência de teste e handoff.
+Não comite caches temporários; revise o tamanho do diff do grafo antes de incluí-lo.
 
-### Boas Práticas para Agentes
+## Git e preservação do trabalho
 
-| Prática | Motivo |
-|---|---|
-| Ler `AGENTS.md` primeiro | Entender limites e doutrina |
-| Consultar Graphify antes de grep amplo | Evitar leitura especulativa de arquivos |
-| Manter um commit por entrega | Facilitar rollback e revisão |
-| Registrar 5W2H para cada feature | Rastreabilidade decisória |
-| Nunca criar segundo núcleo de pedidos | Invariante arquitetural |
-| Testar antes de commitar | 30 testes devem passar |
+- Comece por `rtk git status --short` e diferencie mudanças preexistentes.
+- Não normalize EOL nem reformate arquivo inteiro junto de correção funcional.
+- Um commit deve representar uma intenção revisável e incluir teste/documentação correspondente.
+- Não reescreva histórico, resete ou apague mudanças do usuário.
+- Merges exigem `npm run check`; marcador de conflito em JS é bloqueador.
+- Não faça push/deploy sem pedido ou autorização explícita.
 
----
+Formato recomendado:
 
-## Registro 5W2H
+```text
+fix(integrations): persistir evento antes do ack
 
-Cada entrega deve adicionar uma entrada no arquivo `docs/5w2h-evolucao.md` contendo:
+Contexto: ...
+Risco: ...
+Evidência: npm test; smoke; fixture sandbox ...
+```
 
-| Campo | Pergunta |
-|---|---|
-| **What** | O que foi feito? |
-| **Why** | Por que foi necessário? |
-| **Where** | Onde impactou no código? |
-| **When** | Quando se aplica operacionalmente? |
-| **Who** | Quem é responsável por cada parte? |
-| **How** | Como foi implementado tecnicamente? |
-| **How much** | Qual a superfície técnica (tabelas, rotas, dependências)? |
+## Prompt-base para uma próxima IA
 
-Além da tabela, registrar: critérios de aceite, evidências, riscos com mitigação e plano de rollback.
+```text
+Objetivo: <resultado observável>
+Fora de escopo: <limites>
+Invariantes: núcleo único, ticket estável, financeiro v1
+Ambiente: Ubuntu/WSL; todo shell via rtk
+Orientação: m1nd primeiro, Graphify antes de navegação ampla
+Critérios de aceite: <testes e comportamento>
+Risco/rollback: <impacto e reversão>
+Entrega: código + testes + docs + evidência; sem push/deploy sem autorização
+```
 
----
+## Handoff obrigatório
 
-## Rollback e Troubleshooting
+Toda entrega deve informar:
 
-- **Schema aditivo**: Rollback desativa rota/tela sem remover dados.
-- **Conflito 409**: Recarregar agregado e repetir com nova chave idempotente.
-- **Falha de impressão**: Preservar pedido; reprocessar `print_job`.
-- **Falha Docker**: Verificar `docker compose ps` e logs antes de reconstruir volumes.
-- **Nunca**: Apagar volumes ou reescrever histórico Git para corrigir problema de aplicação.
+- resultado alcançado;
+- paths tocados;
+- decisões e premissas;
+- o que foi provado e comandos usados;
+- o que não pôde ser provado;
+- riscos abertos por severidade;
+- migração/configuração necessária;
+- rollback;
+- próximo menor passo seguro.
 
----
+## Próximos passos recomendados
 
-## Scripts Disponíveis
+1. autenticação/autorização do posto e proteção de API/SSE;
+2. migrations versionadas e backup/restore;
+3. fixtures + sandbox iFood;
+4. contrato privado + sandbox Delivery Much;
+5. outbox/worker observável para comandos e ACKs;
+6. modularização gradual de `server.js` e `main.js`;
+7. agente local de impressão física;
+8. carga, métricas e runbook de incidente.
 
-| Comando | Descrição |
-|---|---|
-| `npm test` | Roda 30 testes unitários |
-| `npm run smoke` | Smoke test E2E |
-| `npm run start:api` | Inicia API Fastify |
-| `npm run start:print` | Inicia Print Bridge |
-| `npm run seed:demo` | Popular banco com dados demo |
-| `npm run graph:update` | Atualizar Graphify via WSL |
+O detalhamento e a justificativa estão na [auditoria técnica](auditoria-tecnica-2026-07-21.md).

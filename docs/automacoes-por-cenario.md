@@ -24,6 +24,9 @@ A v1 não cria personalização bespoke por cliente. Em vez disso, usa regras co
 | pagamento em dinheiro | método `cash` | altera caixa esperado do turno | vínculo explícito ao turno |
 | estorno | parcela reversível e turno aberto | cria compensação sem apagar o original | unicidade por pagamento |
 | retirada | turno aberto | reduz caixa esperado sem alterar faturamento | tipo canônico `cash_withdrawal` |
+| evento externo novo | adapter habilitado e payload válido | persiste evento, normaliza pedido em `received` e cria mapping | unicidade canal/evento e canal/merchant/pedido |
+| aceite externo | confirmação recebida do parceiro | ativa pedido local, baixa estoque e reserva ticket | comando idempotente e transação única |
+| ACK iFood | evento local já commitado | confirma recebimento ao parceiro | ACK pós-commit; duplicata não recria pedido |
 
 Os filtros financeiros são de consulta: a mesma combinação de tipo e forma de pagamento alimenta listagem, cards e totais, sem criar ou modificar lançamento.
 

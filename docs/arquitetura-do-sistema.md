@@ -31,30 +31,33 @@
 - frontend estático e leve
 - backend em Node com Fastify
 - finance gerencial e dirigido por evento
-- adapters de canal preparados, mas não obrigatórios na v1
+- adapters iFood/Delivery Much atrás de feature flags e ainda dependentes de homologação
 
 ## Fluxo operacional obrigatório
 
 ```mermaid
 flowchart LR
-  EXTERNAL["Balcão, WhatsApp, iFood e OlaClick"] -->|"POST /orders"| API["API Fastify"]
+  MANUAL["Balcão, WhatsApp e OlaClick manual"] -->|"POST /orders"| API["API Fastify"]
+  CHANNELS["iFood / Delivery Much"] --> ADAPTERS["Adapters com polling"]
+  ADAPTERS --> EVENTS[("channel_events")]
+  EVENTS --> API
   UI["ops-web: rascunho local"] -->|"POST /tabs/:id/rounds + Idempotency-Key"| API
   API --> DOMAIN["Domínio: catálogo, adicionais, descontos e totais"]
   API --> TX["Transação da rodada"]
   TX --> STOCK[("stock_balances + movements")]
-  TX --> ORDERS[("orders imutáveis")]
+  TX --> ORDERS[("orders: rodada + estado")]
   TX --> JOB["print_job idempotente"]
   ORDERS --> KITCHEN["Fila da cozinha + SSE"]
   JOB --> BRIDGE["print-bridge"]
-  BRIDGE --> SPOOL[("Spool persistente")]
+  BRIDGE --> SPOOL[("Spool local/volume")]
   UI -->|"parcelas/estornos"| PAYMENTS[("tab_payments")]
   PAYMENTS --> FINANCE[("finance_entries")]
-  EXTERNAL -->|"order.completed"| FINANCE
+  ORDERS -->|"order.completed"| FINANCE
   FINANCE --> SUMMARY["Resumo/lista com os mesmos filtros"]
 ```
 
 - `Finalizar pedido` não limpa o carrinho antes de a API confirmar sucesso. Repetir a mesma finalização deve devolver o mesmo pedido, sem duplicar itens, impressão ou lançamento financeiro.
-- O frontend não envia nem exibe operador: a v1 é de posto único, sem login e sem identidade administrativa.
+- O frontend não envia nem exibe operador: isso é uma limitação deliberada da demo e bloqueia o uso com dados reais até existir autenticação/autorização.
 - `fulfillment` aceita apenas `delivery`, `pickup` e `local`. Endereço é obrigatório somente para `delivery` e deve ser ocultado/ignorado nos demais modos.
 - A cozinha recebe somente pedidos confirmados. O horário impresso é o `createdAt` persistido no pedido, nunca o horário local da impressora.
 - Rodadas de produção e cancelamento são novos `orders`; `reverses_order_id` referencia a origem, sem `UPDATE` destrutivo no ticket já emitido.
@@ -88,6 +91,22 @@ flowchart LR
 - `apps/print-bridge`: recebe o contrato estável do ticket e grava spool idempotente por `jobId`, sem consultar ou alterar pedidos. A API recupera jobs interrompidos na inicialização e repete falhas periodicamente.
 - Novos canais entram por adapters que normalizam para o mesmo comando de pedido; não criam fluxos paralelos na UI ou no domínio.
 
+## Fronteira de integração externa
+
+- `channel_events` deduplica o evento bruto do parceiro.
+- `channel_mappings` liga merchant/pedido externo ao único `order` local e expõe estado de sincronização.
+- `channel_commands` funciona como outbox de aceite, cancelamento, preparo e pronto.
+- O poller usa advisory lock por canal para evitar duas execuções simultâneas.
+- No iFood, persistência/processamento local fazem commit antes do ACK. Evento repetido é reconhecido e novamente confirmado sem duplicar pedido.
+- Credenciais e payloads reais ainda não foram homologados. Feature flags devem permanecer desligadas fora de sandbox.
+
+## Fronteira de segurança
+
+- CORS usa allowlist; isso controla navegador, não acesso à API.
+- Seed e anonimização exigem `DEMO_ADMIN_TOKEN` e ficam desabilitados sem segredo.
+- API e print bridge usam `PRINT_BRIDGE_TOKEN`; o bridge valida bearer, IDs e tamanho do ticket.
+- As rotas operacionais e SSE ainda não têm identidade de operador. Esta é uma pendência P0 antes de qualquer integração real.
+
 ## Eventos internos
 
 - `order.created`, `order.confirmed`, `order.completed`, `order.cancelled`
@@ -101,3 +120,4 @@ flowchart LR
 - Confiar no estado do caixa mantido pela UI permite abertura duplicada e fechamento inválido; a restrição deve ser transacional no backend/DB.
 - Gerar horário no print-bridge causa divergência entre operação e ticket; `createdAt` deve atravessar o contrato sem recomputação.
 - Acoplar regras de delivery ou canal aos componentes visuais multiplica exceções; a UI coleta dados e a API valida o contrato normalizado.
+- Hospedar o bridge no Render não alcança a impressora da LAN e o filesystem do serviço pode ser efêmero; produção exige um agente local autenticado.

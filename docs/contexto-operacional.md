@@ -8,7 +8,7 @@ O Camoburguer opera como restaurante de pequeno porte com pedidos vindos de balc
 
 ## Responsabilidade operacional
 
-- A demo considera uma única pessoa responsável pelo atendimento e caixa, sem login, perfil administrativo ou identificação de operador.
+- A demo considera uma única pessoa responsável pelo atendimento e caixa, sem login, perfil administrativo ou identificação de operador. Essa simplificação só é aceitável com dados sintéticos e bloqueia integrações reais até existir controle de acesso.
 - A cozinha recebe os pedidos finalizados pela fila e pelo ticket impresso.
 - O cliente final não acessa a aplicação nesta versão.
 

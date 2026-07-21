@@ -1,103 +1,91 @@
 import { createOrderAction } from "./order-actions.js";
 import { getOrderWithMapping } from "./integration-repository.js";
+import { fetchIFoodCancellationReasons } from "./providers/ifood.js";
 
-export default async function integrationRoutes(fastify, options) {
-  const { db, sse } = fastify;
+export default async function integrationRoutes(fastify, { db, sse, config }) {
+  function publishSyncStatus(orderId, syncStatus) {
+    sse.publish("orders", {
+      type: "order.sync.status.changed",
+      payload: { orderId, syncStatus },
+      at: new Date().toISOString()
+    });
+  }
+
+  async function enqueueAction(request, reply, action, payload, message) {
+    const { id } = request.params;
+    const idempotencyKey = request.headers["idempotency-key"];
+
+    try {
+      const result = await createOrderAction(id, action, payload, idempotencyKey, db);
+      publishSyncStatus(id, result.syncStatus);
+      return reply.code(202).send({
+        orderId: id,
+        action,
+        syncStatus: result.syncStatus,
+        repeated: result.repeated,
+        message
+      });
+    } catch (error) {
+      return reply.code(error.statusCode || 500).send({ error: error.message });
+    }
+  }
 
   fastify.get("/orders/:id/cancellation-reasons", async (request, reply) => {
-    const { id } = request.params;
-    const order = await getOrderWithMapping(id, db);
-    
-    if (!order || !order.mapping) {
+    const order = await getOrderWithMapping(request.params.id, db);
+    if (!order?.mapping) {
       return reply.code(404).send({ error: "Pedido de integração não encontrado" });
     }
-    
-    // Simplification for the demo: hardcoded reasons for the channels
-    const reasons = [
-      { id: "501", name: "Problemas no sistema" },
-      { id: "502", name: "Restaurante sem energia" },
-      { id: "503", name: "Produto indisponível" }
-    ];
 
-    return reply.send({ reasons });
-  });
-
-  fastify.post("/orders/:id/accept", async (request, reply) => {
-    const { id } = request.params;
-    const idempotencyKey = request.headers['idempotency-key'];
-    if (!idempotencyKey) return reply.code(400).send({ error: "idempotency-key is required" });
-
-    try {
-      const { command, syncStatus, order } = await createOrderAction(id, "accept", {}, db);
-      sse.publish("order.sync.status.changed", { orderId: id, syncStatus });
-      return reply.code(202).send({
-        orderId: id,
-        action: "accept",
-        syncStatus,
-        message: "Aceitação enviada à plataforma"
-      });
-    } catch (err) {
-      return reply.code(err.statusCode || 500).send({ error: err.message });
+    if (order.mapping.channel === "ifood" && config.ifood.enabled) {
+      const reasons = await fetchIFoodCancellationReasons(config.ifood, order.mapping.externalId);
+      if (!reasons.length) return reply.code(409).send({ error: "Canal não ofereceu motivo de cancelamento" });
+      return reply.send({ reasons, demo: false });
     }
+
+    if (order.mapping.channel === "deliverymuch" && config.deliveryMuch.enabled) {
+      return reply.code(501).send({
+        error: "Cancelamento Delivery Much bloqueado até homologar os códigos do parceiro"
+      });
+    }
+
+    // Apenas para pedidos sintéticos quando o adapter está desligado.
+    return reply.send({
+      reasons: [
+        { id: "501", name: "Problemas no sistema" },
+        { id: "502", name: "Restaurante sem energia" },
+        { id: "503", name: "Produto indisponível" }
+      ],
+      demo: true
+    });
   });
 
-  fastify.post("/orders/:id/cancel", async (request, reply) => {
-    const { id } = request.params;
-    const idempotencyKey = request.headers['idempotency-key'];
+  fastify.post("/orders/:id/accept", (request, reply) => enqueueAction(
+    request,
+    reply,
+    "accept",
+    {},
+    "Aceitação enviada à plataforma"
+  ));
+
+  fastify.post("/orders/:id/cancel", (request, reply) => {
     const { reasonId } = request.body || {};
-    
-    if (!idempotencyKey) return reply.code(400).send({ error: "idempotency-key is required" });
-    if (!reasonId) return reply.code(400).send({ error: "reasonId is required" });
-
-    try {
-      const { command, syncStatus, order } = await createOrderAction(id, "cancel", { reasonId }, db);
-      sse.publish("order.sync.status.changed", { orderId: id, syncStatus });
-      return reply.code(202).send({
-        orderId: id,
-        action: "cancel",
-        syncStatus,
-        message: "Cancelamento enviado à plataforma"
-      });
-    } catch (err) {
-      return reply.code(err.statusCode || 500).send({ error: err.message });
-    }
+    if (!reasonId) return reply.code(400).send({ error: "reasonId é obrigatório" });
+    return enqueueAction(request, reply, "cancel", { reasonId }, "Cancelamento enviado à plataforma");
   });
 
-  fastify.post("/orders/:id/start-preparation", async (request, reply) => {
-    const { id } = request.params;
-    const idempotencyKey = request.headers['idempotency-key'];
-    if (!idempotencyKey) return reply.code(400).send({ error: "idempotency-key is required" });
+  fastify.post("/orders/:id/start-preparation", (request, reply) => enqueueAction(
+    request,
+    reply,
+    "startPreparation",
+    {},
+    "Início de preparo enviado à plataforma"
+  ));
 
-    try {
-      const { command, syncStatus, order } = await createOrderAction(id, "startPreparation", {}, db);
-      sse.publish("order.sync.status.changed", { orderId: id, syncStatus });
-      return reply.code(202).send({
-        orderId: id,
-        action: "startPreparation",
-        syncStatus,
-        message: "Início de preparo enviado à plataforma"
-      });
-    } catch (err) {
-      return reply.code(err.statusCode || 500).send({ error: err.message });
-    }
-  });
-
-  fastify.post("/orders/:id/ready", async (request, reply) => {
-    const { id } = request.params;
-    const idempotencyKey = request.headers['idempotency-key'];
-    if (!idempotencyKey) return reply.code(400).send({ error: "idempotency-key is required" });
-
-    try {
-      const { command, syncStatus, order } = await createOrderAction(id, "ready", {}, db);
-      sse.publish("order.sync.status.changed", { orderId: id, syncStatus });
-      return reply.code(202).send({
-        orderId: id,
-        action: "ready",
-        syncStatus,
-        message: "Pronto enviado à plataforma"
-      });
-    } catch (err) {
-      return reply.code(err.statusCode || 500).send({ error: err.message });
-    }
-  });
+  fastify.post("/orders/:id/ready", (request, reply) => enqueueAction(
+    request,
+    reply,
+    "ready",
+    {},
+    "Pronto enviado à plataforma"
+  ));
 }

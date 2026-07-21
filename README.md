@@ -1,398 +1,198 @@
-# 🍔 Camoburguer Demo
+# Camoburguer Demo
 
-> **Plataforma operacional de hamburgueria: pedidos, cozinha, estoque, caixa e delivery em um núcleo único.**
+Aplicação operacional de hamburgueria para pedidos, comandas, cozinha, estoque e caixa gerencial em um núcleo único.
 
-[![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Fastify](https://img.shields.io/badge/Fastify-5-000000?logo=fastify)](https://fastify.dev/)
-[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render)](https://render.com/)
-[![Testes](https://img.shields.io/badge/Testes-30%2F30-brightgreen)]()
+> Estado: **demo validada localmente**. O deploy público pode estar em commit anterior. iFood/Delivery Much não estão homologados e não devem ser habilitados com dados reais enquanto API/SSE estiverem sem autenticação de operador.
 
----
+## O que funciona
 
-## Sumário
+- pedidos manuais de balcão, WhatsApp e OlaClick;
+- comandas/mesas com rodadas e cancelamentos corretivos;
+- catálogo snapshot, adicionais e descontos;
+- estoque transacional para `xis`, `dog` e `hamburguer`;
+- fila da cozinha e estados do pedido;
+- pagamentos parciais, estorno, abertura, reforço, sangria e fechamento;
+- ticket textual persistido em `print_jobs` e spool idempotente;
+- SSE para atualização da interface;
+- adapters iFood e Delivery Much atrás de flags, ainda sem homologação real.
 
-- [Visão Geral](#visão-geral)
-- [Arquitetura](#arquitetura)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Início Rápido (Local)](#início-rápido-local)
-- [Testes](#testes)
-- [Deploy em Nuvem (Render)](#deploy-em-nuvem-render)
-- [Funcionalidades](#funcionalidades)
-- [Fluxo do Pedido](#fluxo-do-pedido)
-- [Variáveis de Ambiente](#variáveis-de-ambiente)
-- [Desenvolvimento com IA](#desenvolvimento-com-ia)
-- [Documentação Técnica](#documentação-técnica)
-- [Cronologia do Projeto](#cronologia-do-projeto)
+## Limites importantes
 
----
+- Não há login/identidade de operador.
+- Rotas operacionais de leitura e escrita não podem receber dados reais na internet nesse estado.
+- O print bridge em nuvem grava arquivo remoto; não imprime na rede local da cozinha.
+- O financeiro é gerencial v1, sem fiscal e sem CMV por receita.
+- Catálogo é o snapshot OlaClick capturado em 2026-07-16.
 
-## Visão Geral
-
-O **Camoburguer** centraliza todos os canais de atendimento (Balcão, WhatsApp, iFood, OlaClick) em uma **fila única de pedidos**. Cada pedido transita por uma máquina de estados estrita, com estoque transacional, impressão atômica e caixa gerencial imutável.
-
-### Princípios
-
-| Princípio | Implementação |
-|---|---|
-| **Núcleo único** | Um só motor de pedidos para todos os canais |
-| **Transação atômica** | Pedido + estoque + ticket na mesma transação DB |
-| **Idempotência nativa** | `Idempotency-Key` em todas as mutações |
-| **Append-only** | Estoque, pagamentos e financeiro nunca sofrem `UPDATE` destrutivo |
-| **Sem login (v1)** | Posto operacional único, sem autenticação |
-
----
+Veja a [auditoria integral](docs/auditoria-tecnica-2026-07-21.md) e a [matriz dos 82 commits](docs/auditoria-commit-a-commit.md).
 
 ## Arquitetura
 
-```
-                    ┌─────────────────────────────────────────┐
-                    │         FONTES DE PEDIDO                │
-                    │  Balcão · WhatsApp · iFood · OlaClick   │
-                    └────────────────────┬────────────────────┘
-                                         │
-                                         ▼
-                    ┌─────────────────────────────────────────┐
-                    │      NÚCLEO ÚNICO DO CAMOBURGUER        │
-                    │   API Fastify + Domínio Transacional    │
-                    │         PostgreSQL (pg)                 │
-                    └────────┬──────────────────────┬─────────┘
-                             │                      │
-                             ▼                      ▼
-                ┌────────────────────────┐  ┌────────────────────────┐
-                │    PAINEL OPERADOR     │  │   FILA DA COZINHA      │
-                │  Comandas & Financeiro │  │   Impressão & SSE      │
-                └────────────────────────┘  └────────────────────────┘
+```text
+manual/partners
+      │
+      ▼
+adapters/API Fastify ──► packages/domain
+      │                       │
+      ▼                       ▼
+ PostgreSQL              ticket canônico
+      │                       │
+      ├── orders/estoque      ▼
+      ├── comandas/finance  print_jobs ──► print-bridge ──► spool
+      └── channel events/commands
+      │
+      ▼
+ops-web + SSE
 ```
 
-### Stack Tecnológica
+Princípios:
 
-| Camada | Tecnologia |
+- `orders` é o único núcleo operacional;
+- pedido + baixa de estoque + reserva de impressão formam uma transação;
+- correções financeiras/estoque/ticket usam efeitos compensatórios;
+- diferenças de canal ficam nos adapters;
+- UI apresenta estado e não redefine regra de domínio.
+
+## Estrutura
+
+```text
+apps/api/                 API, persistência, SSE e adapters
+apps/ops-web/             painel estático do operador
+apps/print-bridge/        spool autenticado
+apps/event-simulator/     utilitário de demo
+packages/domain/          regras puras de pedido, caixa e ticket
+packages/finance-core/    efeitos e resumos gerenciais
+packages/shared-types/    enums/contratos
+scripts/                  seed, Graphify e verificação
+tests/                    unitário, contrato, UI e smoke
+docs/                     operação, arquitetura, auditoria e runbooks
+```
+
+## Início rápido no Ubuntu/WSL
+
+Pré-requisitos: Node.js 22+, npm, WSL 2/Ubuntu e Docker Desktop com integração WSL.
+
+```bash
+cd /mnt/c/Users/milla/Documents/Projetos/Git/camoburguer-demo
+rtk npm ci
+rtk proxy docker compose -p camoburguer-dev up -d --build
+rtk proxy docker compose -p camoburguer-dev exec -T api node /app/scripts/seed-demo.mjs
+```
+
+URLs:
+
+- painel: `http://localhost:8081`;
+- API: `http://localhost:3001/health`;
+- bridge: `http://localhost:3100/health`.
+
+Ao terminar:
+
+```bash
+rtk proxy docker compose -p camoburguer-dev down
+```
+
+Não use `down -v` no projeto padrão sem intenção explícita de apagar dados.
+
+## Validação
+
+```bash
+rtk npm run check
+rtk npm test
+rtk npm audit --omit=dev
+rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token npm run smoke
+rtk git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check
+```
+
+`cr-at-eol` evita que o checkout CRLF do Windows seja confundido com espaço sobrando; espaços reais continuam sendo rejeitados.
+
+Snapshot desta auditoria:
+
+| Gate | Resultado |
 |---|---|
-| **Runtime** | Node.js 22+ (ES Modules) |
-| **API** | Fastify 5 + `@fastify/cors` + `@fastify/helmet` + `@fastify/rate-limit` |
-| **Banco** | PostgreSQL 16+ (migrações idempotentes no boot) |
-| **Frontend** | HTML5 + Vanilla JS + CSS (sem framework) |
-| **Impressão** | `window.print()` client-side + Print Bridge (Fastify) |
-| **Infra** | Docker Compose (local) · Render PaaS (produção) |
-| **Testes** | Node.js Test Runner nativo (30 testes unitários + smoke E2E) |
+| sintaxe | todos os arquivos JS/MJS válidos |
+| testes | 36/36 |
+| audit npm produção | 0 vulnerabilidades conhecidas |
+| imagens Docker | build aprovado |
+| API/PostgreSQL/bridge | health aprovado |
+| smoke E2E | aprovado |
+| SSE/CORS | aprovado localmente |
 
----
+O smoke pressupõe a stack local e um banco descartável/preparado. Ele cria e altera dados.
 
-## Estrutura do Projeto
+## Impressão
 
-```
-camoburguer-demo/
-├── apps/
-│   ├── api/                 # API Core (Fastify): rotas, domínio, banco, SSE
-│   │   └── src/server.js    # Servidor principal (~1250 linhas)
-│   ├── ops-web/             # Interface operacional (HTML + JS + CSS)
-│   │   ├── index.html       # SPA do operador
-│   │   ├── main.js          # Lógica, estado e renderização
-│   │   └── styles.css       # Design dark brown premium
-│   ├── print-bridge/        # Serviço de impressão e spooler
-│   └── event-simulator/     # Utilitário para carga demo
-├── packages/
-│   ├── domain/              # Entidades, regras de catálogo e cálculos
-│   ├── finance-core/        # Lançamentos gerenciais e agregação
-│   └── shared-types/        # Enums e contratos compartilhados
-├── tests/
-│   ├── domain.test.js       # Testes de domínio (descontos, adicionais, itens)
-│   ├── finance.test.js      # Testes financeiros (caixa, turnos, lançamentos)
-│   ├── ops-web.test.js      # Testes de UI (renderização, escapeHtml, carrinho)
-│   └── smoke.mjs            # Teste end-to-end integrado
-├── scripts/
-│   ├── seed-demo.mjs        # Popular banco com dados de demonstração
-│   └── simulate-order.mjs   # Simulação de pedido para testes
-├── docs/                    # Documentação técnica completa
-├── render.yaml              # Blueprint de deploy no Render
-├── docker-compose.yml       # Stack local (PostgreSQL + API + Bridge + Web)
-├── AGENTS.md                # Regras para agentes de IA
-├── SUBAGENTES.md            # Pipeline de subagentes e revisores
-└── package.json             # Monorepo com workspaces npm
+Ticket de cozinha:
+
+```text
+buildKitchenTicket()
+  → print_jobs (na transação do pedido)
+  → API envia bearer + payload
+  → print-bridge valida e grava uma vez por jobId
 ```
 
----
+`window.print()` permanece somente para relatório financeiro de turno. O formato está em [docs/padrao-ticket-cozinha.md](docs/padrao-ticket-cozinha.md).
 
-## Início Rápido (Local)
+## Integrações
 
-### Pré-requisitos
+As flags começam desligadas:
 
-- **Node.js** 22+
-- **Docker** e **Docker Compose** (para stack completa)
-- **PostgreSQL** 16+ (se preferir sem Docker)
-
-### Via Docker Compose (recomendado)
-
-```bash
-# Subir a stack completa
-docker compose up -d --build
-
-# Popular com dados de demonstração
-node scripts/seed-demo.mjs
+```env
+IFOOD_ENABLED=false
+DELIVERYMUCH_ENABLED=false
 ```
 
-### Sem Docker (desenvolvimento)
+iFood usa autenticação centralizada, polling do módulo Events, detalhes do Order e ACK após commit. Delivery Much depende da especificação privada do estabelecimento. Nenhum dos dois foi validado com credenciais reais nesta auditoria.
 
-```bash
-# Instalar dependências
-npm install
+Antes de habilitar, cumprir [docs/roteiro-fase2-producao.md](docs/roteiro-fase2-producao.md).
 
-# Configurar variáveis (copiar e editar)
-cp .env.example .env
+## Segurança/configuração
 
-# Iniciar a API (requer PostgreSQL rodando)
-npm run start:api
-```
+Variáveis principais:
 
-### URLs Locais
-
-| Serviço | URL |
-|---|---|
-| 🖥️ **Painel Operacional** | http://localhost:8081 |
-| ⚙️ **API Core** | http://localhost:3001/health |
-| 🖨️ **Print Bridge** | http://localhost:3100/health |
-
----
-
-## Testes
-
-```bash
-# Bateria completa (30 testes unitários)
-npm test
-
-# Smoke test end-to-end (requer API + banco)
-npm run smoke
-```
-
-### Cobertura dos Testes
-
-| Suíte | Escopo | Quantidade |
+| Variável | Default local | Função |
 |---|---|---|
-| `domain.test.js` | Descontos, adicionais, cálculos, acumulação | ~13 testes |
-| `finance.test.js` | Lançamentos, turnos, agregação de caixa | ~10 testes |
-| `ops-web.test.js` | escapeHtml, renderização DOM, carrinho | ~7 testes |
-| `smoke.mjs` | Fluxo completo E2E contra API real | Integrado |
+| `DATABASE_URL` | PostgreSQL local | conexão da API |
+| `PRINT_BRIDGE_URL` | `http://127.0.0.1:3100` | destino do spool |
+| `PRINT_BRIDGE_TOKEN` | vazio em dev | bearer API ↔ bridge; obrigatório no bridge em produção |
+| `CORS_ORIGINS` | localhost + demo Render | allowlist separada por vírgula |
+| `AUTO_SEED` | `false` | seed somente em banco vazio quando explicitamente ativo |
+| `DEMO_ADMIN_TOKEN` | vazio | seed/anonimização ficam desabilitados |
 
----
-
-## Deploy em Nuvem (Render)
-
-O arquivo `render.yaml` provisiona toda a infraestrutura em **1 clique**.
-
-### Passo a Passo
-
-1. Crie uma conta em [render.com](https://render.com/)
-2. No dashboard, clique em **New +** → **Blueprint**
-3. Conecte o repositório `camoburguer-demo`
-4. O Render cria automaticamente:
-
-```
-┌──────────────────┐  ┌───────────────┐  ┌──────────────────┐  ┌──────────────────┐
-│ PostgreSQL DB    │  │ Fastify API   │  │ Print Bridge     │  │ Ops Web          │
-│ camoburguer-db   │  │ camoburguer-  │  │ camoburguer-     │  │ camoburguer-     │
-│ (Gerenciado)     │  │ api           │  │ bridge           │  │ ops-web (Static) │
-└──────────────────┘  └───────────────┘  └──────────────────┘  └──────────────────┘
-```
-
-### URLs de Produção
-
-| Serviço | URL |
-|---|---|
-| **API** | `https://camoburguer-api.onrender.com` |
-| **Ops Web** | `https://camoburguer-ops-web.onrender.com` |
-| **Print Bridge** | `https://camoburguer-bridge.onrender.com` |
-
-### Seed Automático
-
-A API detecta banco vazio no boot e executa o seed de demonstração automaticamente (`AUTO_SEED=true`).
-
-> 📖 Guia completo: [docs/RENDER_DEPLOY.md](docs/RENDER_DEPLOY.md)
-
----
-
-## Funcionalidades
-
-### 📋 Pedidos e Canais
-
-- Fila unificada para Balcão, WhatsApp, iFood e OlaClick
-- Fila de autorização para pedidos de delivery (aceitar/recusar)
-- Máquina de estados: `received → confirmed → in_preparation → ready → completed`
-- Cancelamento parcial/total com ticket corretivo
-
-### 🍽️ Comandas e Mesas
-
-- Abertura por identificador livre (tab ou mesa)
-- Rodadas independentes com carrinho dedicado
-- Pagamentos parciais (Dinheiro, Pix, Crédito, Débito, App)
-- Estorno append-only e encerramento seguro
-
-### 📦 Estoque
-
-- Três categorias: Xis, Dog e Hambúrguer
-- Baixa transacional na confirmação do pedido
-- Restituição automática em cancelamentos pré-preparo
-- Ajuste manual com motivo obrigatório
-
-### 💰 Financeiro e Caixa
-
-- Turnos de caixa (abrir/fechar) com numerário esperado
-- Reforço e sangria em caixa aberto
-- Faturamento por forma de pagamento
-- Impressão de fechamento (resumido e detalhado)
-
-### 🖨️ Impressão
-
-- Ticket de cozinha via `window.print()` (client-side)
-- Relatório de turno para impressora térmica
-- Print Bridge como backup/spooler
-
-### 🔒 Segurança
-
-- LGPD: rota `/lgpd/anonymize` para anonimização de PII
-- Helmet (cabeçalhos de segurança)
-- Rate limiting (1000 req/min em demo)
-- CORS habilitado
-
----
-
-## Fluxo do Pedido
-
-```
-received ──(Aceite)──► confirmed ──(Preparo)──► in_preparation ──(Pronto)──► ready ──(Concluir)──► completed
-    │                      │                          │                       │
-    └──(Recusar)───────────┴──────(Cancelar)──────────┴───────────────────────┴───► cancelled
-```
-
-### Regra de Cálculo
-
-```
-totalItem = (preçoBase + Σ adicionais) × quantidade × (1 − descontoItem/100)
-totalPedido = Σ totalItem × (1 − descontoGeral/100)
-```
-
----
-
-## Variáveis de Ambiente
-
-| Variável | Serviço | Descrição | Default |
-|---|---|---|---|
-| `DATABASE_URL` | API | Conexão PostgreSQL | — |
-| `PORT` | API | Porta da API | `3001` |
-| `NODE_ENV` | API | Ambiente | `production` |
-| `PRINT_BRIDGE_URL` | API | URL do Print Bridge | `https://camoburguer-bridge.onrender.com` |
-| `DEFAULT_PRINTER` | API | Impressora padrão | `cozinha-principal` |
-| `AUTO_SEED` | API | Seed automático no boot | `true` |
-
-> Veja `.env.example` para a lista completa incluindo integrações iFood/Delivery Much.
-
----
+O Blueprint do Render gera/referencia segredos para bridge/admin e adiciona headers do site. Isso não substitui autenticação do operador.
 
 ## Desenvolvimento com IA
 
-O Camoburguer foi projetado para evolução assistida por agentes de IA. O arquivo `AGENTS.md` define as regras operacionais.
+Toda tarefa deve obedecer `AGENTS.md` e o [guia de desenvolvimento assistido por IA](docs/guia-de-desenvolvimento.md):
 
-### Doutrina Ponytail Full
+- WSL e `rtk` para shell;
+- `m1nd` primeiro em tarefa não trivial;
+- Graphify antes de navegação ampla e depois de mudança central;
+- Ponytail full;
+- preservar trabalho preexistente;
+- teste/documentação no mesmo diff;
+- distinguir prova direta de inferência;
+- sem push/deploy sem autorização.
 
-> **Preferir o caminho mais curto, recursos nativos da plataforma e o menor número de peças móveis.**
+Papéis opcionais e gates estão em [SUBAGENTES.md](SUBAGENTES.md).
 
-### Pipeline de Agentes (`SUBAGENTES.md`)
-
-O desenvolvimento segue uma cadeia de 14 agentes especializados com revisores pareados:
-
-```
-po_processo → revisor_processo → arquiteto_sistema → revisor_arquitetura →
-dominio_db → revisor_dominio → backend_core → revisor_backend →
-frontend_ops → revisor_frontend → impressao_infra → revisor_infra →
-qa_validacao → revisor_final
-```
-
-### Ferramentas de Orientação
-
-| Ferramenta | Uso | Quando |
-|---|---|---|
-| **m1nd** | Análise estrutural rápida | Antes de edições não-triviais |
-| **Graphify** | Mapa persistente do projeto | Consultar relações e dependências |
-| **Ponytail** | Filtro de complexidade | Sempre (doutrina padrão) |
-
-### Guia Rápido para Agentes
-
-```bash
-# Orientação estrutural
-rtk m1nd agent first-minute --repo . --query "mudança desejada" --json
-
-# Consultar grafo do projeto
-rtk graphify query "como funciona o estoque?"
-rtk graphify path "orders" "finance_entries"
-rtk graphify explain "tab_payments"
-
-# Atualizar grafo após mudanças
-rtk graphify update .
-
-# Testes antes de commit
-npm test
-npm run smoke
-```
-
-### Protocolo de Commit
-
-```
-feat(escopo): descrição curta     # Nova funcionalidade
-fix(escopo): descrição curta      # Correção de bug
-docs(escopo): descrição curta     # Documentação
-refactor(escopo): descrição curta # Refatoração
-test(escopo): descrição curta     # Testes
-style(escopo): descrição curta    # Estilo/formatação
-chore(escopo): descrição curta    # Manutenção
-```
-
-### 5W2H Obrigatório
-
-Cada entrega deve registrar no [5W2H](docs/5w2h-evolucao.md):
-
-| Campo | Pergunta |
-|---|---|
-| **What** | O que foi feito? |
-| **Why** | Por que foi necessário? |
-| **Where** | Onde impactou? |
-| **When** | Quando se aplica? |
-| **Who** | Quem é responsável? |
-| **How** | Como foi implementado? |
-| **How much** | Qual a superfície técnica? |
-
----
-
-## Documentação Técnica
+## Documentação
 
 | Documento | Conteúdo |
 |---|---|
-| 📑 [Documentação Central](docs/DOCUMENTACAO_CENTRAL.md) | Guia mestre unificado |
-| 🏗️ [Arquitetura](docs/arquitetura-do-sistema.md) | Módulos, fronteiras e decisões |
-| 🔄 [Ciclo do Pedido](docs/ciclo-do-pedido.md) | Máquina de estados e regras |
-| 💰 [Ciclo Financeiro](docs/ciclo-financeiro.md) | Caixa, turnos e lançamentos |
-| 📦 [Estoque](docs/estoque.md) | Controle transacional append-only |
-| 🖨️ [Ticket de Cozinha](docs/padrao-ticket-cozinha.md) | Formato de impressão |
-| 🚀 [Deploy Render](docs/RENDER_DEPLOY.md) | Guia completo de deploy |
-| 📊 [5W2H Evolução](docs/5w2h-evolucao.md) | Histórico decisório completo |
-| 🛠️ [Guia de Desenvolvimento](docs/guia-de-desenvolvimento.md) | Protocolo Git e validação |
-| 🤖 [AGENTS.md](AGENTS.md) | Regras para agentes de IA |
-| 👥 [SUBAGENTES.md](SUBAGENTES.md) | Pipeline de subagentes |
+| [Auditoria técnica](docs/auditoria-tecnica-2026-07-21.md) | achados, correções, provas e bloqueadores |
+| [Auditoria commit a commit](docs/auditoria-commit-a-commit.md) | 82 commits avaliados |
+| [Arquitetura](docs/arquitetura-do-sistema.md) | módulos, dados e fronteiras |
+| [Ciclo do pedido](docs/ciclo-do-pedido.md) | estados e invariantes |
+| [Ciclo financeiro](docs/ciclo-financeiro.md) | caixa, pagamentos e efeitos |
+| [Ticket da cozinha](docs/padrao-ticket-cozinha.md) | contrato textual e transporte |
+| [Deploy Render](docs/RENDER_DEPLOY.md) | publicação segura da demo |
+| [Roteiro de produção](docs/roteiro-fase2-producao.md) | gates ordenados |
+| [Guia IA](docs/guia-de-desenvolvimento.md) | workflow e definição de pronto |
 
----
+## Deploy público observado
 
-## Cronologia do Projeto
+- painel: [camoburguer-ops-web.onrender.com](https://camoburguer-ops-web.onrender.com/)
+- API esperada: `https://camoburguer-api.onrender.com`
+- bridge esperado: `https://camoburguer-bridge.onrender.com`
 
-| Data | Marco | Commits |
-|---|---|---|
-| **14/Jul** | Inicialização do repositório e demo operacional completa | `3dd601b` · `bdd41dd` |
-| **16/Jul** | Descontos, cardápio OlaClick, adicionais, comandas, estoque e pagamentos | `9174d61`…`b901fd4` |
-| **20/Jul** | Entregas 0-5, integrações, redesign UI, impressão, LGPD e segurança | `83a137a`…`dd5fca6` |
-| **21/Jul** | Fluxo contínuo de comandas, deploy Render e correções de produção | `384a10f`…`3fb67d4` |
-
-> Histórico completo: `git log --oneline --all`
-
----
-
-<p align="center">
-  <strong>Camoburguer</strong> · Engenharia de ponta para a gastronomia moderna
-</p>
+Não há alteração automática desse ambiente a partir do working tree local.

@@ -11,6 +11,7 @@ services:
     name: camoburguer-api
     env: node
     plan: free
+    healthCheckPath: /health
     buildCommand: npm install
     startCommand: node apps/api/src/server.js
     envVars:
@@ -25,7 +26,19 @@ services:
       - key: DEFAULT_PRINTER
         value: cozinha-principal
       - key: PRINT_BRIDGE_URL
-        value: https://camoburguer-bridge.onrender.com
+        fromService:
+          type: web
+          name: camoburguer-bridge
+          property: hostport
+      - key: PRINT_BRIDGE_TOKEN
+        fromService:
+          type: web
+          name: camoburguer-bridge
+          envVarKey: PRINT_BRIDGE_TOKEN
+      - key: CORS_ORIGINS
+        value: https://camoburguer-ops-web.onrender.com
+      - key: DEMO_ADMIN_TOKEN
+        generateValue: true
       - key: AUTO_SEED
         value: "true"
 
@@ -34,11 +47,16 @@ services:
     name: camoburguer-bridge
     env: node
     plan: free
+    healthCheckPath: /health
     buildCommand: npm install
     startCommand: node apps/print-bridge/src/server.js
     envVars:
       - key: PORT
         value: 3100
+      - key: NODE_ENV
+        value: production
+      - key: PRINT_BRIDGE_TOKEN
+        generateValue: true
 
   # 4. Frontend Operacional (Static Web Site)
   - type: web
@@ -50,3 +68,18 @@ services:
       - path: /*
         name: X-Frame-Options
         value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+      - path: /*
+        name: Content-Security-Policy
+        value: default-src 'self'; connect-src 'self' https://camoburguer-api.onrender.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
+      - path: /*
+        name: Cache-Control
+        value: no-store

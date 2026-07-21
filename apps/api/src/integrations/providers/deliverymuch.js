@@ -1,14 +1,20 @@
+import { randomUUID } from "crypto";
 import { requestForm, requestJson } from "../http-client.js";
 import { ingestExternalOrder } from "../order-ingestion.js";
-import { getPendingCommands, updateChannelCommand, insertChannelEvent } from "../integration-repository.js";
-import { activateAcceptedOrder } from "../order-actions.js";
-import { randomUUID } from "crypto";
+import {
+  getPendingCommands,
+  getOrderWithMapping,
+  insertChannelEvent,
+  updateChannelCommand,
+  updateChannelMapping
+} from "../integration-repository.js";
+import { activateAcceptedOrder, applyIntegratedTransition } from "../order-actions.js";
 
 export default function createDeliveryMuchAdapter(config, db) {
-  let currentToken = null;
+  let tokenCache = null;
 
   async function getToken() {
-    if (currentToken) return currentToken;
+    if (tokenCache?.expiresAt > Date.now() + 60_000) return tokenCache.value;
 
     const payload = await requestForm(config.deliveryMuch.authUrl, {
       grant_type: "password",
@@ -18,113 +24,159 @@ export default function createDeliveryMuchAdapter(config, db) {
       password: config.deliveryMuch.password
     });
 
-    currentToken = payload.access_token;
-    return currentToken;
+    tokenCache = {
+      value: payload.access_token,
+      expiresAt: Date.now() + Number(payload.expires_in || payload.expiresIn || 3_600) * 1000
+    };
+    return tokenCache.value;
+  }
+
+  async function authorizedRequest(path, options = {}) {
+    const token = await getToken();
+    return requestJson(`${config.deliveryMuch.apiUrl}${path}`, {
+      ...options,
+      headers: { ...options.headers, Authorization: `Bearer ${token}` }
+    });
   }
 
   async function fetchOrders() {
-    const token = await getToken();
-    return requestJson(`${config.deliveryMuch.apiUrl}/orders`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const payload = await authorizedRequest("/orders");
+    return Array.isArray(payload) ? payload : payload?.orders || [];
   }
 
-  async function markReceived(externalOrderId) {
-    const token = await getToken();
-    return requestJson(`${config.deliveryMuch.apiUrl}/orders/${externalOrderId}/receive`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  async function sendCommand(command) {
+    const externalOrderId = command.payload.externalOrderId;
+    if (!externalOrderId) throw new Error("Comando Delivery Much sem externalOrderId");
+
+    const endpoint = {
+      accept: "accept",
+      cancel: "cancel",
+      ready: "ready"
+    }[command.action];
+    if (!endpoint) throw new Error(`Ação Delivery Much não suportada: ${command.action}`);
+
+    return authorizedRequest(`/orders/${encodeURIComponent(externalOrderId)}/${endpoint}`, { method: "PATCH" });
   }
 
-  async function acceptOrder(externalOrderId) {
-    const token = await getToken();
-    return requestJson(`${config.deliveryMuch.apiUrl}/orders/${externalOrderId}/accept`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` }
-    });
-  }
-
-  async function cancelOrder(externalOrderId) {
-    const token = await getToken();
-    return requestJson(`${config.deliveryMuch.apiUrl}/orders/${externalOrderId}/cancel`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  async function processPendingCommands(executor) {
+    const commands = await getPendingCommands("deliverymuch", executor);
+    for (const command of commands) {
+      try {
+        await sendCommand(command);
+        if (command.action === "accept") {
+          await activateAcceptedOrder(command.orderId, db, executor);
+        } else if (command.action === "ready") {
+          await applyIntegratedTransition(command.orderId, "ready", db, executor);
+        } else if (command.action === "cancel") {
+          await applyIntegratedTransition(command.orderId, "cancelled", db, executor);
+        }
+        const order = await getOrderWithMapping(command.orderId, executor);
+        if (order?.mapping) {
+          await updateChannelMapping(order.mapping.id, {
+            externalStatus: command.action,
+            syncStatus: "synchronized",
+            syncError: null
+          }, executor);
+        }
+        await updateChannelCommand(command.id, {
+          status: "completed",
+          completedAt: new Date().toISOString(),
+          error: null
+        }, executor);
+      } catch (error) {
+        const attempts = command.attempts + 1;
+        await updateChannelCommand(command.id, {
+          attempts,
+          status: attempts >= 3 ? "failed" : "pending",
+          error: error.message,
+          nextAttemptAt: new Date(Date.now() + 60_000).toISOString()
+        }, executor);
+        if (attempts >= 3) {
+          const order = await getOrderWithMapping(command.orderId, executor);
+          if (order?.mapping) {
+            await updateChannelMapping(order.mapping.id, {
+              syncStatus: "failed",
+              syncError: error.message
+            }, executor);
+          }
+        }
+      }
+    }
   }
 
   async function poll(executor) {
     if (!config.deliveryMuch.enabled) return;
 
     try {
-      // 1. Process pending commands
-      const pendingCommands = await getPendingCommands("deliverymuch", executor);
-      for (const cmd of pendingCommands) {
-        try {
-          if (cmd.action === "accept") {
-            await acceptOrder(cmd.payload.externalOrderId || cmd.idempotencyKey.split(":")[2]);
-            await activateAcceptedOrder(cmd.orderId, db);
-          } else if (cmd.action === "cancel") {
-            await cancelOrder(cmd.payload.externalOrderId || cmd.idempotencyKey.split(":")[2]);
-          }
-
-          await updateChannelCommand(cmd.id, {
-            status: "completed",
-            completedAt: new Date().toISOString()
-          }, executor);
-        } catch (err) {
-          await updateChannelCommand(cmd.id, {
-            attempts: cmd.attempts + 1,
-            status: cmd.attempts >= 3 ? "failed" : "pending",
-            error: err.message,
-            nextAttemptAt: new Date(Date.now() + 60000).toISOString()
-          }, executor);
-        }
-      }
-
-      // 2. Fetch new orders
+      await processPendingCommands(executor);
       const orders = await fetchOrders();
+      const receiveIds = [];
+
       for (const externalOrder of orders) {
-        const eventId = randomUUID();
-        
-        await insertChannelEvent({
-          id: eventId,
+        if (!externalOrder?.id) throw new Error("Pedido Delivery Much sem id");
+        const externalEventId = `${externalOrder.id}:${externalOrder.status || "unknown"}`;
+        const savedEvent = await insertChannelEvent({
+          id: randomUUID(),
           channel: "deliverymuch",
-          externalEventId: eventId, // DM doesn't have events, so we generate one
+          externalEventId,
+          merchantId: config.deliveryMuch.companyUuid,
           externalOrderId: externalOrder.id,
-          eventType: "ORDER_CREATED",
-          payload: externalOrder
+          eventType: `ORDER_${String(externalOrder.status || "observed").toUpperCase()}`,
+          payload: externalOrder,
+          status: "processed"
         }, executor);
 
-        await ingestExternalOrder({
+        receiveIds.push(externalOrder.id);
+        if (!savedEvent) continue;
+
+        const ingestion = await ingestExternalOrder({
           source: "deliverymuch",
           externalMerchantId: config.deliveryMuch.companyUuid,
           externalOrderId: externalOrder.id,
           externalStatus: externalOrder.status,
-          customerName: externalOrder.customer?.name || "Cliente",
-          fulfillmentMode: "delivery", // simplistic mapping
-          deliveryAddress: externalOrder.deliveryAddress?.formattedAddress,
-          items: (externalOrder.items || []).map(item => ({
+          customerName: externalOrder.customer?.name || "Cliente Delivery Much",
+          fulfillmentMode: externalOrder.fulfillmentMode === "pickup" ? "pickup" : "delivery",
+          deliveryAddress: externalOrder.deliveryAddress?.formattedAddress || null,
+          createdAt: externalOrder.createdAt,
+          items: (externalOrder.items || []).map((item) => ({
             id: item.id || randomUUID(),
             name: item.name,
             quantity: item.quantity,
             price: Number(item.price),
-            notes: ""
-          }))
+            notes: item.notes || ""
+          })),
+          metadata: { deliveryMuchOrder: externalOrder }
         }, executor, db);
-
-        await markReceived(externalOrder.id);
+        if (ingestion.repeated) {
+          const order = await getOrderWithMapping(ingestion.orderId, executor);
+          if (order?.mapping) {
+            await updateChannelMapping(order.mapping.id, {
+              externalStatus: externalOrder.status,
+              syncStatus: "synchronized"
+            }, executor);
+          }
+        }
       }
-    } catch (err) {
-      if (err.statusCode === 401) {
-        currentToken = null; // force token refresh on next run
-      }
-      throw err;
+      return { receiveIds };
+    } catch (error) {
+      if (error.statusCode === 401) tokenCache = null;
+      throw error;
     }
   }
 
   return {
     channel: "deliverymuch",
-    poll
+    pollIntervalMs: Math.max(config.deliveryMuch.pollIntervalMs, 15_000),
+    poll,
+    afterCommit: async ({ receiveIds }) => {
+      try {
+        for (const externalOrderId of receiveIds) {
+          await authorizedRequest(`/orders/${encodeURIComponent(externalOrderId)}/receive`, { method: "PATCH" });
+        }
+      } catch (error) {
+        if (error.statusCode === 401) tokenCache = null;
+        throw error;
+      }
+    }
   };
 }

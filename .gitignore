@@ -1,6 +1,7 @@
 node_modules/
 .env
 .env.*
+!.env.example
 dist/
 coverage/
 tmp/
@@ -9,6 +10,17 @@ apps/print-bridge/data/
 *.log
 .m1nd/
 daemon_state.json
+auto_ingest_state.json
+boot_memory_state.json
+calibration_state.json
+daemon_alerts.json
+document_cache_index.json
+embeddings_cache.bin
+graph_snapshot.json
+ingest_roots.json
+plasticity_state.json
+tremor_state.json
+trust_state.json
 graphify-out/cache/
 graphify-out/20*/
 graphify-out/.graphify_root

@@ -27,5 +27,10 @@
 
 Item já enviado nunca é apagado ou reimpresso como se fosse novo. O cancelamento gera ticket separado com `CANCELAMENTO / RETIRAR`, comanda, nova rodada, referência curta ao pedido original, quantidades canceladas e motivo. O ticket original permanece imutável.
 
-## Formato de Impressão (Client-Side)
-Os tickets da cozinha (normais e corretivos) agora são renderizados via HTML/CSS em um <div id="print-area"> escondido na UI principal e disparados via window.print(), removendo a necessidade de ler do spooler e delegando a impressão ao diálogo nativo do sistema operacional do operador para melhor demonstração tátil.
+## Transporte de impressão
+
+O domínio gera o texto canônico; a API persiste um `print_job` na mesma transação do pedido/estoque e o envia ao `print-bridge` autenticado. O bridge grava uma única entrada de spool por `jobId`. Retry reutiliza o ID e nunca sobrescreve conteúdo existente.
+
+O frontend não imprime ticket de cozinha em paralelo. `window.print()` permanece apenas para relatório gerencial de turno, que não faz parte deste contrato.
+
+O bridge hospedado em nuvem é apenas demonstração de spool. Impressão térmica física exige um agente na rede local e validação separada de ESC/POS, USB/serial ou TCP.

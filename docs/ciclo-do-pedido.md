@@ -43,3 +43,11 @@ Itens do rascunho podem ser alterados livremente. Depois do envio, toda correç�
 - Cozinha trabalha sobre a fila operacional, não sobre o canal.
 - Ao concluir, o pedido pode gerar movimento financeiro automático.
 - Ao cancelar depois de concluído, o sistema gera reversão financeira.
+
+## Pedidos externos
+
+- Pedido iFood/Delivery Much é normalizado em `received` sem baixar estoque ou imprimir.
+- Aceite/recusa cria comando idempotente para o adapter; a chave deve sobreviver a retry de rede.
+- iFood só ativa o pedido local depois do evento de confirmação. Delivery Much ativa após resposta positiva ao comando, sujeito à homologação do contrato privado.
+- Preparo/pronto usam o adapter quando o canal oferece a operação; diferenças ficam no adapter, não na máquina de estados visual.
+- Evento externo é gravado antes do ACK e duplicatas não recriam pedidos.

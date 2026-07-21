@@ -4,8 +4,14 @@ export function createSseHub() {
   function subscribe(channel, reply) {
     if (!channels.has(channel)) channels.set(channel, new Set());
     channels.get(channel).add(reply);
+    const heartbeat = setInterval(() => {
+      if (!reply.raw.destroyed) reply.raw.write(": keepalive\n\n");
+    }, 25_000);
+    heartbeat.unref();
     reply.raw.on("close", () => {
+      clearInterval(heartbeat);
       channels.get(channel)?.delete(reply);
+      if (channels.get(channel)?.size === 0) channels.delete(channel);
     });
   }
 
@@ -14,7 +20,8 @@ export function createSseHub() {
     if (!replies) return;
     const serialized = `data: ${JSON.stringify(payload)}\n\n`;
     for (const reply of replies) {
-      reply.raw.write(serialized);
+      if (reply.raw.destroyed) replies.delete(reply);
+      else reply.raw.write(serialized);
     }
   }
 

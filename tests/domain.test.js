@@ -52,7 +52,9 @@ test("adicionais são validados, congelados, cobrados e impressos", () => {
       addons: [{ sku: "ovo" }, { sku: "mucarela" }]
     }]
   });
-  assert.equal(order.total, 43.74);
+  assert.equal(order.total, 50.22);
+  assert.equal(order.items[0].name, "X-SIMPLES");
+  assert.equal(order.items[0].price, 24);
   assert.deepEqual(order.items[0].addons, [
     { sku: "ovo", name: "Ovo", price: 3, quantity: 1 },
     { sku: "mucarela", name: "Muçarela", price: 4, quantity: 1 }
@@ -60,6 +62,7 @@ test("adicionais são validados, congelados, cobrados e impressos", () => {
   assert.match(buildKitchenTicket(order), /\+ Ovo[\s\S]*\+ Muçarela/);
   assert.throws(() => createOrder({ items: [{ sku: "refrigerante-lata", name: "Refri", price: 6, addons: [{ sku: "ovo" }] }] }), /não aceita/);
   assert.throws(() => createOrder({ items: [{ sku: "x-simples", name: "X", price: 24, addons: [{ sku: "ovo" }, { sku: "ovo" }] }] }), /duplicado/);
+  assert.throws(() => createOrder({ items: [{ name: "Item fracionado", price: 10, quantity: 1.5 }] }), /inválido/);
 });
 
 test("pedido rejeita produto marcado como indisponível", () => {
