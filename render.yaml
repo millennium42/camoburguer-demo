@@ -1,12 +1,12 @@
-services:
-  # 1. Banco de Dados PostgreSQL
-  - type: postgres
-    name: camoburguer-db
+databases:
+  # 1. Banco de Dados PostgreSQL Gerenciado pelo Render
+  - name: camoburguer-db
     databaseName: camoburguer
     user: camoburguer_user
     plan: free
 
-  # 2. API Core (Fastify + Domínio)
+services:
+  # 2. API Core (Fastify + Domínio Transacional)
   - type: web
     name: camoburguer-api
     env: node
@@ -27,7 +27,7 @@ services:
       - key: PRINT_BRIDGE_URL
         value: https://camoburguer-bridge.onrender.com
 
-  # 3. Print Bridge Service
+  # 3. Print Bridge Service (Fastify)
   - type: web
     name: camoburguer-bridge
     env: node
@@ -38,7 +38,7 @@ services:
       - key: PORT
         value: 3100
 
-  # 4. Frontend Operacional (Static Web)
+  # 4. Frontend Operacional (Static Web Site)
   - type: web
     name: camoburguer-ops-web
     env: static
