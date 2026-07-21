@@ -32,11 +32,18 @@ if ! graphify update "$staging_dir"; then
   graphify cluster-only "$staging_dir"
 fi
 
+out_dir="$staging_dir/.graphify"
+if [[ ! -d "$out_dir" ]]; then
+  out_dir="$staging_dir/graphify-out"
+fi
+
 mkdir -p "$source_dir/graphify-out"
 for artifact in "${artifacts[@]}"; do
-  rsync -a "$staging_dir/graphify-out/$artifact" "$source_dir/graphify-out/$artifact"
+  if [[ -f "$out_dir/$artifact" ]]; then
+    rsync -a "$out_dir/$artifact" "$source_dir/graphify-out/$artifact"
+  fi
 done
 
 graphify query "guia desenvolvimento validação release" \
-  --graph "$staging_dir/graphify-out/graph.json" \
+  --graph "$out_dir/graph.json" \
   --budget 400

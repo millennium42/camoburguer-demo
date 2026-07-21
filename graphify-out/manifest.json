@@ -1,387 +1,338 @@
 {
-  "apps/api/package.json": {
-    "mtime": 1784059726.3873868,
-    "ast_hash": "997ac545172ff5f831a30d1237197d86",
-    "semantic_hash": "997ac545172ff5f831a30d1237197d86"
-  },
   "apps/api/src/config.js": {
-    "mtime": 1784059726.3883822,
-    "ast_hash": "dcdad890dd2f9f75b4e2159fb0abbfd2",
-    "semantic_hash": "dcdad890dd2f9f75b4e2159fb0abbfd2"
+    "mtime": 1784605802134.6357,
+    "hash": "591dcd018db5589e72370cd8d1c70f97"
   },
   "apps/api/src/db.js": {
-    "mtime": 1784259620.999053,
-    "ast_hash": "f18b3b062057d3a4ce64f4cbf460484a",
-    "semantic_hash": ""
+    "mtime": 1784611226359.1128,
+    "hash": "867558a9072c913e0bce89ba35709e05"
+  },
+  "apps/api/src/integrations/http-client.js": {
+    "mtime": 1784605802304.9377,
+    "hash": "d6e2751537f920df73aeb93130ee2fb5"
+  },
+  "apps/api/src/integrations/integration-repository.js": {
+    "mtime": 1784605802375.5918,
+    "hash": "5e93d5a4064b4cce822b95e454205310"
+  },
+  "apps/api/src/integrations/integration-routes.js": {
+    "mtime": 1784605802601.1274,
+    "hash": "b3f1214f18b50c6dd927b01e64624fc2"
+  },
+  "apps/api/src/integrations/order-actions.js": {
+    "mtime": 1784605803059.7278,
+    "hash": "45b9820e417f6ee0cfa9dca71182e983"
+  },
+  "apps/api/src/integrations/order-ingestion.js": {
+    "mtime": 1784605803156.7659,
+    "hash": "97cce187f781a2c0ae43304b87978ec1"
+  },
+  "apps/api/src/integrations/polling-runner.js": {
+    "mtime": 1784605803289.2,
+    "hash": "5f284724eea4d189df55b4857f49a46f"
+  },
+  "apps/api/src/integrations/providers/deliverymuch.js": {
+    "mtime": 1784605803475.3086,
+    "hash": "5cf68c4e17b4ccd538c84766ea7d6ae0"
+  },
+  "apps/api/src/integrations/providers/ifood.js": {
+    "mtime": 1784605803506.6624,
+    "hash": "93335e0384eb24a9b68d9b1cbe05730b"
   },
   "apps/api/src/server.js": {
-    "mtime": 1784259613.8921645,
-    "ast_hash": "2d1d3ee5ecd6cbf1c8490ba765fbce16",
-    "semantic_hash": ""
+    "mtime": 1784615971563.0476,
+    "hash": "a518637bcf0bfe40994a20427dcd5696"
   },
   "apps/api/src/sse.js": {
-    "mtime": 1784059726.389386,
-    "ast_hash": "2fe0c6984359c7155999942da50f05f3",
-    "semantic_hash": "2fe0c6984359c7155999942da50f05f3"
-  },
-  "apps/event-simulator/package.json": {
-    "mtime": 1784059726.3903809,
-    "ast_hash": "2ad68af929f2deeddd8f150f6a312f9d",
-    "semantic_hash": "2ad68af929f2deeddd8f150f6a312f9d"
+    "mtime": 1784605803742.8247,
+    "hash": "2fe0c6984359c7155999942da50f05f3"
   },
   "apps/event-simulator/src/seed.js": {
-    "mtime": 1784057012.126635,
-    "ast_hash": "43f63ae4ef8f5b1240c6aebf9b4930b2",
-    "semantic_hash": "43f63ae4ef8f5b1240c6aebf9b4930b2"
+    "mtime": 1784605804073.1052,
+    "hash": "43f63ae4ef8f5b1240c6aebf9b4930b2"
   },
   "apps/ops-web/main.js": {
-    "mtime": 1784260662.082765,
-    "ast_hash": "edb3194462427d8f2f9ca87b1c347f35",
-    "semantic_hash": ""
-  },
-  "apps/print-bridge/package.json": {
-    "mtime": 1784059726.3933823,
-    "ast_hash": "d5fa683d8c69481ea4eb1fa91d0ade47",
-    "semantic_hash": "d5fa683d8c69481ea4eb1fa91d0ade47"
+    "mtime": 1784616690710.322,
+    "hash": "17efcab97220d6a9b762d2ffbfaed239"
   },
   "apps/print-bridge/src/server.js": {
-    "mtime": 1784058476.3537822,
-    "ast_hash": "a69fc733da2de02c6a4467fd284591a3",
-    "semantic_hash": "a69fc733da2de02c6a4467fd284591a3"
-  },
-  "package.json": {
-    "mtime": 1784247619.1838987,
-    "ast_hash": "9b578ed039ebe2e1f18983d966631eb2",
-    "semantic_hash": "9b578ed039ebe2e1f18983d966631eb2"
+    "mtime": 1784605804760.2358,
+    "hash": "a69fc733da2de02c6a4467fd284591a3"
   },
   "packages/domain/catalog.js": {
-    "mtime": 1784249613.2550125,
-    "ast_hash": "28eb95568993b9c4ae945a2c93c429b3",
-    "semantic_hash": "28eb95568993b9c4ae945a2c93c429b3"
+    "mtime": 1784605808157.1982,
+    "hash": "28eb95568993b9c4ae945a2c93c429b3"
   },
   "packages/domain/index.js": {
-    "mtime": 1784253430.9079013,
-    "ast_hash": "d063f4602d1f89411406497854f5dd11",
-    "semantic_hash": "d063f4602d1f89411406497854f5dd11"
-  },
-  "packages/domain/package.json": {
-    "mtime": 1784059726.3933823,
-    "ast_hash": "60bc70bf4d1ff0cfe279dbe3f482a34e",
-    "semantic_hash": "60bc70bf4d1ff0cfe279dbe3f482a34e"
+    "mtime": 1784605808184.878,
+    "hash": "d063f4602d1f89411406497854f5dd11"
   },
   "packages/finance-core/index.js": {
-    "mtime": 1784258356.5474865,
-    "ast_hash": "90fe85fc6d654b341f5ee42955a0527e",
-    "semantic_hash": ""
-  },
-  "packages/finance-core/package.json": {
-    "mtime": 1784059726.3943849,
-    "ast_hash": "6c267a2db56d4c2aa73d67f2d24a358a",
-    "semantic_hash": "6c267a2db56d4c2aa73d67f2d24a358a"
+    "mtime": 1784611240862.432,
+    "hash": "f8b5332fc1fa76f784cdbc5bdffe76d1"
   },
   "packages/shared-types/index.js": {
-    "mtime": 1784055321.888453,
-    "ast_hash": "10f359e97292149863772a0c47304a91",
-    "semantic_hash": "10f359e97292149863772a0c47304a91"
+    "mtime": 1784605808691.507,
+    "hash": "bde70fa6280245b6053048272952704c"
   },
-  "packages/shared-types/package.json": {
-    "mtime": 1784059726.3953848,
-    "ast_hash": "3f0fefe47a6d5a790dc191a1c34ef8c2",
-    "semantic_hash": "3f0fefe47a6d5a790dc191a1c34ef8c2"
+  "scripts/seed-demo.mjs": {
+    "mtime": 1784614982301.029,
+    "hash": "db91faa2dd3d83eb7cfe34b498ab009c"
+  },
+  "scripts/simulate-order.mjs": {
+    "mtime": 1784605809444.3845,
+    "hash": "19d103c406f6141c3e6dc95a4e860b62"
   },
   "tests/domain.test.js": {
-    "mtime": 1784253613.3765528,
-    "ast_hash": "dce2b7ba13217876c8fe2ad994a987c8",
-    "semantic_hash": "dce2b7ba13217876c8fe2ad994a987c8"
+    "mtime": 1784605812690.4624,
+    "hash": "dce2b7ba13217876c8fe2ad994a987c8"
   },
   "tests/finance.test.js": {
-    "mtime": 1784258518.9333255,
-    "ast_hash": "2d2f4f5c3912720935076cb92deedbb8",
-    "semantic_hash": ""
+    "mtime": 1784605812743.7424,
+    "hash": "2d2f4f5c3912720935076cb92deedbb8"
   },
   "tests/ops-web.test.js": {
-    "mtime": 1784260330.510847,
-    "ast_hash": "e728085668c8d0e038736d6557b61f3f",
-    "semantic_hash": ""
+    "mtime": 1784611240865.4324,
+    "hash": "87d41e3814fd85574c0634b298048fa8"
   },
   "tests/smoke.mjs": {
-    "mtime": 1784260348.1088834,
-    "ast_hash": "1a9bfad56b058e744a722e6aa1b1e5ea",
-    "semantic_hash": ""
+    "mtime": 1784605812956.8416,
+    "hash": "1a9bfad56b058e744a722e6aa1b1e5ea"
   },
   "AGENTS.md": {
-    "mtime": 1784048701.137936,
-    "ast_hash": "2f1d4500c17e656e80d5b3a709f5eb24",
-    "semantic_hash": ""
+    "mtime": 1784605801919.7646,
+    "hash": "2f1d4500c17e656e80d5b3a709f5eb24"
   },
   "README.md": {
-    "mtime": 1784258803.712067,
-    "ast_hash": "1e679ab8d2056cd524fcaaca90fec7ad",
-    "semantic_hash": ""
+    "mtime": 1784617716102.9878,
+    "hash": "18d54d68a42ebedc07058dcd84994853"
   },
   "SUBAGENTES.md": {
-    "mtime": 1784059726.3863811,
-    "ast_hash": "10865084044de0fbf19731ab37d79cc3",
-    "semantic_hash": ""
+    "mtime": 1784605801980.9104,
+    "hash": "10865084044de0fbf19731ab37d79cc3"
   },
   "apps/ops-web/index.html": {
-    "mtime": 1784260305.896943,
-    "ast_hash": "a057ac8a60fb8a01bf85bce2cf4bf068",
-    "semantic_hash": ""
+    "mtime": 1784612570513.256,
+    "hash": "e94a745b9326dbd7edd2915de1a3917b"
   },
   "docker-compose.yml": {
-    "mtime": 1784058476.3637834,
-    "ast_hash": "cc906d98f92925a92b4bfe3e94ceadaf",
-    "semantic_hash": ""
+    "mtime": 1784605804771.525,
+    "hash": "cc906d98f92925a92b4bfe3e94ceadaf"
   },
   "docs/5w2h-evolucao.md": {
-    "mtime": 1784260370.9130194,
-    "ast_hash": "830244808065cfb5469c6dc2d51fd2e8",
-    "semantic_hash": ""
+    "mtime": 1784617784844.0967,
+    "hash": "e90ec754f653209cbe8707db4cf85561"
+  },
+  "docs/DOCUMENTACAO_CENTRAL.md": {
+    "mtime": 1784617823053.327,
+    "hash": "4b3e309b24d1e933bb484bf1ecf02d9c"
+  },
+  "docs/RENDER_DEPLOY.md": {
+    "mtime": 1784617911320.1248,
+    "hash": "9e100d13b6a5185ba49ba600210d8ff2"
   },
   "docs/arquitetura-do-sistema.md": {
-    "mtime": 1784258803.7100668,
-    "ast_hash": "80b0c5a5350a4c51c1e72205ce491df0",
-    "semantic_hash": ""
+    "mtime": 1784605805672.406,
+    "hash": "d101fa662eec166349931b763423a9c4"
   },
   "docs/automacoes-por-cenario.md": {
-    "mtime": 1784048751.8645144,
-    "ast_hash": "fa32434e4829b07a8416b45433e9164f",
-    "semantic_hash": ""
+    "mtime": 1784605805983.0742,
+    "hash": "de9f8faadcc70cf6282419c9b6675ec1"
   },
   "docs/canais-e-captura.md": {
-    "mtime": 1784054222.7363017,
-    "ast_hash": "390bd3079f5e32d18ebd7299aa2051ac",
-    "semantic_hash": ""
+    "mtime": 1784605805990.588,
+    "hash": "390bd3079f5e32d18ebd7299aa2051ac"
   },
   "docs/ciclo-do-pedido.md": {
-    "mtime": 1784259266.4353454,
-    "ast_hash": "c6c302776833b2c8ee699aff01d72218",
-    "semantic_hash": ""
+    "mtime": 1784605806120.1648,
+    "hash": "c6c302776833b2c8ee699aff01d72218"
   },
   "docs/ciclo-financeiro.md": {
-    "mtime": 1784260370.9070187,
-    "ast_hash": "dd40ec8d16dd8fc7234c9e31328d13d7",
-    "semantic_hash": ""
+    "mtime": 1784605806553.6226,
+    "hash": "9bf593aa1e26ae7c19cf8d53c218f2ba"
   },
   "docs/contexto-operacional.md": {
-    "mtime": 1784248447.1025498,
-    "ast_hash": "9e0bc48a0a82ba601884898c6b217b02",
-    "semantic_hash": ""
+    "mtime": 1784605806750.7522,
+    "hash": "54adf031decb2f3682dbca7c5de83846"
   },
   "docs/estoque.md": {
-    "mtime": 1784255071.8907743,
-    "ast_hash": "637dc3c1f2be98b9b9a6adcd8ccbe98b",
-    "semantic_hash": ""
+    "mtime": 1784605806807.3784,
+    "hash": "637dc3c1f2be98b9b9a6adcd8ccbe98b"
   },
   "docs/guia-de-desenvolvimento.md": {
-    "mtime": 1784248015.199761,
-    "ast_hash": "73b7a5681f37c2ab532d629d3f864d36",
-    "semantic_hash": ""
+    "mtime": 1784617873429.5564,
+    "hash": "868313423c0a899bb6fcf73ea5c3698c"
   },
   "docs/padrao-ticket-cozinha.md": {
-    "mtime": 1784251848.4962904,
-    "ast_hash": "a277f5fd9a62c38be56bc4bd022ad2fc",
-    "semantic_hash": ""
+    "mtime": 1784605807100.382,
+    "hash": "20c05ae38793289687aaed85d20db261"
   },
   "docs/pagamentos-comandas.md": {
-    "mtime": 1784259613.8941605,
-    "ast_hash": "7e825e8d84c898969b04e0ccb7da267a",
-    "semantic_hash": ""
+    "mtime": 1784605807174.7087,
+    "hash": "7e825e8d84c898969b04e0ccb7da267a"
   },
   "docs/relatorio-validacao.md": {
-    "mtime": 1784260633.8432508,
-    "ast_hash": "a4e43754f8a6acd35a70772343fd8a9a",
-    "semantic_hash": ""
+    "mtime": 1784605807310.0498,
+    "hash": "2fa0b4404261ec0e7ed739f53d9d60c4"
+  },
+  "docs/roteiro-fase2-producao.md": {
+    "mtime": 1784605807488.5671,
+    "hash": "0f8828f272b88aba4366004f0baa85d7"
+  },
+  "render.yaml": {
+    "mtime": 1784615024567.1128,
+    "hash": "2c5538aaf318ace776d379638f4f97e9"
   },
   "skills/architecture-gate-review/SKILL.md": {
-    "mtime": 1784048909.153772,
-    "ast_hash": "435547fae92452fa9331d447eadf4e73",
-    "semantic_hash": ""
+    "mtime": 1784605809573.4597,
+    "hash": "435547fae92452fa9331d447eadf4e73"
   },
   "skills/architecture-gate-review/agents/openai.yaml": {
-    "mtime": 1784059726.3963833,
-    "ast_hash": "f71e5359a583d905069a694fe812404d",
-    "semantic_hash": ""
+    "mtime": 1784605809855.4912,
+    "hash": "f71e5359a583d905069a694fe812404d"
   },
   "skills/backend-gate-review/SKILL.md": {
-    "mtime": 1784049099.3582358,
-    "ast_hash": "de017e544922a0f8f349892f052d656f",
-    "semantic_hash": ""
+    "mtime": 1784605809988.2349,
+    "hash": "de017e544922a0f8f349892f052d656f"
   },
   "skills/backend-gate-review/agents/openai.yaml": {
-    "mtime": 1784059726.3973908,
-    "ast_hash": "280644032b672a942bfeddf1486e8701",
-    "semantic_hash": ""
+    "mtime": 1784605810038.0073,
+    "hash": "280644032b672a942bfeddf1486e8701"
   },
   "skills/domain-db-gate-review/SKILL.md": {
-    "mtime": 1784048909.1727724,
-    "ast_hash": "2d653b9717cc9030aceebc18d715da1f",
-    "semantic_hash": ""
+    "mtime": 1784605810068.2734,
+    "hash": "2d653b9717cc9030aceebc18d715da1f"
   },
   "skills/domain-db-gate-review/agents/openai.yaml": {
-    "mtime": 1784048909.181773,
-    "ast_hash": "86532f180a43679c9d75f0958837382d",
-    "semantic_hash": ""
+    "mtime": 1784605810094.8235,
+    "hash": "86532f180a43679c9d75f0958837382d"
   },
   "skills/finance-insight-curator/SKILL.md": {
-    "mtime": 1784049203.4250934,
-    "ast_hash": "69b7e33c772be7a313a0bf1e0e6f41de",
-    "semantic_hash": ""
+    "mtime": 1784605810272.312,
+    "hash": "69b7e33c772be7a313a0bf1e0e6f41de"
   },
   "skills/finance-insight-curator/agents/openai.yaml": {
-    "mtime": 1784059726.3973908,
-    "ast_hash": "6f85fede4540df931944edbbf8f3f823",
-    "semantic_hash": ""
+    "mtime": 1784605810431.7817,
+    "hash": "6f85fede4540df931944edbbf8f3f823"
   },
   "skills/frontend-gate-review/SKILL.md": {
-    "mtime": 1784049099.378244,
-    "ast_hash": "7397ec50fe3f0d851a2d0c622ccabe5d",
-    "semantic_hash": ""
+    "mtime": 1784605810470.497,
+    "hash": "7397ec50fe3f0d851a2d0c622ccabe5d"
   },
   "skills/frontend-gate-review/agents/openai.yaml": {
-    "mtime": 1784059726.398383,
-    "ast_hash": "a620d3a81435084ed3d15c1c04b00fb9",
-    "semantic_hash": ""
+    "mtime": 1784605810495.7703,
+    "hash": "a620d3a81435084ed3d15c1c04b00fb9"
   },
   "skills/infra-gate-review/SKILL.md": {
-    "mtime": 1784049099.6752489,
-    "ast_hash": "923fa516537ba869f46ff177022f0072",
-    "semantic_hash": ""
+    "mtime": 1784605810690.4697,
+    "hash": "923fa516537ba869f46ff177022f0072"
   },
   "skills/infra-gate-review/agents/openai.yaml": {
-    "mtime": 1784059726.398383,
-    "ast_hash": "8e12944eb43be3d20efdf59ce11739fc",
-    "semantic_hash": ""
+    "mtime": 1784605810752.683,
+    "hash": "8e12944eb43be3d20efdf59ce11739fc"
   },
   "skills/kitchen-ticket-ergonomics-review/SKILL.md": {
-    "mtime": 1784049203.4440925,
-    "ast_hash": "d7e5b175e577a87ee6a7047aabcb6fac",
-    "semantic_hash": ""
+    "mtime": 1784605810798.1787,
+    "hash": "d7e5b175e577a87ee6a7047aabcb6fac"
   },
   "skills/kitchen-ticket-ergonomics-review/agents/openai.yaml": {
-    "mtime": 1784059726.3993835,
-    "ast_hash": "f0e4cdb2e4b9bdb7d45115204b85f3b6",
-    "semantic_hash": ""
+    "mtime": 1784605810824.1829,
+    "hash": "f0e4cdb2e4b9bdb7d45115204b85f3b6"
   },
   "skills/operator-friction-audit/SKILL.md": {
-    "mtime": 1784049203.4530928,
-    "ast_hash": "54e05fea839e6bbfba357775eca84dba",
-    "semantic_hash": ""
+    "mtime": 1784605810849.1863,
+    "hash": "54e05fea839e6bbfba357775eca84dba"
   },
   "skills/operator-friction-audit/agents/openai.yaml": {
-    "mtime": 1784049203.459093,
-    "ast_hash": "64411f6cf2f8723e611dd62b602dbcd2",
-    "semantic_hash": ""
+    "mtime": 1784605811003.5906,
+    "hash": "64411f6cf2f8723e611dd62b602dbcd2"
   },
   "skills/operator-ui-builder/SKILL.md": {
-    "mtime": 1784049099.366243,
-    "ast_hash": "ebf6f18da7a7bf99ae750eb8896a3dbb",
-    "semantic_hash": ""
+    "mtime": 1784605811119.0894,
+    "hash": "ebf6f18da7a7bf99ae750eb8896a3dbb"
   },
   "skills/operator-ui-builder/agents/openai.yaml": {
-    "mtime": 1784059726.3993835,
-    "ast_hash": "11ae13e7064ee04bcd5ffe317465c018",
-    "semantic_hash": ""
+    "mtime": 1784605811144.5928,
+    "hash": "11ae13e7064ee04bcd5ffe317465c018"
   },
   "skills/order-finance-domain-modeler/SKILL.md": {
-    "mtime": 1784048909.1627727,
-    "ast_hash": "52730d2527e18047d9c6a5234aec4198",
-    "semantic_hash": ""
+    "mtime": 1784605811213.3098,
+    "hash": "52730d2527e18047d9c6a5234aec4198"
   },
   "skills/order-finance-domain-modeler/agents/openai.yaml": {
-    "mtime": 1784059726.400383,
-    "ast_hash": "716eee5725c82f1cc9a46ee12e40af1d",
-    "semantic_hash": ""
+    "mtime": 1784605811274.1257,
+    "hash": "716eee5725c82f1cc9a46ee12e40af1d"
   },
   "skills/print-infra-specialist/SKILL.md": {
-    "mtime": 1784049099.3862429,
-    "ast_hash": "07040095b3e3b8603254949313b86ed0",
-    "semantic_hash": ""
+    "mtime": 1784605811331.5042,
+    "hash": "07040095b3e3b8603254949313b86ed0"
   },
   "skills/print-infra-specialist/agents/openai.yaml": {
-    "mtime": 1784059726.400383,
-    "ast_hash": "6d8c5aafd1b4852dcf47325bc536e99f",
-    "semantic_hash": ""
+    "mtime": 1784605811363.7278,
+    "hash": "6d8c5aafd1b4852dcf47325bc536e99f"
   },
   "skills/process-gate-review/SKILL.md": {
-    "mtime": 1784048908.598772,
-    "ast_hash": "c2be98afb24f892770103977cf511713",
-    "semantic_hash": ""
+    "mtime": 1784605811477.7664,
+    "hash": "c2be98afb24f892770103977cf511713"
   },
   "skills/process-gate-review/agents/openai.yaml": {
-    "mtime": 1784059726.4013822,
-    "ast_hash": "7691b868f078439b77024bd1ab863259",
-    "semantic_hash": ""
+    "mtime": 1784605811570.932,
+    "hash": "7691b868f078439b77024bd1ab863259"
   },
   "skills/release-readiness-review/SKILL.md": {
-    "mtime": 1784049099.6942463,
-    "ast_hash": "28ac7129dfb2e9bfc8a91a267cb86ebc",
-    "semantic_hash": ""
+    "mtime": 1784605811621.9336,
+    "hash": "28ac7129dfb2e9bfc8a91a267cb86ebc"
   },
   "skills/release-readiness-review/agents/openai.yaml": {
-    "mtime": 1784049099.698244,
-    "ast_hash": "d5e5156f894e2d5c2d19e74ea504a654",
-    "semantic_hash": ""
+    "mtime": 1784605811686.9185,
+    "hash": "d5e5156f894e2d5c2d19e74ea504a654"
   },
   "skills/restaurant-architecture-designer/SKILL.md": {
-    "mtime": 1784048909.1427722,
-    "ast_hash": "07907211c3a953678fa2151be0717703",
-    "semantic_hash": ""
+    "mtime": 1784605811816.9636,
+    "hash": "07907211c3a953678fa2151be0717703"
   },
   "skills/restaurant-architecture-designer/agents/openai.yaml": {
-    "mtime": 1784059726.4013822,
-    "ast_hash": "0f8df1686876833b993fc2b56e6c791f",
-    "semantic_hash": ""
+    "mtime": 1784605811890.9963,
+    "hash": "0f8df1686876833b993fc2b56e6c791f"
   },
   "skills/restaurant-backend-builder/SKILL.md": {
-    "mtime": 1784049099.3472354,
-    "ast_hash": "bac30d0468de0ff1d63d5b735717cd7c",
-    "semantic_hash": ""
+    "mtime": 1784605811951.8252,
+    "hash": "bac30d0468de0ff1d63d5b735717cd7c"
   },
   "skills/restaurant-backend-builder/agents/openai.yaml": {
-    "mtime": 1784059726.4023838,
-    "ast_hash": "bed046975e7c3ee5b4ddad05748ffe7b",
-    "semantic_hash": ""
+    "mtime": 1784605812025.952,
+    "hash": "bed046975e7c3ee5b4ddad05748ffe7b"
   },
   "skills/restaurant-demo-qa/SKILL.md": {
-    "mtime": 1784052101.9193313,
-    "ast_hash": "9f8553fc35d71b75eba11579a3b0e0d2",
-    "semantic_hash": ""
+    "mtime": 1784605812054.4365,
+    "hash": "9f8553fc35d71b75eba11579a3b0e0d2"
   },
   "skills/restaurant-demo-qa/agents/openai.yaml": {
-    "mtime": 1784059726.4033825,
-    "ast_hash": "7008519005a797b1585f5405eb634536",
-    "semantic_hash": ""
+    "mtime": 1784605812081.883,
+    "hash": "7008519005a797b1585f5405eb634536"
   },
   "skills/restaurant-process-orchestrator/SKILL.md": {
-    "mtime": 1784048908.5917716,
-    "ast_hash": "bdecf754936f349a3de1636c369f75cd",
-    "semantic_hash": ""
+    "mtime": 1784605812105.5457,
+    "hash": "bdecf754936f349a3de1636c369f75cd"
   },
   "skills/restaurant-process-orchestrator/agents/openai.yaml": {
-    "mtime": 1784059726.4043846,
-    "ast_hash": "1ed2e63925d7288ba8f2be2bfaf46b89",
-    "semantic_hash": ""
+    "mtime": 1784605812254.125,
+    "hash": "1ed2e63925d7288ba8f2be2bfaf46b89"
   },
   "skills/scenario-automation-planner/SKILL.md": {
-    "mtime": 1784049203.4360943,
-    "ast_hash": "33cfecf62b1aa8fb474e683e65ed17ec",
-    "semantic_hash": ""
+    "mtime": 1784605812316.7158,
+    "hash": "33cfecf62b1aa8fb474e683e65ed17ec"
   },
   "skills/scenario-automation-planner/agents/openai.yaml": {
-    "mtime": 1784059726.4053857,
-    "ast_hash": "1d5fd4d119f3d595cb1ba112689865a2",
-    "semantic_hash": ""
+    "mtime": 1784605812428.118,
+    "hash": "1d5fd4d119f3d595cb1ba112689865a2"
   },
   "workflows/camoburguer-implementation-flow.md": {
-    "mtime": 1784059726.4053857,
-    "ast_hash": "1493b6e1da73b22aeba1ff5b3da451df",
-    "semantic_hash": ""
+    "mtime": 1784605813043.2834,
+    "hash": "1493b6e1da73b22aeba1ff5b3da451df"
   },
   "workflows/review-template.md": {
-    "mtime": 1784059726.4063869,
-    "ast_hash": "bf32c0347958bdbb953b5085f6aaba25",
-    "semantic_hash": ""
+    "mtime": 1784605813089.6113,
+    "hash": "bf32c0347958bdbb953b5085f6aaba25"
   }
 }
