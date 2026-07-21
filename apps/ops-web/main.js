@@ -23,7 +23,8 @@ const apiBase = typeof window === "undefined"
   ? ""
   : (window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1")
       ? `${window.location.protocol}//${window.location.hostname}:3001`
-      : `${window.location.protocol}//${window.location.hostname}`);
+      : `${window.location.protocol}//${window.location.hostname.replace('ops-web', 'api')}`);
+
 
 const sourceLabels = {
   counter: "🍔 Balcão",
