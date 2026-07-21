@@ -731,15 +731,58 @@ function wireCart() {
   $("#active-comanda-discount")?.addEventListener("input", renderOrderItems);
   
   $("#btn-open-catalog")?.addEventListener("click", () => {
-    $("#catalog-modal").showModal();
+    $("#catalog-modal")?.showModal();
+  });
+  
+  $("#btn-quick-new-order")?.addEventListener("click", () => {
+    showPanel("pedidos");
+    $("#catalog-modal")?.showModal();
+  });
+
+  $("#btn-quick-open-tab")?.addEventListener("click", () => {
+    showPanel("comandas");
+    $("#tab-modal")?.showModal();
+  });
+
+  $("#btn-quick-stock")?.addEventListener("click", () => {
+    showPanel("estoque");
+    $("#inventory-modal")?.showModal();
+  });
+
+  $("#btn-quick-cash")?.addEventListener("click", () => {
+    showPanel("financeiro");
+    if (activeShift()) {
+      $("#adjustment-dialog")?.showModal();
+    } else {
+      notify("Abra o caixa para registrar movimentações.", "error");
+    }
+  });
+
+  document.querySelectorAll("[data-dialog-close]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const dialogId = btn.dataset.dialogClose;
+      document.getElementById(dialogId)?.close();
+    });
+  });
+
+  $("#btn-redirect-tab-form")?.addEventListener("click", () => {
+    $("#tab-modal")?.close();
+    showPanel("comandas");
+    const labelInput = document.querySelector('#tab-form input[name="label"]');
+    if (labelInput) labelInput.focus();
+  });
+
+  $("#btn-redirect-inventory-form")?.addEventListener("click", () => {
+    $("#inventory-modal")?.close();
+    showPanel("estoque");
   });
   
   $("#close-catalog-modal")?.addEventListener("click", () => {
-    $("#catalog-modal").close();
+    $("#catalog-modal")?.close();
   });
   
   $("#close-item-config-dialog")?.addEventListener("click", () => {
-    $("#item-config-dialog").close();
+    $("#item-config-dialog")?.close();
   });
   
   $("#item-config-form")?.addEventListener("submit", (e) => {

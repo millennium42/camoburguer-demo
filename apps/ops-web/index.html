@@ -3,34 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Camoburguer Demo</title>
+    <title>Camoburguer POS · Operações</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <div class="app-shell">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">Camoburguer</p>
-          <h1>Pedidos, cozinha e financeiro</h1>
-          <p class="lede">Uma operação simples, rápida e centralizada.</p>
+      <header class="hero glass">
+        <div class="brand-container">
+          <p class="eyebrow">Camoburguer POS</p>
+          <h1>Gestão Operacional</h1>
+          <p class="lede">Pedidos, cozinha e financeiro</p>
         </div>
-        <div class="status-card" role="status" aria-live="polite">
-          <span id="api-status">Conectando API...</span>
-          <small id="last-sync">Aguardando dados</small>
+        <div class="quick-actions-bar">
+          <button type="button" id="btn-quick-new-order" class="primary">+ Novo Pedido</button>
+          <button type="button" id="btn-quick-open-tab" class="secondary">+ Abrir Comanda</button>
+          <button type="button" id="btn-quick-stock" class="secondary">+ Estoque</button>
+          <button type="button" id="btn-quick-cash" class="secondary">+ Caixa</button>
+          <div class="status-card" role="status" aria-live="polite">
+            <span class="status-dot"></span>
+            <span id="api-status">Conectando API...</span>
+            <small id="last-sync" style="display:none;">Aguardando dados</small>
+          </div>
         </div>
       </header>
 
       <nav class="tab-bar" aria-label="Áreas do sistema">
-        <button type="button" class="tab-button active" data-tab="pedidos">Pedidos</button>
-        <button type="button" class="tab-button" data-tab="comandas">Comandas</button>
-        <button type="button" class="tab-button" data-tab="estoque">Estoque</button>
-        <button type="button" class="tab-button" data-tab="cozinha">Cozinha</button>
-        <button type="button" class="tab-button" data-tab="financeiro">Financeiro</button>
+        <button type="button" class="tab-button active" data-tab="pedidos">🍔 Pedidos</button>
+        <button type="button" class="tab-button" data-tab="comandas">📋 Comandas</button>
+        <button type="button" class="tab-button" data-tab="estoque">📦 Estoque</button>
+        <button type="button" class="tab-button" data-tab="cozinha">🍳 Cozinha</button>
+        <button type="button" class="tab-button" data-tab="financeiro">💰 Financeiro</button>
       </nav>
 
       <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
 
       <main>
+        <!-- ABA PEDIDOS -->
         <section class="tab-panel active" id="tab-pedidos">
           <article class="card" id="auth-queue-card" hidden style="border-color: var(--warning); background: rgba(245, 158, 11, 0.05);">
             <h2>⚡ Integrações Aguardando</h2>
@@ -38,7 +46,10 @@
           </article>
           <div class="grid two">
             <article class="card">
-              <h2>Novo pedido</h2>
+              <div class="section-heading">
+                <h2>Novo pedido</h2>
+                <button type="button" id="btn-open-catalog" class="primary">+ Selecionar Produtos</button>
+              </div>
               <form id="order-form" class="stack">
                 <div id="active-tab-banner" class="active-tab-banner" hidden>
                   <strong id="active-tab-label"></strong>
@@ -46,11 +57,11 @@
                 </div>
                 <div class="grid two">
                   <label>Canal
-                      <select name="source" required>
-                        <option value="counter">🏪 Balcão</option>
-                        <option value="whatsapp">💬 WhatsApp</option>
-                        <option value="olaclick">🍔 OlaClick</option>
-                      </select>
+                    <select name="source" required>
+                      <option value="counter">🏪 Balcão</option>
+                      <option value="whatsapp">💬 WhatsApp</option>
+                      <option value="olaclick">🍔 OlaClick</option>
+                    </select>
                   </label>
                   <label>Modalidade
                     <select id="fulfillment-mode" name="fulfillmentMode" required>
@@ -76,13 +87,11 @@
                   </label>
                 </div>
                 <label>Observações do pedido<input name="notes" placeholder="Sem cebola, ponto da carne..." /></label>
-                <div class="actions">
-                  <button type="button" id="btn-open-catalog" class="primary">Adicionar Produto</button>
-                </div>
+                
                 <div>
                   <div class="section-heading">
                     <h3>Itens do pedido</h3>
-                    <strong id="order-total">R$ 0,00</strong>
+                    <strong id="order-total" style="font-size: 1.25rem; color: var(--accent);">R$ 0,00</strong>
                   </div>
                   <ul id="order-items" class="item-list" aria-live="polite"></ul>
                 </div>
@@ -92,23 +101,27 @@
                     <input id="order-discount" name="discountPercent" type="number" min="0" max="100" step="0.01" value="0" inputmode="decimal" />
                   </label>
                 </fieldset>
-                <button type="submit" class="primary">Finalizar pedido</button>
+                <button type="submit" class="primary" style="padding: 14px; font-size: 1rem;">Finalizar e Enviar Pedido</button>
               </form>
             </article>
 
             <article class="card">
-              <h2>🍳 Fila de Produção</h2>
+              <div class="section-heading">
+                <h2>🍳 Fila de Produção</h2>
+              </div>
               <div id="orders-list" class="stack"></div>
             </article>
           </div>
         </section>
 
+        <!-- ABA ESTOQUE -->
         <section class="tab-panel" id="tab-estoque">
           <div class="grid two">
             <article class="card">
               <h2>Estoque por categoria</h2>
-              <div id="inventory-balances" class="stats-grid"></div>
+              <div id="inventory-balances" class="stats-grid" style="margin-bottom: 20px;"></div>
               <form id="inventory-form" class="stack divided-form">
+                <h3>Ajustar Saldo</h3>
                 <label>Categoria<select name="category"><option value="xis">Xis</option><option value="dog">Dog</option><option value="hamburguer">Hambúrguer</option></select></label>
                 <label>Ajuste em unidades<input name="delta" type="number" step="1" required placeholder="Ex.: 10 ou -2" /></label>
                 <label>Motivo<input name="reason" required placeholder="Carga inicial, contagem, perda..." /></label>
@@ -122,6 +135,7 @@
           </div>
         </section>
 
+        <!-- ABA COMANDAS -->
         <section class="tab-panel" id="tab-comandas">
           <div id="active-comanda-card" class="card active-comanda-box" hidden>
             <div class="section-heading">
@@ -144,7 +158,7 @@
           </div>
           <div class="grid two">
             <article class="card">
-              <h2>Abrir comanda</h2>
+              <h2>Abrir comanda / mesa</h2>
               <form id="tab-form" class="stack">
                 <label>Tipo
                   <select name="kind"><option value="tab">Comanda</option><option value="table">Mesa</option></select>
@@ -161,13 +175,15 @@
           </div>
         </section>
 
+        <!-- ABA COZINHA -->
         <section class="tab-panel" id="tab-cozinha">
           <article class="card">
-            <h2>Fila da cozinha</h2>
+            <h2>🍳 Fila da cozinha</h2>
             <div id="kitchen-list" class="stack"></div>
           </article>
         </section>
 
+        <!-- ABA FINANCEIRO -->
         <section class="tab-panel" id="tab-financeiro">
           <article class="card">
             <div class="section-heading"><h2>Filtros financeiros</h2><span id="finance-filter-status" class="pill">Consolidado sem filtros</span></div>
@@ -182,7 +198,7 @@
                   <option value="">Todos</option><option value="sale">Venda</option><option value="cancellation">Cancelamento</option><option value="opening">Abertura</option><option value="cash_reinforcement">Reforço</option><option value="cash_withdrawal">Retirada (sangria)</option><option value="closing_adjustment">Diferença de fechamento</option>
                 </select>
               </label>
-              <div class="actions"><button type="submit" class="primary">Aplicar filtros</button><button type="button" id="clear-finance-filters">Limpar filtro</button></div>
+              <div class="actions"><button type="submit" class="primary">Aplicar filtros</button><button type="button" id="clear-finance-filters" class="secondary">Limpar filtro</button></div>
             </form>
           </article>
           <div class="grid two">
@@ -205,7 +221,7 @@
               </form>
 
               <div id="open-shift-actions" class="stack" hidden>
-                <button type="button" id="open-adjustment-dialog">Adicionar movimentação</button>
+                <button type="button" id="open-adjustment-dialog" class="secondary">Adicionar movimentação</button>
                 <form id="close-shift-form" class="stack divided-form">
                   <label>Valor contado
                     <input name="declaredAmount" type="number" min="0" step="0.01" required />
@@ -228,10 +244,35 @@
       </main>
     </div>
 
+    <!-- MODAL: ABRIR COMANDA VIA ATALHO -->
+    <dialog id="tab-modal" aria-labelledby="tab-modal-title">
+      <div class="stack">
+        <div class="section-heading">
+          <h2 id="tab-modal-title">📋 Abrir Nova Comanda</h2>
+          <button type="button" class="icon-button close-dialog" data-dialog-close="tab-modal" aria-label="Fechar">×</button>
+        </div>
+        <p class="lede">Abra uma nova comanda ou mesa para lançar rodadas de pedidos.</p>
+        <button type="button" class="secondary" id="btn-redirect-tab-form">Ir para formulário de comandas</button>
+      </div>
+    </dialog>
+
+    <!-- MODAL: AJUSTE DE ESTOQUE VIA ATALHO -->
+    <dialog id="inventory-modal" aria-labelledby="inventory-modal-title">
+      <div class="stack">
+        <div class="section-heading">
+          <h2 id="inventory-modal-title">📦 Ajuste de Estoque</h2>
+          <button type="button" class="icon-button close-dialog" data-dialog-close="inventory-modal" aria-label="Fechar">×</button>
+        </div>
+        <p class="lede">Realize o lançamento rápido de entrada ou saída de insumos.</p>
+        <button type="button" class="secondary" id="btn-redirect-inventory-form">Ir para painel de estoque</button>
+      </div>
+    </dialog>
+
+    <!-- MODAL: MOVIMENTAÇÃO DE CAIXA -->
     <dialog id="adjustment-dialog" aria-labelledby="adjustment-title">
       <form id="adjustment-form" class="stack">
         <div class="section-heading">
-          <h2 id="adjustment-title">Adicionar movimentação</h2>
+          <h2 id="adjustment-title">💵 Adicionar Movimentação de Caixa</h2>
           <button type="button" id="close-adjustment-dialog" class="icon-button" aria-label="Fechar">×</button>
         </div>
         <label>Tipo
@@ -240,16 +281,17 @@
             <option value="withdrawal">Retirada (sangria)</option>
           </select>
         </label>
-        <label>Valor<input name="amount" type="number" min="0.01" step="0.01" required /></label>
+        <label>Valor<input name="amount" type="number" min="0.01" step="0.01" required placeholder="0,00" /></label>
         <label>Motivo<input name="reason" placeholder="Troco, retirada para pagamento..." required /></label>
         <button type="submit" class="primary">Salvar movimentação</button>
       </form>
     </dialog>
 
+    <!-- MODAL: CANCELAMENTO DE ITEM -->
     <dialog id="cancellation-dialog" aria-labelledby="cancellation-title">
       <form id="cancellation-form" class="stack">
         <div class="section-heading">
-          <h2 id="cancellation-title">Cancelar item enviado</h2>
+          <h2 id="cancellation-title">❌ Cancelar item enviado</h2>
           <button type="button" id="close-cancellation-dialog" class="icon-button" aria-label="Fechar">×</button>
         </div>
         <p id="cancellation-item" class="lede"></p>
@@ -260,10 +302,11 @@
       </form>
     </dialog>
 
+    <!-- MODAL: SELEÇÃO DE CATÁLOGO / CARDÁPIO -->
     <dialog id="catalog-modal" aria-labelledby="catalog-title">
       <div class="stack">
         <div class="section-heading">
-          <h2 id="catalog-title">Selecionar Produto</h2>
+          <h2 id="catalog-title">🍔 Selecionar Produto do Cardápio</h2>
           <button type="button" id="close-catalog-modal" class="icon-button" aria-label="Fechar">×</button>
         </div>
         <div id="catalog-modal-content" style="max-height: 70vh; overflow-y: auto;">
@@ -272,19 +315,20 @@
       </div>
     </dialog>
 
+    <!-- MODAL: CONFIGURAÇÃO DO ITEM (ADICIONAIS & OBS) -->
     <dialog id="item-config-dialog" aria-labelledby="item-config-title">
       <form id="item-config-form" class="stack">
         <div class="section-heading">
-          <h2 id="item-config-title">Configurar Item</h2>
+          <h2 id="item-config-title">✨ Configurar Item</h2>
           <button type="button" id="close-item-config-dialog" class="icon-button" aria-label="Fechar">×</button>
         </div>
         <input type="hidden" id="config-item-sku" />
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <strong id="config-item-name" style="font-size: 1.1rem;"></strong>
-          <span id="config-item-price" class="price"></span>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+          <strong id="config-item-name" style="font-size: 1.15rem; color: var(--text);"></strong>
+          <span id="config-item-price" class="price" style="font-weight: 700; color: var(--accent); font-size: 1.2rem;"></span>
         </div>
         <fieldset id="config-addons-field" hidden>
-          <legend style="font-weight: 500; margin-bottom: 4px; display: block;">Adicionais</legend>
+          <legend>Adicionais disponíveis</legend>
           <div id="config-addons" class="addon-grid"></div>
         </fieldset>
         <div class="grid two">
@@ -298,12 +342,12 @@
         <label>Observação do item
           <input id="config-notes" placeholder="Sem cebola, ponto da carne..." />
         </label>
-        <button type="submit" class="primary">Adicionar ao pedido</button>
+        <button type="submit" class="primary" style="padding: 12px;">Adicionar ao pedido</button>
       </form>
     </dialog>
 
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js?v=12"></script>
+    <script type="module" src="./main.js?v=13"></script>
   </body>
 </html>
