@@ -1,57 +1,79 @@
-# 🍔 Camoburguer
-> **O coração digital da sua hamburgueria: ágil, resiliente e feito para crescer.**
+# 🍔 Camoburguer Demo
 
-O **Camoburguer** não é apenas um sistema de caixa. É uma plataforma operacional completa desenhada para centralizar pedidos, acabar com o caos na cozinha e dar total visibilidade financeira ao seu negócio. Seja atendendo no balcão, via WhatsApp ou integrado a aplicativos de delivery, sua equipe trabalha em uma única tela, sem estresse.
+> **O coração digital da sua hamburgueria: ágil, resiliente, auditável e pronto para a nuvem.**
 
-## 🚀 Por que escolher o Camoburguer?
-
-- **Gestão Unificada de Pedidos**: Chega de tablets apitando de todos os lados. Centralize Balcão, WhatsApp, iFood e Delivery Much em uma única fila de autorização.
-- **Cozinha Sem Papel Perdido**: Cada pedido confirmado é enviado automaticamente para impressão na cozinha com um ticket padronizado. Com recuperação automática de falhas, nenhum pedido é esquecido se a impressora acabar o papel.
-- **Controle de Comandas e Mesas**: Atenda o salão com comandas livres. Adicione rodadas ao longo da noite, receba pagamentos parciais (Dinheiro, Pix, Cartões) e acompanhe o saldo exato, centavo por centavo.
-- **Estoque Transacional Inteligente**: Xis, Dogs e Hambúrgueres controlados em tempo real. A baixa só ocorre quando o pedido é confirmado. Se houver cancelamento, o sistema devolve o item automaticamente.
-- **Caixa Blindado e Financeiro Transparente**: Abertura, reforço, sangria e fechamento seguros. Histórico imutável de entradas e saídas, sem possibilidade de fraude ou edição não rastreável.
-- **Ultra Leve e Veloz**: Uma interface moderna, sem atrasos, que funciona perfeitamente em telas touch, tablets e computadores antigos. 
+O **Camoburguer** é uma plataforma operacional de alta performance desenhada para centralizar pedidos, eliminar a confusão na cozinha e oferecer total visibilidade financeira ao seu negócio. Seja no atendimento de balcão, via WhatsApp, com comanda local em mesas ou integrado a aplicativos de delivery (iFood e Delivery Much), sua equipe trabalha em um fluxo unificado e contínuo.
 
 ---
 
-## 🛠 Arquitetura de Alto Desempenho
+## 🚀 Destaques da Plataforma
 
-Construído sob o rigor da engenharia moderna e a doutrina *Ponytail Full* (menor solução correta):
-- **Core Imutável**: Pedidos são auditáveis. Cancelamentos geram registros reversos, nunca apagando o histórico real.
-- **Eventos em Tempo Real (SSE)**: Quando o salão fecha uma comanda, a cozinha sabe na hora. Sem "atualizar a página".
-- **Integração Segura**: Os pedidos externos ficam em estado `received` (aguardando) até a aprovação humana. Somente após a aceitação o estoque é afetado e a cozinha notificada.
-- **Idempotência Garantida**: Clique duplo no botão de pagar? A rede caiu no meio do fechamento? O Camoburguer usa chaves idempotentes para garantir que cobranças ou pedidos nunca sejam duplicados.
+- **Fila Unificada de Atendimento**: Centralize Balcão, WhatsApp, iFood e OlaClick em uma única fila de autorização visual.
+- **Fluxo Contínuo de Comandas e Mesas**: Lançamento de rodadas direto na aba de comandas com carrinho e catálogo integrados.
+- **Desconto Flexível por Item e Rodada**: Aplicação de descontos percentuais por produto e por rodada diretamente na comanda/mesa aberta.
+- **Estoque Transacional Append-Only**: Baixa automática em transação atômica no banco relacional. Impede vendas sem saldo e restitui itens em cancelamentos elegíveis.
+- **Cozinha Sem Papel Perdido**: Ticket impresso em padrão térmico claro (client-side via `window.print()` e bridge de spooler). Tickets corretivos em cancelamentos parciais sem apagar o histórico original.
+- **Caixa Gerencial Blindado**: Controle de turnos (Abertura, Reforço, Sangria e Fechamento), histórico imutável de recebimentos por múltiplos métodos (Dinheiro, Pix, Crédito, Débito, App).
+- **Pronto para Nuvem (Render PaaS)**: Deploy em 1 clique via arquivo Blueprint `render.yaml` (PostgreSQL, Fastify API, Print Bridge e Ops Web CDN).
 
 ---
 
-## ⚙️ Experimente Agora (Modo Demo)
+## ⚙️ Testando no Ambiente Local (Modo Demo)
 
-A demonstração sobe todo o ecossistema localmente usando Docker.
+O ambiente de demonstração sobe a pilha completa via Docker Compose com um único comando:
 
-**Pré-requisitos**: Docker Desktop (com WSL ativo), Node.js 24+ e npm.
-
-```powershell
-rtk wsl.exe -d Ubuntu -- docker compose up -d --build
+```bash
+docker compose up -d --build
 ```
 
-### Acessos:
-- **Terminal do Operador**: [http://127.0.0.1:8081](http://127.0.0.1:8081)
-- **API Core**: [http://127.0.0.1:3001/health](http://127.0.0.1:3001/health)
-- **Serviço de Impressão (Bridge)**: [http://127.0.0.1:3100/health](http://127.0.0.1:3100/health)
+### Script de Carga de Demonstração (Seed):
+Para popular o banco PostgreSQL local com comandas, mesas, vendas e histórico de teste:
+```bash
+node scripts/seed-demo.mjs
+```
 
-> **💡 Dica**: Execute `rtk npm run smoke` para disparar uma bateria de testes end-to-end que cria pedidos, opera comandas, envia para a cozinha, fecha o caixa e valida todas as travas financeiras do sistema.
+### URLs de Acesso Local:
+- 🖥️ **Painel Operacional (Ops Web)**: [http://localhost:8081](http://localhost:8081)
+- ⚙️ **API Core (Fastify)**: [http://localhost:3001/health](http://localhost:3001/health)
+- 🖨️ **Serviço de Impressão (Print Bridge)**: [http://localhost:3100/health](http://localhost:3100/health)
 
 ---
 
-## 📚 Documentação Técnica e Deploy
+## 🧪 Bateria de Testes e Fumaça (End-to-End)
 
-Toda a lógica e fluxos estão detalhadamente documentados. Nenhum dado pessoal ou caminho absoluto é mantido no repositório por questões estritas de segurança.
+```bash
+# Testes Unitários de Domínio, Financeiro e UI (30 testes)
+npm test
 
-- [Ciclo do Pedido](docs/ciclo-do-pedido.md)
-- [Arquitetura do Sistema](docs/arquitetura-do-sistema.md)
-- [Controle de Estoque](docs/estoque.md)
-- [Pagamentos e Comandas](docs/pagamentos-comandas.md)
-- [Guia de Deploy no Render](docs/RENDER_DEPLOY.md)
+# Teste de Fumaça Integrado End-to-End
+npm run smoke
+```
+
+---
+
+## 🌐 Deploy em Nuvem (Render Server PaaS)
+
+O Camoburguer inclui o Blueprint `render.yaml` para deploy automatizado na plataforma **Render**.
+
+1. Crie uma conta no [Render](https://render.com/).
+2. Conecte seu repositório do GitHub em **Blueprints** > **New Blueprint Instance**.
+3. O Render provisionará automaticamente o banco PostgreSQL, a API Fastify, a Print Bridge e o Ops Web Static.
+
+> 📖 **Guia Completo de Deploy**: Consulte o arquivo [docs/RENDER_DEPLOY.md](docs/RENDER_DEPLOY.md).
+
+---
+
+## 📚 Documentação Técnica Completa
+
+Toda a arquitetura, regras de negócio e histórico de decisões foram unificados em nosso guia mestre:
+
+- 📑 **[Documentação Central Unificada](docs/DOCUMENTACAO_CENTRAL.md)**
+- 🚀 **[Guia de Deploy no Render](docs/RENDER_DEPLOY.md)**
+- 🏗️ **[Arquitetura do Sistema](docs/arquitetura-do-sistema.md)**
+- 🔄 **[Ciclo do Pedido](docs/ciclo-do-pedido.md)**
+- 💰 **[Ciclo Financeiro](docs/ciclo-financeiro.md)**
+- 📦 **[Controle de Estoque](docs/estoque.md)**
+- 🖨️ **[Padrão do Ticket de Cozinha](docs/padrao-ticket-cozinha.md)**
 
 ---
 *Camoburguer: A essência da operação gastronômica moderna.*
