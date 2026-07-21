@@ -354,24 +354,30 @@ Garanta que seu repositório contém as alterações mais recentes com o arquivo
 
 ## 12. Histórico Decisório 5W2H e Evolução
 
-A evolução do Camoburguer é rastreada através da metodologia **5W2H**:
+A evolução do Camoburguer é rastreada através da metodologia **5W2H** ([registro completo](5w2h-evolucao.md)):
 
-| PR | O quê (What) | Por quê (Why) | Onde (Where) | Como (How) |
-| --- | --- | --- | --- | --- |
-| **PR 0** | Descontos por item e no total | Permitir descontos de 0-100% sem alterar catálogo base | Domínio, DB `orders`, UI | Cálculo acumulado e trava no domínio |
-| **PR 1** | Guia e automação Graphify | Tornar evoluções reproduzíveis com validação WSL | Docs, scripts npm | Execução do Graphify via Ubuntu/WSL |
-| **PR 2** | Cardápio OlaClick | Atualizar o cardápio com preços reais capturados | Pacote de domínio, `/catalog` | Snapshot estático com 51 produtos |
-| **PR 3** | Adicionais do Cardápio | Permitir opcionais pagos por categoria | Catálogo, carrinho, ticket | Checkboxes nativos e SKUs congelados |
-| **PR 4** | Comandas e Mesas | Atender consumo local em rodadas | `service_tabs`, UI Comandas | Rodadas sequenciais vinculadas |
-| **PR 5** | Tickets Corretivos | Permitir cancelamentos parciais sem apagar o histórico | Endpoint cancellation, UI | Inserção de rodada negativa |
-| **PR 6** | Estoque por Categoria | Baixa e restituição de Xis, Dog e Hambúrguer | `stock_balances`, DB | Lock por ordem alfabética de categoria |
-| **PR 7** | Pagamentos Múltiplos | Aceitar parcelas fracionadas e estornos em comandas | `tab_payments`, UI | Validação de centavos e `mixed` derivado |
-| **PR 8** | Retiradas e Filtros | Registrar sangria e sincronizar visões gerenciais | Painel financeiro, API | Reutilização do tipo `cash_withdrawal` |
-| **PR 9** | QA e Ajustes Responsivos | Garantir operabilidade em telas touch estreitas (390px) | CSS `ops-web`, suíte | Flex-wrap e prevenção de overflow |
-| **PR 10** | Integrações iFood / Delivery Much | Isolamento de pedidos externos em Fila de Autorização | `channel_mappings`, API | Status `received` antes da aprovação |
-| **PR 11** | Redesign Visual Dark | Prover estética de alta performance para caixa | `styles.css` | Cores Tailored, glassmorphism |
-| **PR 12** | Impressão Client-Side | Permitir demonstração tátil via `window.print()` | `main.js`, `index.html` | Injeção em área de impressão isolada |
-| **PR 13** | Documentação Central & Render Deploy | Unificar documentação e prover Blueprint de deploy em nuvem | `docs/`, `render.yaml`, `README.md` | Guia completo + `render.yaml` nativo |
+| PR | O quê (What) | Por quê (Why) | Onde (Where) |
+| --- | --- | --- | --- |
+| **PR 0** | Descontos por item e no total | Permitir descontos de 0-100% sem alterar catálogo base | Domínio, DB `orders`, UI |
+| **PR 1** | Guia e automação Graphify | Tornar evoluções reproduzíveis com validação WSL | Docs, scripts npm |
+| **PR 2** | Cardápio OlaClick | Atualizar o cardápio com preços reais capturados | Pacote de domínio, `/catalog` |
+| **PR 3** | Adicionais do Cardápio | Permitir opcionais pagos por categoria | Catálogo, carrinho, ticket |
+| **PR 4** | Comandas e Mesas | Atender consumo local em rodadas | `service_tabs`, UI Comandas |
+| **PR 5** | Tickets Corretivos | Permitir cancelamentos parciais sem apagar o histórico | Endpoint cancellation, UI |
+| **PR 6** | Estoque por Categoria | Baixa e restituição de Xis, Dog e Hambúrguer | `stock_balances`, DB |
+| **PR 7** | Pagamentos Múltiplos | Aceitar parcelas fracionadas e estornos em comandas | `tab_payments`, UI |
+| **PR 8** | Retiradas e Filtros | Registrar sangria e sincronizar visões gerenciais | Painel financeiro, API |
+| **PR 9** | QA e Ajustes Responsivos | Garantir operabilidade em telas touch estreitas (390px) | CSS `ops-web`, suíte |
+| **PR 10** | Integrações iFood / DM | Isolamento de pedidos externos em Fila de Autorização | `channel_mappings`, API |
+| **PR 11** | Redesign Visual Dark | Prover estética premium para POS | `styles.css` |
+| **PR 12** | Impressão Client-Side | Demonstração tátil via `window.print()` | `main.js`, `index.html` |
+| **PR 13** | Documentação Central & Render | Unificar docs e habilitar deploy em nuvem | `docs/`, `render.yaml` |
+| **PR 14** | Fluxo Contínuo de Comandas | Carrinho contextual e desconto pós-envio | `main.js`, `index.html` |
+| **PR 15** | LGPD e Segurança | Anonimização PII, Helmet e Rate Limit | `server.js`, `package.json` |
+| **PR 16** | Catálogo por Abas | Navegação por categorias e modal de configuração | `main.js`, `index.html` |
+| **PR 17** | Fix Render.yaml e Auto-Seed | Provisão correta de DB e seed automático no boot | `render.yaml`, `server.js` |
+| **PR 18** | Fix apiBase para Render | Frontend aponta para subdomínio correto da API | `main.js` |
 
 ---
 *Camoburguer: Engenharia de ponta para a gastronomia moderna.*
+
