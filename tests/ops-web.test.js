@@ -49,7 +49,7 @@ test("UI expõe somente as modalidades válidas e não identifica operador", asy
     [["delivery", "🛵 Delivery"], ["pickup", "🛍️ Retirada"], ["local", "🍽️ Local"]]
   );
   assert.match(html, /id="delivery-address-field" hidden/);
-  assert.match(html, /id="catalog-discount"[^>]*min="0"[^>]*max="100"/);
+  assert.match(html, /id="config-discount"[^>]*min="0"[^>]*max="100"/);
   assert.match(html, /name="discountPercent"[^>]*min="0"[^>]*max="100"/);
   assert.match(script, /<input type=\"number\" min=\"0\" max=\"100\"[^>]*data-item-discount=/);
   assert.match(html, /<dialog id="adjustment-dialog"/);
@@ -59,7 +59,7 @@ test("UI expõe somente as modalidades válidas e não identifica operador", asy
 
 test("UI agrupa o catálogo e sinaliza produto esgotado", async () => {
   const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
-  assert.match(script, /<optgroup label=/);
+  assert.match(script, /data-catalog-tab/);
   assert.match(script, /sellable \? "" : "disabled"/);
   assert.match(script, /"Esgotado"/);
   assert.match(script, /"Sem estoque"/);
@@ -79,10 +79,10 @@ test("UI contém o painel e os controles nativos de adicionais", async () => {
     readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8"),
     readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8")
   ]);
-  assert.match(html, /id="catalog-addons-field" hidden/);
-  assert.match(html, /id="catalog-addons"/);
-  assert.match(script, /type=\"checkbox\" name=\"catalog-addon\"/);
-  assert.match(script, /field\.hidden = !selected\?\.allowsAddons/);
+  assert.match(html, /id="config-addons-field"/);
+  assert.match(html, /id="config-addons"/);
+  assert.match(script, /type=\"checkbox\" name=\"config-addon\"/);
+  assert.match(script, /field\.hidden = !item\.allowsAddons/);
 });
 
 test("UI expõe comandas e reutiliza o formulário de pedidos", async () => {

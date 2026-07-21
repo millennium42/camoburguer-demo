@@ -65,8 +65,8 @@ async function seed() {
   // 3. Pedidos Delivery Externos Aguardando Autorização (iFood / Delivery Much)
   const o3 = crypto.randomUUID();
   await db.query(`
-    INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, total, delivery_address, items)
-    VALUES ($1, 'ifood', 'received', 'Carlos iFood', 'delivery', 42.00, 'Rua das Flores, 123', $2::jsonb)
+    INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, delivery_address, items)
+    VALUES ($1, 'ifood', 'received', 'Carlos iFood', 'delivery', 'app_paid', 42.00, 'Rua das Flores, 123', $2::jsonb)
   `, [o3, JSON.stringify([
     { id: crypto.randomUUID(), sku: 'hamburguer-artesanal', name: 'HAMBÚRGUER ARTESANAL', quantity: 1, price: 35.00, addons: [] },
     { id: crypto.randomUUID(), sku: 'guarana-lata', name: 'GUARANÁ LATA', quantity: 1, price: 7.00, addons: [] }
@@ -79,8 +79,8 @@ async function seed() {
 
   const o4 = crypto.randomUUID();
   await db.query(`
-    INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, total, items)
-    VALUES ($1, 'deliverymuch', 'received', 'Ana Delivery Much', 'pickup', 28.00, $2::jsonb)
+    INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, items)
+    VALUES ($1, 'deliverymuch', 'received', 'Ana Delivery Much', 'pickup', 'app_paid', 28.00, $2::jsonb)
   `, [o4, JSON.stringify([
     { id: crypto.randomUUID(), sku: 'x-salada', name: 'X-SALADA', quantity: 1, price: 28.00, addons: [] }
   ])]);
@@ -95,8 +95,8 @@ async function seed() {
   // 4. Pedidos Delivery Normais
   const o5 = crypto.randomUUID();
   await db.query(`
-    INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, total, delivery_address, items)
-    VALUES ($1, 'whatsapp', 'in_preparation', 'Pedro (WhatsApp)', 'delivery', 65.00, 'Av. Brasil, 400', $2::jsonb)
+    INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, delivery_address, items)
+    VALUES ($1, 'whatsapp', 'in_preparation', 'Pedro (WhatsApp)', 'delivery', 'pix', 65.00, 'Av. Brasil, 400', $2::jsonb)
   `, [o5, JSON.stringify([
     { id: crypto.randomUUID(), sku: 'x-tudo', name: 'X-TUDO', quantity: 1, price: 35.00, addons: [] },
     { id: crypto.randomUUID(), sku: 'x-tudo', name: 'X-TUDO', quantity: 1, price: 30.00, addons: [{ name: 'Sem ervilha' }] }
