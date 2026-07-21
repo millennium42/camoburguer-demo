@@ -266,13 +266,8 @@
           <h2 id="catalog-title">Selecionar Produto</h2>
           <button type="button" id="close-catalog-modal" class="icon-button" aria-label="Fechar">×</button>
         </div>
-<<<<<<< HEAD
-        <div id="catalog-modal-content" class="menu-products-grid" style="max-height: 70vh; overflow-y: auto;">
-          <!-- Items injected here -->
-=======
         <div id="catalog-modal-content" style="max-height: 70vh; overflow-y: auto;">
           <!-- Items injected dynamically -->
->>>>>>> feat/comanda-flow-and-discounts
         </div>
       </div>
     </dialog>
@@ -284,22 +279,14 @@
           <button type="button" id="close-item-config-dialog" class="icon-button" aria-label="Fechar">×</button>
         </div>
         <input type="hidden" id="config-item-sku" />
-<<<<<<< HEAD
-        <p id="config-item-name" class="lede"></p>
-        <p id="config-item-price"></p>
-        <fieldset id="config-addons-field" hidden>
-          <legend>Adicionais</legend>
-          <div id="config-addons" class="addon-grid"></div>
-        </fieldset>
-=======
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <strong id="config-item-name" style="font-size: 1.1rem;"></strong>
           <span id="config-item-price" class="price"></span>
         </div>
-        <div id="config-addons-field">
-          <label style="font-weight: 500; margin-bottom: 4px; display: block;">Adicionais</label>
+        <fieldset id="config-addons-field" hidden>
+          <legend style="font-weight: 500; margin-bottom: 4px; display: block;">Adicionais</legend>
           <div id="config-addons" class="addon-grid"></div>
-        </div>
+        </fieldset>
         <div class="grid two">
           <label>Quantidade
             <input type="number" id="config-qty" min="1" step="1" value="1" inputmode="numeric" required />
@@ -317,6 +304,6 @@
 
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js?v=11"></script>
+    <script type="module" src="./main.js?v=12"></script>
   </body>
 </html>

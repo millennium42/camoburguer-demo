@@ -321,39 +321,45 @@ function renderInventory() {
 
 function renderOrderItems() {
   const list = $("#order-items");
-  if (!state.orderItems.length) {
-    list.innerHTML = '<li class="empty-state">Nenhum item adicionado.</li>';
-    $("#order-total").textContent = money(0);
-    return;
+  if (list) {
+    if (!state.orderItems.length) {
+      list.innerHTML = '<li class="empty-state">Nenhum item adicionado.</li>';
+      const orderTotal = $("#order-total");
+      if (orderTotal) orderTotal.textContent = money(0);
+    } else {
+      list.innerHTML = state.orderItems
+        .map((item, index) => `
+          <li class="order-card cart-row">
+            <div>
+              <strong>${escapeHtml(item.name)}</strong>
+              <div class="mini-meta">
+                <span>${money(item.price)} cada</span>
+                <span>${escapeHtml(item.notes || "Sem observação")}</span>
+              </div>
+              ${(item.addons || []).length ? `<div class="addon-list">${item.addons.map((addon) => `+ ${escapeHtml(addon.name)} (${money(addon.price)})`).join(" · ")}</div>` : ""}
+            </div>
+            <div class="quantity-control">
+              <button type="button" data-decrease-item="${index}" aria-label="Diminuir ${escapeHtml(item.name)}">−</button>
+              <input type="number" min="1" step="1" value="${item.quantity}" data-item-quantity="${index}" aria-label="Quantidade de ${escapeHtml(item.name)}" />
+              <button type="button" data-increase-item="${index}" aria-label="Aumentar ${escapeHtml(item.name)}">+</button>
+            </div>
+            <label class="discount-control">Desconto (%)
+              <input type="number" min="0" max="100" step="0.01" value="${item.discountPercent || 0}" data-item-discount="${index}" inputmode="decimal" aria-label="Desconto de ${escapeHtml(item.name)} em porcentagem" />
+            </label>
+            <strong>${money(calculateOrderPreviewTotal([item]))}</strong>
+            <button type="button" data-remove-item="${index}" class="link-danger">Remover</button>
+          </li>
+        `)
+        .join("");
+      const orderTotal = $("#order-total");
+      if (orderTotal) {
+        orderTotal.textContent = money(
+          calculateOrderPreviewTotal(state.orderItems, $("#order-discount")?.value || 0)
+        );
+      }
+    }
   }
-
-  list.innerHTML = state.orderItems
-    .map((item, index) => `
-      <li class="order-card cart-row">
-        <div>
-          <strong>${escapeHtml(item.name)}</strong>
-          <div class="mini-meta">
-            <span>${money(item.price)} cada</span>
-            <span>${escapeHtml(item.notes || "Sem observação")}</span>
-          </div>
-          ${(item.addons || []).length ? `<div class="addon-list">${item.addons.map((addon) => `+ ${escapeHtml(addon.name)} (${money(addon.price)})`).join(" · ")}</div>` : ""}
-        </div>
-        <div class="quantity-control">
-          <button type="button" data-decrease-item="${index}" aria-label="Diminuir ${escapeHtml(item.name)}">−</button>
-          <input type="number" min="1" step="1" value="${item.quantity}" data-item-quantity="${index}" aria-label="Quantidade de ${escapeHtml(item.name)}" />
-          <button type="button" data-increase-item="${index}" aria-label="Aumentar ${escapeHtml(item.name)}">+</button>
-        </div>
-        <label class="discount-control">Desconto (%)
-          <input type="number" min="0" max="100" step="0.01" value="${item.discountPercent || 0}" data-item-discount="${index}" inputmode="decimal" aria-label="Desconto de ${escapeHtml(item.name)} em porcentagem" />
-        </label>
-        <strong>${money(calculateOrderPreviewTotal([item]))}</strong>
-        <button type="button" data-remove-item="${index}" class="link-danger">Remover</button>
-      </li>
-    `)
-    .join("");
-  $("#order-total").textContent = money(
-    calculateOrderPreviewTotal(state.orderItems, $("#order-discount").value)
-  );
+  renderActiveTab();
 }
 
 function renderTabs() {
@@ -751,8 +757,8 @@ function wireCart() {
     );
     
     renderOrderItems();
-    $("#item-config-dialog").close();
-    $("#catalog-modal").close();
+    $("#item-config-dialog")?.close();
+    notify(`${selected.name} adicionado.`);
   });
 
     document.body.addEventListener("click", async (event) => {
