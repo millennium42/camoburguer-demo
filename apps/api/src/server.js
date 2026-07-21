@@ -31,6 +31,7 @@ import { createDb, mapFinanceEntry, mapOrder, mapShift, mapTab, mapTabPayment } 
 import { createSseHub } from "./sse.js";
 import integrationRoutes from "./integrations/integration-routes.js";
 import { startIntegrationPolling } from "./integrations/polling-runner.js";
+import { runSeedDemo } from "../../../scripts/seed-demo.mjs";
 
 const app = Fastify({ logger: true });
 const db = createDb(config.databaseUrl);
@@ -1215,9 +1216,30 @@ app.get("/events/finance", async (_, reply) => {
   return reply;
 });
 
+app.post("/demo/seed", async (request, reply) => {
+  try {
+    await runSeedDemo(db);
+    return { ok: true, message: "Banco de dados preenchido com dados de demonstração." };
+  } catch (error) {
+    return reply.code(500).send({ error: error.message });
+  }
+});
+
 await app.register(integrationRoutes);
 
 await db.init();
+
+if (process.env.AUTO_SEED !== "false") {
+  try {
+    const { rows } = await db.query("SELECT COUNT(*) FROM cash_shifts");
+    if (Number(rows[0]?.count || 0) === 0) {
+      app.log.info("Banco de dados vazio detectado. Executando seed de demonstração automaticamente...");
+      await runSeedDemo(db);
+    }
+  } catch (error) {
+    app.log.error(error, "Auto-seed de demonstração ignorado.");
+  }
+}
 await recoverPrintJobs(true);
 // ponytail: retry fixo atende a demo single-instance; adotar backoff/fila quando houver volume real.
 setInterval(() => recoverPrintJobs().catch((error) => app.log.error(error)), 15_000).unref();

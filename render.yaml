@@ -26,6 +26,8 @@ services:
         value: cozinha-principal
       - key: PRINT_BRIDGE_URL
         value: https://camoburguer-bridge.onrender.com
+      - key: AUTO_SEED
+        value: "true"
 
   # 3. Print Bridge Service (Fastify)
   - type: web
