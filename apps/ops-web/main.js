@@ -317,7 +317,6 @@ function renderInventory() {
       ? state.inventory.movements.map((item) => `<div class="entry-card"><div class="mini-meta"><span>${labels[item.category] || escapeHtml(item.category)}</span><span>${formatWhen(item.createdAt)}</span><span>${escapeHtml(item.reason)}</span></div><strong>${item.delta > 0 ? "+" : ""}${item.delta}</strong>${item.metadata?.note ? `<p>${escapeHtml(item.metadata.note)}</p>` : ""}</div>`).join("")
       : '<p class="empty-state">Nenhuma movimentação.</p>';
   }
->>>>>>> feat/comanda-flow-and-discounts
 }
 
 function renderOrderItems() {
@@ -489,7 +488,13 @@ function renderOrders() {
     return;
   }
   
-  const sortedNormalOrders = [...normalOrders].reverse();
+  const sortedNormalOrders = [...normalOrders].sort((a, b) => {
+    const isAFinished = ["completed", "cancelled"].includes(a.status);
+    const isBFinished = ["completed", "cancelled"].includes(b.status);
+    if (!isAFinished && isBFinished) return -1;
+    if (isAFinished && !isBFinished) return 1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
   list.innerHTML = sortedNormalOrders
     .map((order) => `
       <div class="order-card">
