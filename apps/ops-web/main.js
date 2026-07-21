@@ -735,8 +735,11 @@ function wireCart() {
   });
   
   $("#btn-quick-new-order")?.addEventListener("click", () => {
-    showPanel("pedidos");
-    $("#catalog-modal")?.showModal();
+    $("#order-modal")?.showModal();
+  });
+
+  $("#btn-open-order-modal")?.addEventListener("click", () => {
+    $("#order-modal")?.showModal();
   });
 
   $("#btn-quick-open-tab")?.addEventListener("click", () => {
@@ -1298,6 +1301,7 @@ function wireForms() {
       state.orderItems = [];
       state.orderAttempt = null;
       form.reset();
+      $("#order-modal")?.close();
       syncDeliveryAddress();
       renderOrderItems();
       await refreshAll().catch((error) => {
