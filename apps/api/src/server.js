@@ -538,7 +538,7 @@ function emitFinanceEvent(type, payload) {
 
 app.get("/health", async () => ({ ok: true, service: "api" }));
 app.get("/", async (request, reply) => ({ status: "ok" }));
-app.head("/", async (request, reply) => { reply.code(200); });
+// HEAD route removed – Fastify automatically supports HEAD for GET routes
 app.get("/catalog", async () => ({
   sourceUrl: CATALOG_SOURCE_URL,
   capturedAt: CATALOG_CAPTURED_AT,
