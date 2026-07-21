@@ -118,15 +118,11 @@
         <section class="tab-panel" id="tab-estoque">
           <div class="grid two">
             <article class="card">
-              <h2>Estoque por categoria</h2>
+              <div class="section-heading">
+                <h2>Estoque por categoria</h2>
+                <button type="button" id="btn-open-inventory-modal" class="primary">+ Ajustar Saldo</button>
+              </div>
               <div id="inventory-balances" class="stats-grid" style="margin-bottom: 20px;"></div>
-              <form id="inventory-form" class="stack divided-form">
-                <h3>Ajustar Saldo</h3>
-                <label>Categoria<select name="category"><option value="xis">Xis</option><option value="dog">Dog</option><option value="hamburguer">Hambúrguer</option></select></label>
-                <label>Ajuste em unidades<input name="delta" type="number" step="1" required placeholder="Ex.: 10 ou -2" /></label>
-                <label>Motivo<input name="reason" required placeholder="Carga inicial, contagem, perda..." /></label>
-                <button type="submit" class="primary">Registrar ajuste</button>
-              </form>
             </article>
             <article class="card">
               <h2>Movimentações de estoque</h2>
@@ -156,23 +152,16 @@
               </div>
             </div>
           </div>
-          <div class="grid two">
-            <article class="card">
-              <h2>Abrir comanda / mesa</h2>
-              <form id="tab-form" class="stack">
-                <label>Tipo
-                  <select name="kind"><option value="tab">Comanda</option><option value="table">Mesa</option></select>
-                </label>
-                <label>Identificador<input name="label" required placeholder="Ex.: 12, Balcão Ana" /></label>
-                <label>Cliente (opcional)<input name="customerName" placeholder="Nome do cliente" /></label>
-                <button type="submit" class="primary">Abrir comanda</button>
-              </form>
-            </article>
-            <article class="card">
-              <div class="section-heading"><h2>Comandas abertas</h2><span id="tabs-count" class="pill">0</span></div>
-              <div id="tabs-list" class="stack"></div>
-            </article>
-          </div>
+          <article class="card">
+            <div class="section-heading">
+              <h2>Comandas abertas</h2>
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <button type="button" id="btn-open-tab-modal" class="primary">+ Abrir Comanda / Mesa</button>
+                <span id="tabs-count" class="pill">0</span>
+              </div>
+            </div>
+            <div id="tabs-list" class="stack"></div>
+          </article>
         </section>
 
         <!-- ABA COZINHA -->
@@ -244,27 +233,37 @@
       </main>
     </div>
 
-    <!-- MODAL: ABRIR COMANDA VIA ATALHO -->
+    <!-- MODAL POPUP: ABRIR COMANDA / MESA -->
     <dialog id="tab-modal" aria-labelledby="tab-modal-title">
       <div class="stack">
         <div class="section-heading">
-          <h2 id="tab-modal-title">📋 Abrir Nova Comanda</h2>
+          <h2 id="tab-modal-title">📋 Abrir Nova Comanda / Mesa</h2>
           <button type="button" class="icon-button close-dialog" data-dialog-close="tab-modal" aria-label="Fechar">×</button>
         </div>
-        <p class="lede">Abra uma nova comanda ou mesa para lançar rodadas de pedidos.</p>
-        <button type="button" class="secondary" id="btn-redirect-tab-form">Ir para formulário de comandas</button>
+        <form id="tab-form" class="stack">
+          <label>Tipo
+            <select name="kind"><option value="tab">Comanda</option><option value="table">Mesa</option></select>
+          </label>
+          <label>Identificador<input name="label" required placeholder="Ex.: 12, Balcão Ana" /></label>
+          <label>Cliente (opcional)<input name="customerName" placeholder="Nome do cliente" /></label>
+          <button type="submit" class="primary">Abrir comanda</button>
+        </form>
       </div>
     </dialog>
 
-    <!-- MODAL: AJUSTE DE ESTOQUE VIA ATALHO -->
+    <!-- MODAL POPUP: AJUSTE DE ESTOQUE -->
     <dialog id="inventory-modal" aria-labelledby="inventory-modal-title">
       <div class="stack">
         <div class="section-heading">
           <h2 id="inventory-modal-title">📦 Ajuste de Estoque</h2>
           <button type="button" class="icon-button close-dialog" data-dialog-close="inventory-modal" aria-label="Fechar">×</button>
         </div>
-        <p class="lede">Realize o lançamento rápido de entrada ou saída de insumos.</p>
-        <button type="button" class="secondary" id="btn-redirect-inventory-form">Ir para painel de estoque</button>
+        <form id="inventory-form" class="stack">
+          <label>Categoria<select name="category"><option value="xis">Xis</option><option value="dog">Dog</option><option value="hamburguer">Hambúrguer</option></select></label>
+          <label>Ajuste em unidades<input name="delta" type="number" step="1" required placeholder="Ex.: 10 ou -2" /></label>
+          <label>Motivo<input name="reason" required placeholder="Carga inicial, contagem, perda..." /></label>
+          <button type="submit" class="primary">Registrar ajuste</button>
+        </form>
       </div>
     </dialog>
 
@@ -348,6 +347,6 @@
 
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js?v=13"></script>
+    <script type="module" src="./main.js?v=14"></script>
   </body>
 </html>

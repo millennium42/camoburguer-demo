@@ -740,17 +740,14 @@ function wireCart() {
   });
 
   $("#btn-quick-open-tab")?.addEventListener("click", () => {
-    showPanel("comandas");
     $("#tab-modal")?.showModal();
   });
 
   $("#btn-quick-stock")?.addEventListener("click", () => {
-    showPanel("estoque");
     $("#inventory-modal")?.showModal();
   });
 
   $("#btn-quick-cash")?.addEventListener("click", () => {
-    showPanel("financeiro");
     if (activeShift()) {
       $("#adjustment-dialog")?.showModal();
     } else {
@@ -765,16 +762,12 @@ function wireCart() {
     });
   });
 
-  $("#btn-redirect-tab-form")?.addEventListener("click", () => {
-    $("#tab-modal")?.close();
-    showPanel("comandas");
-    const labelInput = document.querySelector('#tab-form input[name="label"]');
-    if (labelInput) labelInput.focus();
+  $("#btn-open-tab-modal")?.addEventListener("click", () => {
+    $("#tab-modal")?.showModal();
   });
 
-  $("#btn-redirect-inventory-form")?.addEventListener("click", () => {
-    $("#inventory-modal")?.close();
-    showPanel("estoque");
+  $("#btn-open-inventory-modal")?.addEventListener("click", () => {
+    $("#inventory-modal")?.showModal();
   });
   
   $("#close-catalog-modal")?.addEventListener("click", () => {
@@ -1221,6 +1214,7 @@ function wireForms() {
       });
       state.activeTabId = tab.id;
       form.reset();
+      $("#tab-modal")?.close();
       await refreshAll();
       showPanel("pedidos");
       notify("Comanda aberta. Adicione os itens da primeira rodada.");
@@ -1247,6 +1241,7 @@ function wireForms() {
       });
       state.inventoryAttempt = null;
       form.reset();
+      $("#inventory-modal")?.close();
       await refreshAll();
       notify("Estoque ajustado.");
     } catch (error) {
