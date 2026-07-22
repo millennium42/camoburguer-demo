@@ -73,7 +73,8 @@ export async function updateCatalogItem(sku, item, executor) {
   const { rows } = await executor.query(
     `UPDATE catalog_items SET
       name=$2, category=$3, price=$4, description=$5, stock_category=$6,
-      allows_addons=$7, preparation_mode=$8, available=$9, updated_at=NOW()
+      allows_addons=$7, preparation_mode=$8, available=$9,
+      updated_at=GREATEST(clock_timestamp(), updated_at + INTERVAL '1 millisecond')
      WHERE sku=$1 AND archived_at IS NULL RETURNING *`,
     [
       sku,
@@ -93,7 +94,9 @@ export async function updateCatalogItem(sku, item, executor) {
 export async function archiveCatalogItem(sku, executor) {
   const { rows } = await executor.query(
     `UPDATE catalog_items
-     SET available=false, archived_at=COALESCE(archived_at, NOW()), updated_at=NOW()
+     SET available=false,
+         archived_at=COALESCE(archived_at, clock_timestamp()),
+         updated_at=GREATEST(clock_timestamp(), updated_at + INTERVAL '1 millisecond')
      WHERE sku=$1 RETURNING *`,
     [sku]
   );

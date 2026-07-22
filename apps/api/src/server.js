@@ -651,28 +651,35 @@ app.post("/catalog/items", async (request, reply) => {
 
 app.patch("/catalog/items/:sku", async (request, reply) => {
   if (!requireDemoAdmin(request, reply)) return reply;
+  const expectedUpdatedAt = String(request.headers["if-match"] || "").trim();
   if (request.body?.sku != null && String(request.body.sku).trim().toLowerCase() !== request.params.sku) {
     return reply.code(400).send({ message: "SKU é imutável" });
   }
-  const saved = await db.transaction(async (client) => {
+  const result = await db.transaction(async (client) => {
     const existing = await getCatalogItem(request.params.sku, client, { forUpdate: true });
-    if (!existing || existing.archivedAt) return null;
-    return updateCatalogItem(existing.sku, normalizeCatalogItem(request.body, existing), client);
+    if (!existing || existing.archivedAt) return { notFound: true };
+    if (expectedUpdatedAt && existing.updatedAt !== expectedUpdatedAt) return { stale: true };
+    return { saved: await updateCatalogItem(existing.sku, normalizeCatalogItem(request.body, existing), client) };
   });
-  if (!saved) return reply.code(404).send({ message: "Item de catálogo não encontrado" });
+  if (result.notFound) return reply.code(404).send({ message: "Item de catálogo não encontrado" });
+  if (result.stale) return reply.code(412).send({ message: "Item alterado por outra operação; recarregue antes de salvar" });
+  const saved = result.saved;
   emitOrderEvent("catalog.changed", { action: saved.available ? "updated" : "paused", item: saved });
   return saved;
 });
 
 app.delete("/catalog/items/:sku", async (request, reply) => {
   if (!requireDemoAdmin(request, reply)) return reply;
+  const expectedUpdatedAt = String(request.headers["if-match"] || "").trim();
   const result = await db.transaction(async (client) => {
     const existing = await getCatalogItem(request.params.sku, client, { forUpdate: true });
     if (!existing) return { notFound: true };
     if (existing.archivedAt) return { saved: existing, repeated: true };
+    if (expectedUpdatedAt && existing.updatedAt !== expectedUpdatedAt) return { stale: true };
     return { saved: await archiveCatalogItem(existing.sku, client), repeated: false };
   });
   if (result.notFound) return reply.code(404).send({ message: "Item de catálogo não encontrado" });
+  if (result.stale) return reply.code(412).send({ message: "Item alterado por outra operação; recarregue antes de arquivar" });
   if (result.repeated) return result.saved;
   const saved = result.saved;
   emitOrderEvent("catalog.changed", { action: "archived", item: saved });

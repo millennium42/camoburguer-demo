@@ -50,6 +50,8 @@ Use `down -v` somente em projeto de teste explicitamente nomeado e quando a excl
 
 A listagem padrão `GET /catalog` permanece pública. `GET /catalog?includeArchived=true`, `POST /catalog/items`, `PATCH /catalog/items/:sku` e `DELETE /catalog/items/:sku` exigem `Authorization: Bearer <DEMO_ADMIN_TOKEN>`; a exclusão arquiva o SKU. Cada mudança efetiva publica `catalog.changed` no stream SSE de pedidos, com `{ action, item }`: `action` é `created`, `updated`, `paused` ou `archived`, e `item` é o snapshot persistido após a operação.
 
+A interface envia o `updatedAt` lido por último no header `If-Match` de `PATCH` e `DELETE`. Se outra operação já alterou o item, a API responde `412` e exige recarga antes de sobrescrever ou arquivar.
+
 ## Orientação antes de editar
 
 ### Tarefa leve

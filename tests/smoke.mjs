@@ -66,7 +66,7 @@ assert.equal(catalog.addOns.length, 17);
   }
 
   const managedSku = `smoke-managed-${runId}`;
-  await api("/catalog/items", {
+  const managedCreated = await api("/catalog/items", {
     method: "POST",
     headers: adminHeaders,
     body: { sku: managedSku, name: "Bala smoke", category: "Bomboniere", price: 2, preparationMode: "direct_handoff" },
@@ -74,13 +74,13 @@ assert.equal(catalog.addOns.length, 17);
   });
   await api(`/catalog/items/${managedSku}`, {
     method: "PATCH",
-    headers: adminHeaders,
+    headers: { ...adminHeaders, "if-match": managedCreated.updatedAt },
     body: { available: "false" },
     expected: [400]
   });
   const paused = await api(`/catalog/items/${managedSku}`, {
     method: "PATCH",
-    headers: adminHeaders,
+    headers: { ...adminHeaders, "if-match": managedCreated.updatedAt },
     body: { available: false, price: 2.5 }
   });
   assert.equal(paused.available, false);
@@ -91,10 +91,21 @@ assert.equal(catalog.addOns.length, 17);
     body: { items: [{ sku: managedSku, quantity: 1 }] },
     expected: [400]
   });
+  const resumed = await api(`/catalog/items/${managedSku}`, {
+    method: "PATCH",
+    headers: { ...adminHeaders, "if-match": paused.updatedAt },
+    body: { available: true }
+  });
+  const edited = await api(`/catalog/items/${managedSku}`, {
+    method: "PATCH",
+    headers: { ...adminHeaders, "if-match": resumed.updatedAt },
+    body: { description: "edição concorrente" }
+  });
   await api(`/catalog/items/${managedSku}`, {
     method: "PATCH",
-    headers: adminHeaders,
-    body: { available: true }
+    headers: { ...adminHeaders, "if-match": resumed.updatedAt },
+    body: { price: 99 },
+    expected: [412]
   });
   const directOrder = await api("/orders", {
     method: "POST",
@@ -104,7 +115,10 @@ assert.equal(catalog.addOns.length, 17);
   });
   assert.equal(directOrder.status, "ready");
   assert.equal(directOrder.items[0].preparationMode, "direct_handoff");
-  await api(`/catalog/items/${managedSku}`, { method: "DELETE", headers: adminHeaders });
+  await api(`/catalog/items/${managedSku}`, {
+    method: "DELETE",
+    headers: { ...adminHeaders, "if-match": edited.updatedAt }
+  });
   assert.equal((await api("/catalog")).items.some((item) => item.sku === managedSku), false);
   assert.equal((await api("/catalog?includeArchived=true", { headers: adminHeaders })).items.find((item) => item.sku === managedSku).archivedAt != null, true);
 

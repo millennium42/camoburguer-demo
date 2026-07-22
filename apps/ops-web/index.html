@@ -17,6 +17,7 @@
         <div class="quick-actions-bar">
           <button type="button" id="btn-quick-new-order" class="primary">+ Novo Pedido</button>
           <button type="button" id="btn-quick-open-tab" class="secondary">+ Abrir Comanda</button>
+          <button type="button" id="btn-quick-catalog-admin" class="secondary">Cardápio</button>
           <button type="button" id="btn-quick-stock" class="secondary">+ Estoque</button>
           <button type="button" id="btn-quick-cash" class="secondary">+ Caixa</button>
           <div class="status-card" role="status" aria-live="polite">
@@ -382,6 +383,89 @@
       </div>
     </dialog>
 
+    <!-- MODAL: ADMINISTRAÇÃO DO CARDÁPIO -->
+    <dialog id="catalog-admin-dialog" aria-labelledby="catalog-admin-title">
+      <div class="stack">
+        <div class="section-heading">
+          <div>
+            <h2 id="catalog-admin-title">Administração do cardápio</h2>
+            <p class="lede">A chave fica somente na memória desta tela.</p>
+          </div>
+          <button type="button" id="close-catalog-admin" class="icon-button" aria-label="Fechar">×</button>
+        </div>
+
+        <form id="catalog-admin-auth" class="inline">
+          <label>Chave administrativa
+            <input name="token" type="password" autocomplete="off" required />
+          </label>
+          <button type="submit" class="primary">Acessar gestão</button>
+        </form>
+
+        <div id="catalog-admin-content" class="catalog-admin-layout" hidden>
+          <section class="stack">
+            <div class="section-heading">
+              <h3>Itens</h3>
+              <div class="actions catalog-admin-actions">
+                <select id="catalog-admin-filter" aria-label="Filtrar itens">
+                  <option value="active">Ativos</option>
+                  <option value="paused">Pausados</option>
+                  <option value="archived">Arquivados</option>
+                  <option value="all">Todos</option>
+                </select>
+                <button type="button" id="catalog-admin-new" class="primary">Novo item</button>
+                <button type="button" id="catalog-admin-lock" class="secondary">Bloquear gestão</button>
+              </div>
+            </div>
+            <div id="catalog-admin-status" class="lede" role="status" aria-live="polite"></div>
+            <div id="catalog-admin-list" class="stack"></div>
+          </section>
+
+          <form id="catalog-item-form" class="stack">
+            <h3 id="catalog-item-form-title">Novo item</h3>
+            <div class="catalog-admin-form-grid">
+              <label>SKU
+                <input name="sku" pattern="[a-z0-9][a-z0-9-]{1,79}" required />
+              </label>
+              <label>Nome<input name="name" maxlength="160" required /></label>
+              <label>Categoria<input name="category" maxlength="80" required /></label>
+              <label>Preço<input name="price" type="number" min="0" step="0.01" required /></label>
+              <label>Estoque
+                <select name="stockCategory">
+                  <option value="">Sem baixa</option>
+                  <option value="xis">Xis</option>
+                  <option value="dog">Dog</option>
+                  <option value="hamburguer">Hambúrguer</option>
+                </select>
+              </label>
+              <label>Modo de entrega
+                <select name="preparationMode" required>
+                  <option value="kitchen">Preparo na cozinha</option>
+                  <option value="direct_handoff">Entrega direta — não preparar</option>
+                </select>
+              </label>
+            </div>
+            <label>Descrição<input name="description" maxlength="500" /></label>
+            <div class="catalog-admin-checks">
+              <label><input name="allowsAddons" type="checkbox" /> Permite adicionais</label>
+              <label><input name="available" type="checkbox" checked /> Disponível para venda</label>
+            </div>
+            <div class="actions">
+              <button type="submit" class="primary">Salvar item</button>
+              <button type="button" id="catalog-item-cancel" class="secondary">Limpar</button>
+            </div>
+          </form>
+
+          <section id="catalog-archive-confirm" class="catalog-archive-confirm" hidden aria-live="assertive">
+            <p id="catalog-archive-message"></p>
+            <div class="actions">
+              <button type="button" id="catalog-archive-cancel" class="secondary">Cancelar</button>
+              <button type="button" id="catalog-archive-submit" class="danger">Arquivar definitivamente</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </dialog>
+
     <!-- MODAL: CONFIGURAÇÃO DO ITEM (ADICIONAIS & OBS) -->
     <dialog id="item-config-dialog" aria-labelledby="item-config-title">
       <form id="item-config-form" class="stack">
@@ -415,6 +499,6 @@
 
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js?v=19"></script>
+    <script type="module" src="./main.js?v=20"></script>
   </body>
 </html>

@@ -4,8 +4,12 @@ import { readFile } from "node:fs/promises";
 import {
   addOrAccumulateItem,
   calculateOrderPreviewTotal,
+  catalogItemPayload,
   escapeHtml,
   nextOrderAttempt,
+  reconcileCartItems,
+  resolveActiveCatalogCategory,
+  sameCatalogAdminSession,
   setItemDiscount,
   setItemQuantity
 } from "../apps/ops-web/main.js";
@@ -53,7 +57,7 @@ test("UI expõe somente as modalidades válidas e não identifica operador", asy
   assert.match(html, /name="discountPercent"[^>]*min="0"[^>]*max="100"/);
   assert.match(script, /<input type=\"number\" min=\"0\" max=\"100\"[^>]*data-item-discount=/);
   assert.match(html, /<dialog id="adjustment-dialog"/);
-  assert.doesNotMatch(`${html}\n${script}`, /operatorName|Operador|Admin/i);
+  assert.doesNotMatch(`${html}\n${script}`, /operatorName|Identificação do operador/i);
   assert.equal(escapeHtml('<b class="x">'), "&lt;b class=&quot;x&quot;&gt;");
 });
 
@@ -61,8 +65,104 @@ test("UI agrupa o catálogo e sinaliza produto esgotado", async () => {
   const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
   assert.match(script, /data-catalog-tab/);
   assert.match(script, /sellable \? "" : "disabled"/);
-  assert.match(script, /"Esgotado"/);
+  assert.match(script, /"Pausado"/);
   assert.match(script, /"Sem estoque"/);
+});
+
+test("gestão do cardápio mantém segredo em memória e monta o contrato completo", async () => {
+  const [html, script, styles] = await Promise.all([
+    readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8"),
+    readFile(new URL("../apps/ops-web/styles.css", import.meta.url), "utf8")
+  ]);
+  const data = new FormData();
+  data.set("sku", " Bala-Nova ");
+  data.set("name", "Bala nova");
+  data.set("category", "Bomboniere");
+  data.set("price", "2.50");
+  data.set("preparationMode", "direct_handoff");
+  data.set("allowsAddons", "on");
+  const payload = catalogItemPayload(data);
+  assert.deepEqual(payload, {
+    sku: "bala-nova",
+    name: "Bala nova",
+    category: "Bomboniere",
+    price: 2.5,
+    description: "",
+    stockCategory: null,
+    allowsAddons: true,
+    preparationMode: "direct_handoff",
+    available: false
+  });
+  assert.match(html, /id="catalog-admin-dialog"/);
+  assert.match(html, /name="preparationMode"/);
+  assert.match(html, /value="direct_handoff"/);
+  assert.match(html, /id="catalog-archive-confirm"/);
+  assert.match(script, /catalogAdminToken: ""/);
+  assert.match(script, /authorization: `Bearer \$\{session\.token\}`/);
+  assert.match(script, /\/catalog\?includeArchived=true/);
+  assert.match(script, /method: "DELETE"/);
+  assert.match(script, /body: JSON\.stringify\(\{ available: !item\.available \}\)/);
+  assert.match(script, /headers: \{ "if-match": item\.updatedAt \}/);
+  assert.match(script, /if \(dialog\?\.open\) auth\?\.elements\.token\.focus\(\)/);
+  assert.match(script, /currentOpener\?\.focus\(\)/);
+  assert.match(script, /hasUnavailableCartItems\(\)/);
+  assert.match(script, /catalogAdminSessionIsCurrent\(session\)/);
+  assert.match(script, /error\.catalogAdminSessionInvalidated = true/);
+  assert.match(script, /session\.generation === state\.catalogAdminGeneration/);
+  assert.match(script, /'#catalog-admin-auth \[type="submit"\]'/);
+  assert.doesNotMatch(script, /localStorage|sessionStorage|document\.cookie/);
+  assert.match(styles, /#catalog-admin-dialog \{ width: min\(960px, calc\(100% - 16px\)\)/);
+  assert.match(styles, /\.catalog-admin-layout, \.catalog-admin-form-grid \{ grid-template-columns: 1fr; \}/);
+});
+
+test("atualiza snapshots ativos do carrinho e bloqueia itens pausados ou arquivados", () => {
+  const cart = [{ sku: "bala", name: "Bala antiga", price: 2, quantity: 2, notes: "preservar" }];
+  const updated = reconcileCartItems(cart, [{
+    sku: "bala",
+    name: "Bala nova",
+    category: "Bomboniere",
+    price: 3,
+    available: true,
+    preparationMode: "direct_handoff",
+    stockCategory: null,
+    allowsAddons: false
+  }]);
+  assert.equal(updated[0].name, "Bala nova");
+  assert.equal(updated[0].price, 3);
+  assert.equal(updated[0].quantity, 2);
+  assert.equal(updated[0].notes, "preservar");
+  assert.equal(updated[0].catalogUnavailable, false);
+
+  const paused = reconcileCartItems(updated, [{
+    sku: "bala", name: "Bala pausada", category: "Bomboniere", price: 4,
+    available: false, allowsAddons: false, preparationMode: "direct_handoff", stockCategory: null
+  }]);
+  assert.equal(paused[0].catalogUnavailable, true);
+  assert.equal(paused[0].name, "Bala pausada");
+  assert.equal(paused[0].price, 4);
+  const archived = reconcileCartItems(updated, [])[0];
+  assert.equal(archived.catalogUnavailable, true);
+  assert.equal(archived.name, "Bala nova");
+
+  const withAddon = [{ ...cart[0], addons: [{ sku: "ovo", name: "Ovo", price: 3 }] }];
+  const addonsDisabled = reconcileCartItems(withAddon, [{
+    sku: "bala", name: "Bala", category: "Bomboniere", price: 2,
+    available: true, allowsAddons: false, preparationMode: "kitchen", stockCategory: null
+  }]);
+  assert.equal(addonsDisabled[0].catalogUnavailable, true);
+  assert.equal(addonsDisabled[0].catalogIssue, "addons_disabled");
+  assert.equal(addonsDisabled[0].addons.length, 1);
+});
+
+test("descarta respostas administrativas antigas e recupera categoria ativa removida", () => {
+  const oldSession = { generation: 1, token: "token-a" };
+  assert.equal(sameCatalogAdminSession(oldSession, { generation: 1, token: "token-a" }), true);
+  assert.equal(sameCatalogAdminSession(oldSession, { generation: 2, token: "token-a" }), false);
+  assert.equal(sameCatalogAdminSession(oldSession, { generation: 1, token: "token-b" }), false);
+  assert.equal(resolveActiveCatalogCategory("Bebidas", [{ category: "Lanches" }]), "Lanches");
+  assert.equal(resolveActiveCatalogCategory("Bebidas", [{ category: "Bebidas" }, { category: "Lanches" }]), "Bebidas");
+  assert.equal(resolveActiveCatalogCategory("Bebidas", []), null);
 });
 
 test("carrinho separa combinações de adicionais e soma seus preços", () => {

@@ -18,7 +18,15 @@ const state = {
   financeFilters: { paymentMethod: "", type: "" },
   shifts: [],
   activeCatalogCategory: null,
-  isCreatingNewTabInOrder: false
+  isCreatingNewTabInOrder: false,
+  catalogAdminToken: "",
+  catalogAdminGeneration: 0,
+  catalogAdminItems: [],
+  catalogAdminEditSku: null,
+  catalogAdminEditUpdatedAt: null,
+  catalogAdminArchiveSku: null,
+  catalogAdminArchiveUpdatedAt: null,
+  catalogAdminArchiveOpener: null
 };
 
 const apiBase = typeof window === "undefined"
@@ -74,6 +82,51 @@ const $ = (selector) => document.querySelector(selector);
 
 export function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => htmlEscapes[character]);
+}
+
+export function catalogItemPayload(data) {
+  return {
+    sku: String(data.get("sku") || "").trim().toLowerCase(),
+    name: String(data.get("name") || "").trim(),
+    category: String(data.get("category") || "").trim(),
+    price: Number(data.get("price")),
+    description: String(data.get("description") || "").trim(),
+    stockCategory: data.get("stockCategory") || null,
+    allowsAddons: data.has("allowsAddons"),
+    preparationMode: data.get("preparationMode"),
+    available: data.has("available")
+  };
+}
+
+export function reconcileCartItems(items, catalog) {
+  const bySku = new Map(catalog.map((item) => [item.sku, item]));
+  return items.map((item) => {
+    const current = bySku.get(item.sku);
+    if (!current) {
+      return { ...item, catalogUnavailable: true, catalogIssue: "unavailable" };
+    }
+    const addonsDisabled = (item.addons || []).length > 0 && !current.allowsAddons;
+    return {
+      ...item,
+      name: current.name,
+      category: current.category,
+      price: current.price,
+      stockCategory: current.stockCategory,
+      preparationMode: current.preparationMode,
+      allowsAddons: current.allowsAddons,
+      catalogUnavailable: !current.available || addonsDisabled,
+      catalogIssue: !current.available ? "unavailable" : addonsDisabled ? "addons_disabled" : null
+    };
+  });
+}
+
+export function resolveActiveCatalogCategory(activeCategory, items) {
+  const categories = [...new Set(items.map((item) => item.category))];
+  return categories.includes(activeCategory) ? activeCategory : categories[0] || null;
+}
+
+function hasUnavailableCartItems() {
+  return state.orderItems.some((item) => item.catalogUnavailable);
 }
 
 export function addOrAccumulateItem(items, selected, quantity, notes = "", discountPercent = 0, addons = []) {
@@ -243,9 +296,7 @@ function renderCatalog() {
   }, {});
 
   const categoryNames = Object.keys(categories);
-  if (!state.activeCatalogCategory && categoryNames.length > 0) {
-    state.activeCatalogCategory = categoryNames[0];
-  }
+  state.activeCatalogCategory = resolveActiveCatalogCategory(state.activeCatalogCategory, state.catalog);
 
   const tabsHtml = `
     <nav class="tab-bar" style="margin-bottom: 16px;">
@@ -260,12 +311,13 @@ function renderCatalog() {
   const itemsHtml = activeItems.map((item) => {
     const inStock = !item.stockCategory || Number(balances[item.stockCategory]) > 0;
     const sellable = item.available && inStock;
-    const availability = !item.available ? "Esgotado" : inStock ? money(item.price) : "Sem estoque";
+    const availability = !item.available ? "Pausado" : inStock ? money(item.price) : "Sem estoque";
     return `
       <div class="menu-product-card" ${sellable ? "" : 'style="opacity: 0.6;"'}>
         <div>
           <h3>${escapeHtml(item.name)}</h3>
           <p>${escapeHtml(item.description || "")}</p>
+          <span class="pill ${item.preparationMode === "direct_handoff" ? "open" : ""}">${item.preparationMode === "direct_handoff" ? "Entrega direta — não preparar" : "Cozinha"}</span>
           <div class="price">${availability}</div>
         </div>
         <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -345,6 +397,7 @@ function renderOrderItems() {
                 <span>${money(item.price)} cada</span>
                 <span>${escapeHtml(item.notes || "Sem observação")}</span>
               </div>
+              ${item.catalogUnavailable ? `<div class="pill danger">${item.catalogIssue === "addons_disabled" ? "Adicionais não aceitos — remova ou revise o item" : "Indisponível — remova para continuar"}</div>` : ""}
               ${(item.addons || []).length ? `<div class="addon-list">${item.addons.map((addon) => `+ ${escapeHtml(addon.name)} (${money(addon.price)})`).join(" · ")}</div>` : ""}
             </div>
             <div class="quantity-control">
@@ -427,6 +480,7 @@ function renderActiveTab() {
                     <span>${money(item.price)} cada</span>
                     <span>${escapeHtml(item.notes || "Sem observação")}</span>
                   </div>
+                  ${item.catalogUnavailable ? `<div class="pill danger">${item.catalogIssue === "addons_disabled" ? "Adicionais não aceitos — remova ou revise o item" : "Indisponível — remova para continuar"}</div>` : ""}
                   ${(item.addons || []).length ? `<div class="addon-list">${item.addons.map((addon) => `+ ${escapeHtml(addon.name)} (${money(addon.price)})`).join(" · ")}</div>` : ""}
                 </div>
                 <div class="quantity-control">
@@ -691,9 +745,157 @@ async function api(path, options = {}) {
   }
   if (!response.ok) {
     const errorMsg = typeof payload === "string" ? payload : (payload?.message || payload?.error || (typeof payload === "object" ? JSON.stringify(payload) : "Falha na API"));
-    throw new Error(errorMsg);
+    const error = new Error(errorMsg);
+    error.status = response.status;
+    throw error;
   }
   return payload;
+}
+
+function lockCatalogAdmin() {
+  state.catalogAdminGeneration += 1;
+  state.catalogAdminToken = "";
+  state.catalogAdminItems = [];
+  state.catalogAdminEditSku = null;
+  state.catalogAdminEditUpdatedAt = null;
+  state.catalogAdminArchiveSku = null;
+  state.catalogAdminArchiveUpdatedAt = null;
+  state.catalogAdminArchiveOpener = null;
+  const dialog = $("#catalog-admin-dialog");
+  const auth = $("#catalog-admin-auth");
+  const content = $("#catalog-admin-content");
+  if (auth) {
+    auth.hidden = false;
+    auth.reset();
+  }
+  if (content) content.hidden = true;
+  if ($("#catalog-archive-confirm")) $("#catalog-archive-confirm").hidden = true;
+  [
+    '#catalog-admin-auth [type="submit"]',
+    '#catalog-item-form [type="submit"]',
+    "#catalog-archive-submit"
+  ].forEach((selector) => {
+    const control = $(selector);
+    if (control) control.disabled = false;
+  });
+  $("#catalog-admin-list")?.replaceChildren();
+  if (dialog?.open) auth?.elements.token.focus();
+}
+
+function catalogAdminSession() {
+  return { generation: state.catalogAdminGeneration, token: state.catalogAdminToken };
+}
+
+export function sameCatalogAdminSession(session, current) {
+  return Boolean(session?.token)
+    && session.generation === current.generation
+    && session.token === current.token;
+}
+
+function catalogAdminSessionIsCurrent(session) {
+  return sameCatalogAdminSession(session, {
+    generation: state.catalogAdminGeneration,
+    token: state.catalogAdminToken
+  });
+}
+
+async function catalogAdminApi(path, options = {}, session = catalogAdminSession()) {
+  try {
+    return await api(path, {
+      ...options,
+      headers: { ...options.headers, authorization: `Bearer ${session.token}` }
+    });
+  } catch (error) {
+    if ((error.status === 401 || error.status === 503) && catalogAdminSessionIsCurrent(session)) {
+      error.catalogAdminSessionInvalidated = true;
+      lockCatalogAdmin();
+    }
+    throw error;
+  }
+}
+
+function resetCatalogItemForm() {
+  const form = $("#catalog-item-form");
+  if (!form) return;
+  form.reset();
+  form.elements.available.checked = true;
+  form.elements.sku.readOnly = false;
+  state.catalogAdminEditSku = null;
+  state.catalogAdminEditUpdatedAt = null;
+  $("#catalog-item-form-title").textContent = "Novo item";
+  form.elements.sku.focus();
+}
+
+function renderCatalogAdminList() {
+  const container = $("#catalog-admin-list");
+  if (!container) return;
+  const filter = $("#catalog-admin-filter")?.value || "active";
+  const items = state.catalogAdminItems.filter((item) => {
+    if (filter === "archived") return Boolean(item.archivedAt);
+    if (filter === "paused") return !item.archivedAt && !item.available;
+    if (filter === "active") return !item.archivedAt && item.available;
+    return true;
+  });
+  container.innerHTML = items.length ? items.map((item) => {
+    const status = item.archivedAt ? "Arquivado" : item.available ? "Ativo" : "Pausado";
+    const mode = item.preparationMode === "direct_handoff" ? "Entrega direta" : "Cozinha";
+    return `
+      <article class="catalog-admin-item">
+        <div>
+          <strong>${escapeHtml(item.name)}</strong>
+          <div class="mini-meta"><span>${escapeHtml(item.sku)}</span><span>${escapeHtml(item.category)}</span><span>${money(item.price)}</span></div>
+          <div class="mini-meta"><span class="pill">${status}</span><span>${mode}</span></div>
+        </div>
+        <div class="actions">
+          ${item.archivedAt ? '<span class="lede">SKU não reutilizável</span>' : `
+            <button type="button" class="secondary small" data-catalog-admin-edit="${escapeHtml(item.sku)}">Editar</button>
+            <button type="button" class="secondary small" data-catalog-admin-toggle="${escapeHtml(item.sku)}">${item.available ? "Pausar" : "Retomar"}</button>
+            <button type="button" class="danger small" data-catalog-admin-archive="${escapeHtml(item.sku)}">Arquivar</button>
+          `}
+        </div>
+      </article>`;
+  }).join("") : '<p class="empty-state">Nenhum item neste filtro.</p>';
+}
+
+async function refreshCatalogAdminList(session = catalogAdminSession()) {
+  if (!catalogAdminSessionIsCurrent(session)) return false;
+  const catalog = await catalogAdminApi("/catalog?includeArchived=true", {}, session);
+  if (!catalogAdminSessionIsCurrent(session) || !$("#catalog-admin-dialog")?.open) return false;
+  state.catalogAdminItems = catalog.items;
+  renderCatalogAdminList();
+  $("#catalog-admin-status").textContent = `${catalog.items.length} itens carregados`;
+  return true;
+}
+
+function editCatalogItem(sku) {
+  const item = state.catalogAdminItems.find((entry) => entry.sku === sku && !entry.archivedAt);
+  const form = $("#catalog-item-form");
+  if (!item || !form) return;
+  state.catalogAdminEditSku = item.sku;
+  state.catalogAdminEditUpdatedAt = item.updatedAt;
+  form.elements.sku.value = item.sku;
+  form.elements.sku.readOnly = true;
+  form.elements.name.value = item.name;
+  form.elements.category.value = item.category;
+  form.elements.price.value = item.price;
+  form.elements.description.value = item.description || "";
+  form.elements.stockCategory.value = item.stockCategory || "";
+  form.elements.preparationMode.value = item.preparationMode;
+  form.elements.allowsAddons.checked = item.allowsAddons;
+  form.elements.available.checked = item.available;
+  $("#catalog-item-form-title").textContent = `Editar ${item.name}`;
+  form.elements.name.focus();
+}
+
+function requestCatalogArchive(sku, opener) {
+  const item = state.catalogAdminItems.find((entry) => entry.sku === sku && !entry.archivedAt);
+  if (!item) return;
+  state.catalogAdminArchiveSku = sku;
+  state.catalogAdminArchiveUpdatedAt = item.updatedAt;
+  state.catalogAdminArchiveOpener = opener;
+  $("#catalog-archive-message").textContent = `Arquivar ${item.name} (${item.sku})? O SKU não poderá ser reutilizado.`;
+  $("#catalog-archive-confirm").hidden = false;
+  $("#catalog-archive-cancel").focus();
 }
 
 async function refreshAll() {
@@ -710,6 +912,7 @@ async function refreshAll() {
     api("/cash-shifts")
   ]);
 
+  state.orderItems = reconcileCartItems(state.orderItems, catalog.items);
   state.catalog = catalog.items;
   state.addOns = catalog.addOns || [];
   state.inventory = inventory;
@@ -849,6 +1052,12 @@ function wireCart() {
 
   $("#btn-quick-open-tab")?.addEventListener("click", () => {
     $("#tab-modal")?.showModal();
+  });
+
+  $("#btn-quick-catalog-admin")?.addEventListener("click", () => {
+    const dialog = $("#catalog-admin-dialog");
+    dialog?.showModal();
+    $("#catalog-admin-auth input[name=token]")?.focus();
   });
 
   $("#btn-quick-stock")?.addEventListener("click", () => {
@@ -1084,6 +1293,10 @@ function wireCart() {
         notify("Adicione ao menos um produto antes de enviar a rodada.", "error");
         return;
       }
+      if (hasUnavailableCartItems()) {
+        notify("Remova os itens indisponíveis antes de enviar a rodada.", "error");
+        return;
+      }
       button.disabled = true;
       try {
         const discountPercent = Number($("#active-comanda-discount")?.value || 0);
@@ -1216,6 +1429,148 @@ function wireCart() {
   });
 }
 
+function wireCatalogAdmin() {
+  const dialog = $("#catalog-admin-dialog");
+  const authForm = $("#catalog-admin-auth");
+  const itemForm = $("#catalog-item-form");
+
+  $("#close-catalog-admin")?.addEventListener("click", () => dialog?.close());
+  dialog?.addEventListener("close", lockCatalogAdmin);
+  $("#catalog-admin-lock")?.addEventListener("click", () => {
+    lockCatalogAdmin();
+    authForm?.elements.token.focus();
+  });
+  $("#catalog-admin-new")?.addEventListener("click", resetCatalogItemForm);
+  $("#catalog-item-cancel")?.addEventListener("click", resetCatalogItemForm);
+  $("#catalog-admin-filter")?.addEventListener("change", renderCatalogAdminList);
+
+  authForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!authForm.reportValidity()) return;
+    const token = authForm.elements.token.value;
+    authForm.elements.token.value = "";
+    state.catalogAdminGeneration += 1;
+    state.catalogAdminToken = token;
+    const session = catalogAdminSession();
+    const submit = authForm.querySelector('[type="submit"]');
+    submit.disabled = true;
+    try {
+      const loaded = await refreshCatalogAdminList(session);
+      if (!loaded) return;
+      authForm.hidden = true;
+      $("#catalog-admin-content").hidden = false;
+      resetCatalogItemForm();
+    } catch (error) {
+      if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated) {
+        notify(error.message, "error");
+        if (dialog?.open) authForm.elements.token.focus();
+      }
+    } finally {
+      if (session.generation === state.catalogAdminGeneration) submit.disabled = false;
+    }
+  });
+
+  itemForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!itemForm.reportValidity()) return;
+    const payload = catalogItemPayload(new FormData(itemForm));
+    const editingSku = state.catalogAdminEditSku;
+    const editingUpdatedAt = state.catalogAdminEditUpdatedAt;
+    const session = catalogAdminSession();
+    const submit = itemForm.querySelector('[type="submit"]');
+    submit.disabled = true;
+    try {
+      await catalogAdminApi(editingSku ? `/catalog/items/${editingSku}` : "/catalog/items", {
+        method: editingSku ? "PATCH" : "POST",
+        headers: editingSku ? { "if-match": editingUpdatedAt } : {},
+        body: JSON.stringify(payload)
+      }, session);
+      if (!catalogAdminSessionIsCurrent(session)) return;
+      resetCatalogItemForm();
+      await Promise.all([refreshCatalogAdminList(session), refreshAll()]);
+      if (!catalogAdminSessionIsCurrent(session)) return;
+      notify(editingSku ? "Item atualizado." : "Item criado.");
+    } catch (error) {
+      if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated) notify(error.message, "error");
+    } finally {
+      if (session.generation === state.catalogAdminGeneration) submit.disabled = false;
+    }
+  });
+
+  document.body.addEventListener("click", async (event) => {
+    const button = event.target.closest?.("button");
+    if (!button) return;
+    if (button.dataset.catalogAdminEdit) {
+      editCatalogItem(button.dataset.catalogAdminEdit);
+      return;
+    }
+    if (button.dataset.catalogAdminArchive) {
+      requestCatalogArchive(button.dataset.catalogAdminArchive, button);
+      return;
+    }
+    if (button.dataset.catalogAdminToggle) {
+      const item = state.catalogAdminItems.find((entry) => entry.sku === button.dataset.catalogAdminToggle);
+      if (!item) return;
+      const session = catalogAdminSession();
+      button.disabled = true;
+      try {
+        await catalogAdminApi(`/catalog/items/${item.sku}`, {
+          method: "PATCH",
+          headers: { "if-match": item.updatedAt },
+          body: JSON.stringify({ available: !item.available })
+        }, session);
+        if (!catalogAdminSessionIsCurrent(session)) return;
+        await Promise.all([refreshCatalogAdminList(session), refreshAll()]);
+        if (!catalogAdminSessionIsCurrent(session)) return;
+        notify(item.available ? "Item pausado." : "Item retomado.");
+      } catch (error) {
+        if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated) notify(error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    }
+  });
+
+  $("#catalog-archive-cancel")?.addEventListener("click", () => {
+    const sku = state.catalogAdminArchiveSku;
+    const opener = state.catalogAdminArchiveOpener;
+    state.catalogAdminArchiveSku = null;
+    state.catalogAdminArchiveUpdatedAt = null;
+    state.catalogAdminArchiveOpener = null;
+    $("#catalog-archive-confirm").hidden = true;
+    const currentOpener = opener?.isConnected
+      ? opener
+      : document.querySelector(`[data-catalog-admin-archive="${sku}"]`);
+    currentOpener?.focus();
+  });
+  $("#catalog-archive-submit")?.addEventListener("click", async (event) => {
+    const sku = state.catalogAdminArchiveSku;
+    if (!sku) return;
+    const session = catalogAdminSession();
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      await catalogAdminApi(`/catalog/items/${sku}`, {
+        method: "DELETE",
+        headers: { "if-match": state.catalogAdminArchiveUpdatedAt }
+      }, session);
+      if (!catalogAdminSessionIsCurrent(session)) return;
+      state.catalogAdminArchiveSku = null;
+      state.catalogAdminArchiveUpdatedAt = null;
+      state.catalogAdminArchiveOpener = null;
+      $("#catalog-archive-confirm").hidden = true;
+      resetCatalogItemForm();
+      await Promise.all([refreshCatalogAdminList(session), refreshAll()]);
+      if (!catalogAdminSessionIsCurrent(session)) return;
+      notify("Item arquivado. O SKU não poderá ser reutilizado.");
+    } catch (error) {
+      if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated) notify(error.message, "error");
+    } finally {
+      if (session.generation === state.catalogAdminGeneration) button.disabled = false;
+    }
+  });
+}
+
 function wireForms() {
   $("#finance-filter-form").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1342,6 +1697,10 @@ function wireForms() {
     const form = event.currentTarget;
     if (!state.orderItems.length) {
       notify("Adicione pelo menos um item antes de finalizar.", "error");
+      return;
+    }
+    if (hasUnavailableCartItems()) {
+      notify("Remova os itens indisponíveis antes de finalizar.", "error");
       return;
     }
     if (!form.reportValidity()) return;
@@ -1508,7 +1867,13 @@ function wireForms() {
 function wireSse() {
   const orderEvents = new EventSource(`${apiBase}/events/orders`);
   const financeEvents = new EventSource(`${apiBase}/events/finance`);
-  orderEvents.onmessage = refreshSafe;
+  orderEvents.onmessage = () => {
+    refreshSafe();
+    const session = catalogAdminSession();
+    refreshCatalogAdminList(session).catch((error) => {
+      if (catalogAdminSessionIsCurrent(session)) notify(error.message, "error");
+    });
+  };
   financeEvents.onmessage = refreshSafe;
   orderEvents.onopen = financeEvents.onopen = () => {
     $("#api-status").textContent = "API conectada";
@@ -1521,6 +1886,7 @@ function wireSse() {
 if (typeof document !== "undefined") {
   wireTabs();
   wireCart();
+  wireCatalogAdmin();
   wireForms();
   wireSse();
   syncDeliveryAddress();
