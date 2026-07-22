@@ -38,13 +38,17 @@ rtk npm test
 Stack completa e isolada:
 
 ```bash
-rtk proxy docker compose -p camoburguer-dev up -d --build
+rtk proxy env DEMO_ADMIN_TOKEN=local-demo-admin-token docker compose -p camoburguer-dev up -d --build
 rtk proxy docker compose -p camoburguer-dev exec -T api node /app/scripts/seed-demo.mjs
-rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token npm run smoke
+rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token DEMO_ADMIN_TOKEN=local-demo-admin-token npm run smoke
 rtk proxy docker compose -p camoburguer-dev down
 ```
 
 Use `down -v` somente em projeto de teste explicitamente nomeado e quando a exclusão do volume fizer parte da intenção. Nunca apague o volume padrão para “tentar de novo”.
+
+### Administração do cardápio
+
+A listagem padrão `GET /catalog` permanece pública. `GET /catalog?includeArchived=true`, `POST /catalog/items`, `PATCH /catalog/items/:sku` e `DELETE /catalog/items/:sku` exigem `Authorization: Bearer <DEMO_ADMIN_TOKEN>`; a exclusão arquiva o SKU. Cada mudança efetiva publica `catalog.changed` no stream SSE de pedidos, com `{ action, item }`: `action` é `created`, `updated`, `paused` ou `archived`, e `item` é o snapshot persistido após a operação.
 
 ## Orientação antes de editar
 
@@ -180,10 +184,10 @@ rtk npm audit --omit=dev
 ### Gate 2 — stack real
 
 ```bash
-rtk proxy docker compose -p camoburguer-check up -d --build
+rtk proxy env DEMO_ADMIN_TOKEN=local-demo-admin-token docker compose -p camoburguer-check up -d --build
 rtk proxy docker compose -p camoburguer-check ps
 rtk proxy docker compose -p camoburguer-check exec -T api node /app/scripts/seed-demo.mjs
-rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token npm run smoke
+rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token DEMO_ADMIN_TOKEN=local-demo-admin-token npm run smoke
 ```
 
 Verifique logs de API/bridge e só depois remova o projeto isolado:

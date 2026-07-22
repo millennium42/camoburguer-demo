@@ -5,7 +5,14 @@ const apiBase = process.env.API_BASE_URL || "http://127.0.0.1:3001";
 const webBase = process.env.WEB_BASE_URL || "http://127.0.0.1:8081";
 const printBase = process.env.PRINT_BRIDGE_URL || "http://127.0.0.1:3100";
 const printBridgeToken = process.env.PRINT_BRIDGE_TOKEN || "";
+const demoAdminToken = process.env.DEMO_ADMIN_TOKEN || "";
 const runId = Date.now().toString(36);
+const smokeBurgerSku = `smoke-burger-${runId}`;
+const smokeBatataSku = `smoke-batata-${runId}`;
+
+if (!demoAdminToken) {
+  throw new Error("DEMO_ADMIN_TOKEN é obrigatório para preparar as fixtures do smoke");
+}
 
 async function request(base, path, { method = "GET", body, headers = {}, expected = [200] } = {}) {
   const response = await fetch(`${base}${path}`, {
@@ -28,9 +35,99 @@ assert.equal((await api("/health")).ok, true);
 assert.equal((await api("/health")).database, "reachable");
 const catalog = await api("/catalog");
 assert.equal(catalog.capturedAt, "2026-07-16");
-assert.equal(catalog.items.length, 51);
-assert.equal(catalog.items.filter((item) => item.available).length, 50);
+assert.ok(catalog.items.length >= 51);
+assert.ok(catalog.items.filter((item) => item.available).length >= 50);
 assert.equal(catalog.addOns.length, 17);
+
+{
+  const adminHeaders = { authorization: `Bearer ${demoAdminToken}` };
+  await api("/catalog/items", {
+    method: "POST",
+    body: { sku: `unauthorized-${runId}`, name: "Bloqueado", category: "Teste", price: 1 },
+    expected: [401]
+  });
+  const fixtures = [
+    [smokeBurgerSku, "Burger smoke", 10],
+    [smokeBatataSku, "Batata smoke", 5],
+    [`smoke-no-shift-${runId}`, "Consumo sem turno", 5],
+    [`smoke-cross-shift-${runId}`, "Consumo entre turnos", 5],
+    [`smoke-meal-${runId}`, "Consumo local", 100],
+    [`smoke-partial-${runId}`, "Consumo parcial", 100],
+    [`smoke-payment-race-${runId}`, "Consumo concorrente", 10],
+    [`smoke-reversal-${runId}`, "Consumo para estorno", 20]
+  ];
+  for (const [sku, name, price] of fixtures) {
+    await api("/catalog/items", {
+      method: "POST",
+      headers: adminHeaders,
+      body: { sku, name, category: "Smoke", price, preparationMode: "kitchen" },
+      expected: [201]
+    });
+  }
+
+  const managedSku = `smoke-managed-${runId}`;
+  await api("/catalog/items", {
+    method: "POST",
+    headers: adminHeaders,
+    body: { sku: managedSku, name: "Bala smoke", category: "Bomboniere", price: 2, preparationMode: "direct_handoff" },
+    expected: [201]
+  });
+  await api(`/catalog/items/${managedSku}`, {
+    method: "PATCH",
+    headers: adminHeaders,
+    body: { available: "false" },
+    expected: [400]
+  });
+  const paused = await api(`/catalog/items/${managedSku}`, {
+    method: "PATCH",
+    headers: adminHeaders,
+    body: { available: false, price: 2.5 }
+  });
+  assert.equal(paused.available, false);
+  assert.equal(paused.price, 2.5);
+  await api("/orders", {
+    method: "POST",
+    headers: { "Idempotency-Key": `paused-${runId}` },
+    body: { items: [{ sku: managedSku, quantity: 1 }] },
+    expected: [400]
+  });
+  await api(`/catalog/items/${managedSku}`, {
+    method: "PATCH",
+    headers: adminHeaders,
+    body: { available: true }
+  });
+  const directOrder = await api("/orders", {
+    method: "POST",
+    headers: { "Idempotency-Key": `direct-${runId}` },
+    body: { items: [{ sku: managedSku, quantity: 1 }] },
+    expected: [201]
+  });
+  assert.equal(directOrder.status, "ready");
+  assert.equal(directOrder.items[0].preparationMode, "direct_handoff");
+  await api(`/catalog/items/${managedSku}`, { method: "DELETE", headers: adminHeaders });
+  assert.equal((await api("/catalog")).items.some((item) => item.sku === managedSku), false);
+  assert.equal((await api("/catalog?includeArchived=true", { headers: adminHeaders })).items.find((item) => item.sku === managedSku).archivedAt != null, true);
+
+  const raceSku = `smoke-race-catalog-${runId}`;
+  await api("/catalog/items", {
+    method: "POST",
+    headers: adminHeaders,
+    body: { sku: raceSku, name: "Corrida catálogo", category: "Smoke", price: 3 },
+    expected: [201]
+  });
+  const raceResults = await Promise.all([
+    api(`/catalog/items/${raceSku}`, { method: "PATCH", headers: adminHeaders, body: { price: 4 }, expected: [200, 404] }),
+    api(`/catalog/items/${raceSku}`, { method: "DELETE", headers: adminHeaders, expected: [200] })
+  ]);
+  assert.equal(raceResults.some((item) => item?.archivedAt != null), true);
+}
+
+const seededOrders = (await api("/orders")).items;
+const seededDrink = seededOrders
+  .find((order) => order.customerName === "Pessoa Demo 01")
+  ?.items.find((item) => item.sku === "refrigerante-lata");
+assert.equal(seededDrink?.preparationMode, "direct_handoff");
+assert.equal(seededDrink?.stockCategory, null);
 
 const initialInventory = await api("/inventory");
 const initialXis = initialInventory.balances.find((item) => item.category === "xis").quantity;
@@ -430,8 +527,8 @@ async function createOrder(source, fulfillmentMode, paymentMethod, extra = {}) {
     fulfillmentMode,
     paymentMethod,
     customerName: `Smoke ${source}`,
-    items: [{ sku: "smoke-burger", name: "Burger smoke", quantity: 2, price: 10 },
-      { sku: "smoke-batata", name: "Batata smoke", quantity: 1, price: 5 }],
+    items: [{ sku: smokeBurgerSku, name: "Burger smoke", quantity: 2, price: 10 },
+      { sku: smokeBatataSku, name: "Batata smoke", quantity: 1, price: 5 }],
     ...extra
   };
   const created = await api("/orders", {
@@ -454,8 +551,8 @@ async function createOrder(source, fulfillmentMode, paymentMethod, extra = {}) {
 const orders = {
   counter: await createOrder("counter", "local", "cash", {
     discountPercent: 20,
-    items: [{ sku: "smoke-burger", name: "Burger smoke", quantity: 2, price: 10, discountPercent: 10 },
-      { sku: "smoke-batata", name: "Batata smoke", quantity: 1, price: 5 }]
+    items: [{ sku: smokeBurgerSku, name: "Burger smoke", quantity: 2, price: 10, discountPercent: 10 },
+      { sku: smokeBatataSku, name: "Batata smoke", quantity: 1, price: 5 }]
   }),
   whatsapp: await createOrder("whatsapp", "pickup", "pix"),
   ifood: await createOrder("ifood", "delivery", "app_paid", { deliveryAddress: "Rua Smoke, 123" }),

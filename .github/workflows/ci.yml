@@ -23,9 +23,12 @@ jobs:
       - run: npm test
       - run: npm audit --omit=dev
       - run: docker compose -p camoburguer-ci up -d --build --wait --wait-timeout 120
+        env:
+          DEMO_ADMIN_TOKEN: ci-demo-admin-token
       - run: docker compose -p camoburguer-ci exec -T api node /app/scripts/seed-demo.mjs
       - run: npm run smoke
         env:
           PRINT_BRIDGE_TOKEN: local-print-bridge-token
+          DEMO_ADMIN_TOKEN: ci-demo-admin-token
       - if: always()
         run: docker compose -p camoburguer-ci down -v

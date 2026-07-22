@@ -116,6 +116,7 @@ flowchart LR
 
 - `order.created`, `order.confirmed`, `order.completed`, `order.cancelled`
 - `order.tab.assigned`
+- `catalog.changed` (`created`, `updated`, `paused`, `archived`)
 - `ticket.printed`, `ticket.print.failed`
 - `cash.shift.opened`, `cash.adjustment.created`, `cash.shift.closed`
 - `finance.entry.created`

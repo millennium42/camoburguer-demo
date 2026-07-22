@@ -6,7 +6,7 @@ import {
   updateChannelMapping
 } from "./integration-repository.js";
 
-import { transitionOrder } from "@camoburguer/domain";
+import { confirmOrder, requiresKitchenPreparation, transitionOrder } from "@camoburguer/domain";
 
 const ACTION_RULES = {
   accept: { status: "received", syncStatus: "accept_pending" },
@@ -106,7 +106,7 @@ export async function activateAcceptedOrder(orderId, db, executor = null) {
       throw new Error("Pedido não encontrado");
     }
 
-    if (order.status === "confirmed") {
+    if (order.status === "confirmed" || (order.status === "ready" && !requiresKitchenPreparation(order.items))) {
       return { saved: order, repeated: true, printJob: null };
     }
 
@@ -114,7 +114,7 @@ export async function activateAcceptedOrder(orderId, db, executor = null) {
       throw new Error("Pedido não está aguardando autorização");
     }
 
-    const confirmed = transitionOrder(order, "confirmed");
+    const confirmed = confirmOrder(order);
     const saved = await db.updateOrder(confirmed, "received", client);
     if (!saved) {
       const error = new Error("Pedido foi alterado durante a confirmação");

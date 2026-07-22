@@ -6,7 +6,6 @@ import rateLimit from "@fastify/rate-limit";
 import { toMoney } from "@camoburguer/shared-types";
 import {
   ADD_ONS,
-  CATALOG,
   CATALOG_CAPTURED_AT,
   CATALOG_SOURCE_URL,
   buildKitchenTicket,
@@ -16,6 +15,7 @@ import {
   createCashShift,
   createCancellationOrder,
   createOrder,
+  confirmOrder,
   transitionOrder
 } from "@camoburguer/domain";
 import {
@@ -32,11 +32,21 @@ import { createSseHub } from "./sse.js";
 import integrationRoutes from "./integrations/integration-routes.js";
 import { startIntegrationPolling } from "./integrations/polling-runner.js";
 import { runSeedDemo } from "../../../scripts/seed-demo.mjs";
+import {
+  archiveCatalogItem,
+  getCatalogItem,
+  insertCatalogItem,
+  listCatalogItems,
+  lockCatalogItems,
+  updateCatalogItem
+} from "./catalog-repository.js";
 
 const app = Fastify({ logger: true });
 const db = createDb(config.databaseUrl);
 const sse = createSseHub();
 const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_paid"];
+const STOCK_CATEGORIES = ["xis", "dog", "hamburguer"];
+const PREPARATION_MODES = ["kitchen", "direct_handoff"];
 
 await app.register(helmet, {
   contentSecurityPolicy: false,
@@ -76,8 +86,47 @@ function requireDemoAdmin(request, reply) {
   return true;
 }
 
+function normalizeCatalogItem(input, current = null) {
+  for (const field of ["allowsAddons", "available"]) {
+    if (Object.hasOwn(input || {}, field) && typeof input[field] !== "boolean") {
+      throw new Error(`${field} deve ser booleano`);
+    }
+  }
+  const value = { ...(current || {}), ...(input || {}) };
+  const sku = String(current?.sku || value.sku || "").trim().toLowerCase();
+  const name = String(value.name || "").trim();
+  const category = String(value.category || "").trim();
+  const price = Number(value.price);
+  const description = String(value.description || "").trim();
+  const stockCategory = value.stockCategory == null || value.stockCategory === ""
+    ? null
+    : String(value.stockCategory);
+  const preparationMode = String(value.preparationMode || "kitchen");
+  const allowsAddons = value.allowsAddons === true;
+  const available = value.available !== false;
+  if (!/^[a-z0-9][a-z0-9-]{1,79}$/.test(sku)) throw new Error("SKU inválido");
+  if (!name || !category) throw new Error("Nome e categoria são obrigatórios");
+  if (!Number.isFinite(price) || price < 0) throw new Error("Preço inválido");
+  if (stockCategory && !STOCK_CATEGORIES.includes(stockCategory)) throw new Error("Categoria de estoque inválida");
+  if (!PREPARATION_MODES.includes(preparationMode)) throw new Error("Modo de preparo inválido");
+  if (preparationMode === "direct_handoff" && stockCategory) {
+    throw new Error("Entrega direta não controla estoque de cozinha");
+  }
+  return {
+    sku,
+    name,
+    category,
+    price: toMoney(price),
+    description,
+    stockCategory,
+    allowsAddons,
+    preparationMode,
+    available
+  };
+}
+
 app.setErrorHandler((error, request, reply) => {
-  const clientError = Boolean(error.validation) || (!error.code && /inválid|obrigatóri|deve ter|transição|item|preço|valor/i.test(error.message));
+  const clientError = Boolean(error.validation) || (!error.code && /inválid|obrigatóri|booleano|deve ter|transição|item|preço|valor/i.test(error.message));
   const publicError = clientError || Number(error.statusCode) < 500;
   if (!publicError) request.log.error(error);
   return reply
@@ -576,12 +625,59 @@ app.get("/health", async (_request, reply) => {
 });
 app.get("/", async (request, reply) => ({ status: "ok" }));
 // HEAD route removed – Fastify automatically supports HEAD for GET routes
-app.get("/catalog", async () => ({
-  sourceUrl: CATALOG_SOURCE_URL,
-  capturedAt: CATALOG_CAPTURED_AT,
-  addOns: ADD_ONS,
-  items: CATALOG
-}));
+app.get("/catalog", async (request, reply) => {
+  const includeArchived = request.query?.includeArchived === "true";
+  if (includeArchived && !requireDemoAdmin(request, reply)) return reply;
+  return {
+    sourceUrl: CATALOG_SOURCE_URL,
+    capturedAt: CATALOG_CAPTURED_AT,
+    addOns: ADD_ONS,
+    items: await listCatalogItems(db, { includeArchived })
+  };
+});
+
+app.post("/catalog/items", async (request, reply) => {
+  if (!requireDemoAdmin(request, reply)) return reply;
+  const item = normalizeCatalogItem(request.body);
+  try {
+    const saved = await insertCatalogItem(item, db);
+    emitOrderEvent("catalog.changed", { action: "created", item: saved });
+    return reply.code(201).send(saved);
+  } catch (error) {
+    if (error.code === "23505") return reply.code(409).send({ message: "SKU já existe e não pode ser reutilizado" });
+    throw error;
+  }
+});
+
+app.patch("/catalog/items/:sku", async (request, reply) => {
+  if (!requireDemoAdmin(request, reply)) return reply;
+  if (request.body?.sku != null && String(request.body.sku).trim().toLowerCase() !== request.params.sku) {
+    return reply.code(400).send({ message: "SKU é imutável" });
+  }
+  const saved = await db.transaction(async (client) => {
+    const existing = await getCatalogItem(request.params.sku, client, { forUpdate: true });
+    if (!existing || existing.archivedAt) return null;
+    return updateCatalogItem(existing.sku, normalizeCatalogItem(request.body, existing), client);
+  });
+  if (!saved) return reply.code(404).send({ message: "Item de catálogo não encontrado" });
+  emitOrderEvent("catalog.changed", { action: saved.available ? "updated" : "paused", item: saved });
+  return saved;
+});
+
+app.delete("/catalog/items/:sku", async (request, reply) => {
+  if (!requireDemoAdmin(request, reply)) return reply;
+  const result = await db.transaction(async (client) => {
+    const existing = await getCatalogItem(request.params.sku, client, { forUpdate: true });
+    if (!existing) return { notFound: true };
+    if (existing.archivedAt) return { saved: existing, repeated: true };
+    return { saved: await archiveCatalogItem(existing.sku, client), repeated: false };
+  });
+  if (result.notFound) return reply.code(404).send({ message: "Item de catálogo não encontrado" });
+  if (result.repeated) return result.saved;
+  const saved = result.saved;
+  emitOrderEvent("catalog.changed", { action: "archived", item: saved });
+  return saved;
+});
 app.get("/scenario-rules", async () => ({
   items: [
     {
@@ -717,7 +813,8 @@ app.post("/tabs/:tabId/rounds", async (request, reply) => {
         "SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM orders WHERE tab_id = $1",
         [tab.id]
       );
-      const order = transitionOrder(createOrder({
+      const catalog = await lockCatalogItems(request.body?.items, client);
+      const order = confirmOrder(createOrder({
         ...(request.body || {}),
         idempotencyKey,
         tabId: tab.id,
@@ -727,7 +824,7 @@ app.post("/tabs/:tabId/rounds", async (request, reply) => {
         paymentMethod: null,
         customerName: request.body?.customerName || tab.customerName || tab.label,
         metadata: { ...(request.body?.metadata || {}), tabLabel: tab.label }
-      }), "confirmed");
+      }, { catalog }));
       const saved = await insertOrder(order, client);
       await changeStock(saved, -1, "sale", client);
       return { saved, printJob: await reservePrintJob(saved, "confirmed", client) };
@@ -744,6 +841,14 @@ app.post("/tabs/:tabId/rounds", async (request, reply) => {
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: "Comanda não está aberta" });
   emitOrderEvent("tab.round.created", result.saved);
+  if (result.saved.status === "ready") {
+    emitOrderEvent("order.status.changed", {
+      orderId: result.saved.id,
+      previousStatus: "confirmed",
+      nextStatus: "ready",
+      order: result.saved
+    });
+  }
   if (result.printJob) await dispatchPrintJob(result.printJob);
   return reply.code(201).send(result.saved);
 });
@@ -986,13 +1091,14 @@ app.post("/orders", async (request, reply) => {
     return existing;
   }
 
-  const order = transitionOrder(
-    createOrder({ ...(request.body || {}), idempotencyKey }),
-    "confirmed"
-  );
   let result;
   try {
     result = await db.transaction(async (client) => {
+      const catalog = await lockCatalogItems(request.body?.items, client);
+      const order = confirmOrder(createOrder(
+        { ...(request.body || {}), idempotencyKey },
+        { catalog }
+      ));
       const saved = await insertOrder(order, client);
       await changeStock(saved, -1, "sale", client);
       const printJob = await reservePrintJob(saved, "confirmed", client);
@@ -1007,6 +1113,14 @@ app.post("/orders", async (request, reply) => {
   }
   emitOrderEvent("order.created", result.saved);
   emitOrderEvent("order.confirmed", result.saved);
+  if (result.saved.status === "ready") {
+    emitOrderEvent("order.status.changed", {
+      orderId: result.saved.id,
+      previousStatus: "confirmed",
+      nextStatus: "ready",
+      order: result.saved
+    });
+  }
 
   if (result.printJob) {
     const printJob = await dispatchPrintJob(result.printJob);

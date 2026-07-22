@@ -24,6 +24,7 @@ services:
       PRINT_BRIDGE_TOKEN: local-print-bridge-token
       DEFAULT_PRINTER: cozinha-principal
       AUTO_SEED: "false"
+      DEMO_ADMIN_TOKEN: ${DEMO_ADMIN_TOKEN:-}
       CORS_ORIGINS: http://localhost:8081,http://127.0.0.1:8081
     ports:
       - "3001:3001"

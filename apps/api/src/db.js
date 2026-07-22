@@ -1,5 +1,6 @@
 import pg from "pg";
 import { toMoney } from "@camoburguer/shared-types";
+import { CATALOG, CATALOG_CAPTURED_AT } from "@camoburguer/domain";
 
 const { Pool, types } = pg;
 
@@ -18,6 +19,24 @@ CREATE TABLE IF NOT EXISTS service_tabs (
   CONSTRAINT service_tabs_kind_check CHECK (kind IN ('tab', 'table')),
   CONSTRAINT service_tabs_status_check CHECK (status IN ('open', 'closed', 'cancelled')),
   CONSTRAINT service_tabs_label_check CHECK (NULLIF(BTRIM(label), '') IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS catalog_items (
+  sku TEXT PRIMARY KEY,
+  name TEXT NOT NULL CHECK (NULLIF(BTRIM(name), '') IS NOT NULL),
+  category TEXT NOT NULL CHECK (NULLIF(BTRIM(category), '') IS NOT NULL),
+  price NUMERIC(12,2) NOT NULL CHECK (price >= 0),
+  description TEXT NOT NULL DEFAULT '',
+  stock_category TEXT NULL CHECK (stock_category IN ('xis', 'dog', 'hamburguer')),
+  allows_addons BOOLEAN NOT NULL DEFAULT FALSE,
+  preparation_mode TEXT NOT NULL DEFAULT 'kitchen' CHECK (preparation_mode IN ('kitchen', 'direct_handoff')),
+  available BOOLEAN NOT NULL DEFAULT TRUE,
+  origin TEXT NOT NULL DEFAULT 'operator' CHECK (origin IN ('olaclick_snapshot', 'operator')),
+  source_version TEXT NULL,
+  archived_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT catalog_direct_stock_check CHECK (preparation_mode <> 'direct_handoff' OR stock_category IS NULL)
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -296,6 +315,30 @@ export function createDb(connectionString) {
   return {
     async init() {
       await pool.query(schemaSql);
+      await pool.query(
+        `INSERT INTO catalog_items (
+          sku, name, category, price, description, stock_category, allows_addons,
+          preparation_mode, available, origin, source_version
+        )
+        SELECT sku, name, category, price, description, stock_category, allows_addons,
+               preparation_mode, available, 'olaclick_snapshot', $2
+        FROM jsonb_to_recordset($1::jsonb) AS item(
+          sku text, name text, category text, price numeric, description text,
+          stock_category text, allows_addons boolean, preparation_mode text, available boolean
+        )
+        ON CONFLICT (sku) DO NOTHING`,
+        [JSON.stringify(CATALOG.map((item) => ({
+          sku: item.sku,
+          name: item.name,
+          category: item.category,
+          price: item.price,
+          description: item.description,
+          stock_category: item.stockCategory,
+          allows_addons: item.allowsAddons,
+          preparation_mode: item.preparationMode,
+          available: item.available
+        }))), CATALOG_CAPTURED_AT]
+      );
     },
     async query(text, values = []) {
       return pool.query(text, values);
