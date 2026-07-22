@@ -16,7 +16,7 @@ test("financeiro lança venda ao concluir pedido", () => {
     paymentMethod: "credit_card",
     discountPercent: 10,
     items: [{ name: "Burger", quantity: 1, price: 32, discountPercent: 25 }]
-  });
+  }, { allowCustomItems: true });
   const entries = buildEntriesFromOrder({
     order,
     previousStatus: "ready",
@@ -34,7 +34,7 @@ test("sumário financeiro agrega entradas", () => {
     source: "counter",
     paymentMethod: "cash",
     items: [{ name: "Burger", quantity: 1, price: 20 }]
-  });
+  }, { allowCustomItems: true });
   const entries = [
     buildOpeningEntry(shift),
     ...buildEntriesFromOrder({ order, previousStatus: "ready", nextStatus: "completed", shiftId: shift.id }),
@@ -63,7 +63,7 @@ test("efeito financeiro repetido não gera nova entrada", () => {
   const order = createOrder({
     paymentMethod: "pix",
     items: [{ name: "Burger", price: 30 }]
-  });
+  }, { allowCustomItems: true });
   assert.deepEqual(
     buildEntriesFromOrder({ order, previousStatus: "completed", nextStatus: "completed" }),
     []

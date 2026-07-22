@@ -76,6 +76,7 @@ const products = [
 ];
 
 const addonCategories = new Set(["Lanches", "Xis tradicionais", "Xis especiais", "Dogs"]);
+const directHandoffCategories = new Set(["Refrigerantes", "Cervejas", "Bebidas", "Bomboniere"]);
 
 export const CATALOG = products.map(
   ([sku, name, category, price, stockCategory = null, available = true]) => ({
@@ -86,6 +87,7 @@ export const CATALOG = products.map(
     description: "",
     stockCategory,
     allowsAddons: addonCategories.has(category),
+    preparationMode: directHandoffCategories.has(category) ? "direct_handoff" : "kitchen",
     available
   })
 );

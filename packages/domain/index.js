@@ -13,7 +13,9 @@ export { ADD_ONS, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL };
 export function calculateStockRequirements(items = []) {
   const requirements = {};
   for (const item of items) {
-    const category = CATALOG.find((candidate) => candidate.sku === item.sku)?.stockCategory;
+    const category = Object.hasOwn(item, "stockCategory")
+      ? item.stockCategory
+      : CATALOG.find((candidate) => candidate.sku === item.sku)?.stockCategory;
     const quantity = Number(item.quantity || 0);
     if (category && !Number.isInteger(quantity)) throw new Error("Quantidade de item com estoque deve ser inteira");
     if (category) requirements[category] = (requirements[category] || 0) + quantity;
@@ -52,7 +54,11 @@ export function calculateOrderTotal(items = [], discountPercent = 0) {
   );
 }
 
-export function createOrder(input) {
+export function createOrder(input, {
+  catalog = CATALOG,
+  allowCustomItems = false,
+  preserveItemSnapshots = false
+} = {}) {
   const source = assertEnum(input.source || "counter", ORDER_SOURCES, "source");
   const fulfillmentMode = assertEnum(
     input.fulfillmentMode || "local",
@@ -63,14 +69,30 @@ export function createOrder(input) {
     ? null
     : assertEnum(input.paymentMethod || "cash", PAYMENT_METHODS, "paymentMethod");
   const items = (input.items || []).map((item) => {
-    const catalogItem = item.sku ? CATALOG.find((candidate) => candidate.sku === item.sku) : null;
-    if (catalogItem && !catalogItem.available) throw new Error("Item indisponível no cardápio");
+    const legacyCatalogItem = preserveItemSnapshots && item.sku
+      ? CATALOG.find((candidate) => candidate.sku === item.sku)
+      : null;
+    const catalogItem = preserveItemSnapshots
+      ? item
+      : item.sku ? catalog.find((candidate) => candidate.sku === item.sku) : null;
+    if (!catalogItem && !allowCustomItems && !preserveItemSnapshots) {
+      throw new Error("Item não encontrado no cardápio");
+    }
+    if (!preserveItemSnapshots && catalogItem && !catalogItem.available) throw new Error("Item indisponível no cardápio");
     const addonSkus = (item.addons || []).map((addon) => String(addon.sku || ""));
     if (new Set(addonSkus).size !== addonSkus.length) throw new Error("Adicional duplicado");
-    if (addonSkus.length && catalogItem && !catalogItem.allowsAddons) {
+    if (!preserveItemSnapshots && addonSkus.length && catalogItem && !catalogItem.allowsAddons) {
       throw new Error("Item não aceita adicionais");
     }
-    const addons = addonSkus.map((sku) => {
+    const addons = preserveItemSnapshots ? (item.addons || []).map((addon) => {
+      const name = String(addon.name || "").trim();
+      const price = Number(addon.price || 0);
+      const quantity = Number(addon.quantity || 1);
+      if (!name || !Number.isFinite(price) || price < 0 || !Number.isInteger(quantity) || quantity <= 0) {
+        throw new Error("Adicional inválido");
+      }
+      return { sku: addon.sku || null, name, price: toMoney(price), quantity };
+    }) : addonSkus.map((sku) => {
       const addon = ADD_ONS.find((candidate) => candidate.sku === sku);
       if (!addon) throw new Error("Adicional inválido");
       return { ...addon, quantity: 1 };
@@ -83,12 +105,30 @@ export function createOrder(input) {
       throw new Error("Item de pedido inválido");
     }
     if (!Number.isFinite(price) || price < 0) throw new Error("Preço de item inválido");
+    const stockCategory = preserveItemSnapshots && !Object.hasOwn(item, "stockCategory")
+      ? legacyCatalogItem?.stockCategory ?? null
+      : catalogItem
+      ? catalogItem.stockCategory ?? null
+      : item.stockCategory ?? null;
+    if (stockCategory != null && !["xis", "dog", "hamburguer"].includes(stockCategory)) {
+      throw new Error("Categoria de estoque inválida");
+    }
+    const preparationMode = preserveItemSnapshots && !Object.hasOwn(item, "preparationMode")
+      ? legacyCatalogItem?.preparationMode || "kitchen"
+      : catalogItem?.preparationMode || item.preparationMode || "kitchen";
+    if (!["kitchen", "direct_handoff"].includes(preparationMode)) {
+      throw new Error("Modo de preparo inválido");
+    }
     return {
       id: item.id || randomUUID(),
       reversesItemId: item.reversesItemId || null,
       sku: item.sku || null,
       name,
-      category: catalogItem?.category || item.category || "custom",
+      category: preserveItemSnapshots
+        ? item.category || legacyCatalogItem?.category || "custom"
+        : catalogItem?.category || item.category || "custom",
+      stockCategory,
+      preparationMode,
       quantity,
       price: toMoney(price),
       addons,
@@ -137,7 +177,10 @@ export function createOrder(input) {
 
 export function createCancellationOrder(input) {
   if (!input.tabId || !input.reversesOrderId) throw new Error("Cancelamento exige comanda e rodada original");
-  const order = createOrder({ ...input, roundKind: "cancellation" });
+  const order = createOrder(
+    { ...input, roundKind: "cancellation" },
+    { allowCustomItems: true, preserveItemSnapshots: true }
+  );
   return { ...order, total: toMoney(-Math.abs(order.total)) };
 }
 
@@ -154,9 +197,27 @@ export function transitionOrder(order, nextStatus) {
   };
 }
 
+export function requiresKitchenPreparation(items = []) {
+  return items.some((item) => (item.preparationMode || "kitchen") === "kitchen");
+}
+
+export function confirmOrder(order) {
+  const confirmed = transitionOrder(order, "confirmed");
+  if (requiresKitchenPreparation(confirmed.items)) return confirmed;
+  return {
+    ...confirmed,
+    status: "ready",
+    updatedAt: new Date().toISOString()
+  };
+}
+
 export function buildKitchenTicket(order) {
+  const hasKitchen = requiresKitchenPreparation(order.items);
+  const cancellationHeader = order.roundKind === "cancellation"
+    ? [hasKitchen ? "*** CANCELAMENTO / RETIRAR ***" : "*** CANCELAMENTO / ENTREGA DIRETA ***"]
+    : [];
   const header = [
-    ...(order.roundKind === "cancellation" ? ["*** CANCELAMENTO / RETIRAR ***"] : []),
+    ...cancellationHeader,
     `Pedido ${order.id.slice(0, 8).toUpperCase()}`,
     ...(order.reversesOrderId ? [`Corrige pedido: ${order.reversesOrderId.slice(0, 8).toUpperCase()}`] : []),
     ...(order.tabId ? [`Comanda: ${order.metadata?.tabLabel || order.tabId}`, `Rodada: ${order.roundNumber}`] : []),
@@ -171,11 +232,17 @@ export function buildKitchenTicket(order) {
     ...(order.deliveryAddress ? [`Endereço: ${order.deliveryAddress}`] : []),
     ...(order.paymentMethod ? [`Pagamento: ${order.paymentMethod}`] : [])
   ];
-  const body = order.items.map((item) => {
+  const formatItem = (item) => {
     const notes = item.notes ? ` | obs: ${item.notes}` : "";
     const addons = (item.addons || []).map((addon) => `  + ${addon.name}`).join("\n");
     return `${item.quantity}x ${item.name}${notes}${addons ? `\n${addons}` : ""}`;
-  });
+  };
+  const kitchenItems = order.items.filter((item) => (item.preparationMode || "kitchen") === "kitchen");
+  const directItems = order.items.filter((item) => item.preparationMode === "direct_handoff");
+  const body = [
+    ...(kitchenItems.length ? [order.roundKind === "cancellation" ? "RETIRAR DA COZINHA" : "PREPARO COZINHA", ...kitchenItems.map(formatItem)] : []),
+    ...(directItems.length ? [order.roundKind === "cancellation" ? "CANCELAR ENTREGA DIRETA — NÃO RETIRAR DA COZINHA" : "ENTREGA DIRETA — NÃO PREPARAR", ...directItems.map(formatItem)] : [])
+  ];
   const footer = order.notes ? [`Observações gerais: ${order.notes}`] : [];
   return [...header, "", ...body, "", ...footer].join("\n");
 }

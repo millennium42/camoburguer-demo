@@ -39,7 +39,7 @@ export async function ingestExternalOrder(input, executor, db) {
       externalMerchantId,
       externalOrderId
     }
-  });
+  }, { allowCustomItems: true });
 
   const savedOrder = await db.insertOrder(order, executor);
 
