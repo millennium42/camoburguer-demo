@@ -25,7 +25,7 @@
 
 ## Itens de entrega direta
 
-Cada item congela no pedido o modo `kitchen` ou `direct_handoff`. O ticket continua único por pedido/rodada e separa, quando existirem, os blocos `PREPARO COZINHA` e `ENTREGA DIRETA — NÃO PREPARAR`. Bebidas e itens de Bomboniere usam entrega direta: orientam atendimento, tele e garçom, mas não criam fila, ticket ou status de produção paralelos.
+Cada item congela no pedido o modo `kitchen` ou `direct_handoff`. O ticket continua único por pedido/rodada e separa, quando existirem, os blocos `PREPARO COZINHA` e `ENTREGA DIRETA — NÃO PREPARAR`. Bebidas e itens de Bomboniere usam entrega direta: orientam atendimento, tele e garçom, mas não criam fila, ticket ou status de produção paralelos. O nome canônico é `Bomboniere`; a variação `bombournie` não é adotada.
 
 Pedido com somente entrega direta é persistido e impresso normalmente, avança de `confirmed` para `ready` na mesma operação e aguarda apenas entrega/conclusão. Em pedido misto, o status de preparo representa somente o trabalho da cozinha.
 

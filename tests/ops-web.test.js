@@ -12,6 +12,7 @@ import {
   sameCatalogAdminSession,
   setItemDiscount,
   setItemQuantity,
+  splitPreparationItems,
   tabAssignmentPayload
 } from "../apps/ops-web/main.js";
 
@@ -197,6 +198,22 @@ test("UI expõe comandas e reutiliza o formulário de pedidos", async () => {
   assert.match(script, /\/tabs\?status=open/);
   assert.match(script, /`\/tabs\/\$\{state\.activeTabId\}\/rounds`/);
   assert.match(script, /\$\("#order-modal"\)\?\.showModal\(\)/);
+});
+
+test("fila operacional separa preparo e entrega direta com escaping", async () => {
+  const groups = splitPreparationItems([
+    { name: "Xis", preparationMode: "kitchen" },
+    { name: "Bebida", preparationMode: "direct_handoff" },
+    { name: "Legado" }
+  ]);
+  assert.deepEqual(groups.kitchen.map((item) => item.name), ["Xis", "Legado"]);
+  assert.deepEqual(groups.direct.map((item) => item.name), ["Bebida"]);
+
+  const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
+  assert.match(script, /PREPARO COZINHA/);
+  assert.match(script, /ENTREGA DIRETA — NÃO PREPARAR/);
+  assert.match(script, /CANCELAR ENTREGA DIRETA — NÃO RETIRAR DA COZINHA/);
+  assert.match(script, /items\.map\(\(item\) => `<li><strong>\$\{item\.quantity\}x \$\{escapeHtml\(item\.name\)\}/);
 });
 
 test("vínculo tardio mantém contrato exclusivo, retry e seleção em erro", async () => {

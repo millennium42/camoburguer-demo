@@ -383,6 +383,10 @@ button.success:hover:not(:disabled) {
 
 .kitchen-card { border-left: 6px solid var(--accent); }
 .kitchen-items { display: grid; gap: 12px; margin-top: 16px; font-size: 1.05rem; }
+.preparation-group { margin-top: 16px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.preparation-group > strong { display: block; color: var(--accent); }
+.direct-handoff-group { border-color: rgba(16, 185, 129, 0.45); background: rgba(16, 185, 129, 0.08); }
+.direct-handoff-group > strong { color: #34d399; }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
 .stat { padding: 20px; border-radius: var(--radius-md); background: rgba(0,0,0,0.3); border: 1px solid var(--line); }
 .stat strong { display: block; font-size: 1.75rem; margin-top: 10px; font-family: 'Outfit', sans-serif; color: var(--text); }

@@ -476,6 +476,38 @@ assert.equal(cancelledTab.rounds[0].items[0].quantity, 1);
 assert.equal((await api("/inventory")).balances.find((item) => item.category === "xis").quantity, initialXis + 5);
 await api(`/tabs/${tab.id}/close`, { method: "POST", body: {} });
 
+const directCancellationTab = await api("/tabs", {
+  method: "POST",
+  body: { label: `Direto-${runId}` },
+  expected: [201]
+});
+const directCancellationRound = await api(`/tabs/${directCancellationTab.id}/rounds`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-direct-round-${runId}` },
+  body: { items: [{ sku: "refrigerante-lata", quantity: 1 }] },
+  expected: [201]
+});
+assert.equal(directCancellationRound.status, "ready");
+const directCancellation = await api(
+  `/tabs/${directCancellationTab.id}/rounds/${directCancellationRound.id}/cancellations`,
+  {
+    method: "POST",
+    headers: { "Idempotency-Key": `smoke-direct-cancel-${runId}` },
+    body: {
+      items: [{ itemId: directCancellationRound.items[0].id, quantity: 1 }],
+      reason: "Cancelar entrega direta"
+    },
+    expected: [201]
+  }
+);
+assert.equal(directCancellation.status, "ready");
+assert.equal(directCancellation.items[0].preparationMode, "direct_handoff");
+assert.equal(
+  (await api("/kitchen/queue")).items.find((order) => order.id === directCancellation.id)?.status,
+  "ready"
+);
+await api(`/tabs/${directCancellationTab.id}/close`, { method: "POST", body: {} });
+
 const preparedTab = await api("/tabs", { method: "POST", body: { label: `Preparo-${runId}` }, expected: [201] });
 const preparedRound = await api(`/tabs/${preparedTab.id}/rounds`, {
   method: "POST",

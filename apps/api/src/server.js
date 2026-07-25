@@ -975,7 +975,7 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
         "SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM orders WHERE tab_id = $1",
         [tab.id]
       );
-      const cancellation = transitionOrder(createCancellationOrder({
+      const cancellation = confirmOrder(createCancellationOrder({
         idempotencyKey,
         tabId: tab.id,
         roundNumber: Number(rows[0].next_round),
@@ -991,7 +991,7 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
           tabLabel: tab.label,
           originalStatusAtCancellation: original.status
         }
-      }), "confirmed");
+      }));
       const saved = await insertOrder(cancellation, client);
       if (original.status === "confirmed") await changeStock(saved, 1, "cancellation", client, original.id);
       return { saved, printJob: await reservePrintJob(saved, "cancellation", client) };

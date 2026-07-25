@@ -87,6 +87,14 @@ export function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => htmlEscapes[character]);
 }
 
+export function splitPreparationItems(items = []) {
+  return items.reduce((groups, item) => {
+    const group = item.preparationMode === "direct_handoff" ? "direct" : "kitchen";
+    groups[group].push(item);
+    return groups;
+  }, { kitchen: [], direct: [] });
+}
+
 export function catalogItemPayload(data) {
   return {
     sku: String(data.get("sku") || "").trim().toLowerCase(),
@@ -682,23 +690,41 @@ function renderKitchen() {
   }
   const sortedKitchen = [...state.kitchen].reverse();
   list.innerHTML = sortedKitchen
-    .map((order) => `
-      <div class="order-card kitchen-card ${order.roundKind === "cancellation" ? "cancellation" : ""}">
-        <div class="order-meta">
-          <span class="pill">${escapeHtml(statusLabels[order.status] || order.status)}</span>
-          ${order.roundKind === "cancellation" ? '<span class="pill">CANCELAMENTO</span>' : ""}
-          ${order.tabId ? `<span>Comanda ${escapeHtml(order.metadata?.tabLabel || order.tabId)} · rodada ${order.roundNumber}</span>` : ""}
-          <span>${escapeHtml(sourceLabels[order.source] || order.source)}</span>
-          <span>${escapeHtml(fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode)}</span>
-          <strong>${escapeHtml(order.customerName || "Cliente")}</strong>
-          <span>${formatWhen(order.createdAt)}</span>
-        </div>
-        ${order.deliveryAddress ? `<p><strong>Endereço:</strong> ${escapeHtml(order.deliveryAddress)}</p>` : ""}
+    .map((order) => {
+      const groups = splitPreparationItems(order.items);
+      const cancellation = order.roundKind === "cancellation";
+      const renderItems = (items) => `
         <ul class="kitchen-items">
-          ${(order.items || []).map((item) => `<li><strong>${item.quantity}x ${escapeHtml(item.name)}</strong>${(item.addons || []).map((addon) => `<div>+ ${escapeHtml(addon.name)}</div>`).join("")}${item.notes ? ` — ${escapeHtml(item.notes)}` : ""}</li>`).join("")}
+          ${items.map((item) => `<li><strong>${item.quantity}x ${escapeHtml(item.name)}</strong>${(item.addons || []).map((addon) => `<div>+ ${escapeHtml(addon.name)}</div>`).join("")}${item.notes ? ` — ${escapeHtml(item.notes)}` : ""}</li>`).join("")}
         </ul>
-      </div>
-    `)
+      `;
+      return `
+        <div class="order-card kitchen-card ${cancellation ? "cancellation" : ""}">
+          <div class="order-meta">
+            <span class="pill">${escapeHtml(statusLabels[order.status] || order.status)}</span>
+            ${cancellation ? '<span class="pill">CANCELAMENTO</span>' : ""}
+            ${order.tabId ? `<span>Comanda ${escapeHtml(order.metadata?.tabLabel || order.tabId)} · rodada ${order.roundNumber}</span>` : ""}
+            <span>${escapeHtml(sourceLabels[order.source] || order.source)}</span>
+            <span>${escapeHtml(fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode)}</span>
+            <strong>${escapeHtml(order.customerName || "Cliente")}</strong>
+            <span>${formatWhen(order.createdAt)}</span>
+          </div>
+          ${order.deliveryAddress ? `<p><strong>Endereço:</strong> ${escapeHtml(order.deliveryAddress)}</p>` : ""}
+          ${groups.kitchen.length ? `
+            <section class="preparation-group kitchen-preparation-group">
+              <strong>${cancellation ? "CANCELAMENTO — RETIRAR DA COZINHA" : "PREPARO COZINHA"}</strong>
+              ${renderItems(groups.kitchen)}
+            </section>
+          ` : ""}
+          ${groups.direct.length ? `
+            <section class="preparation-group direct-handoff-group">
+              <strong>${cancellation ? "CANCELAR ENTREGA DIRETA — NÃO RETIRAR DA COZINHA" : "ENTREGA DIRETA — NÃO PREPARAR"}</strong>
+              ${renderItems(groups.direct)}
+            </section>
+          ` : ""}
+        </div>
+      `;
+    })
     .join("");
 }
 

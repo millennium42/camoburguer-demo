@@ -137,6 +137,7 @@ test("cancelamento de entrega direta não instrui retirada da cozinha", () => {
     }]
   });
   const ticket = buildKitchenTicket(cancellation);
+  assert.equal(confirmOrder(cancellation).status, "ready");
   assert.match(ticket, /CANCELAMENTO \/ ENTREGA DIRETA/);
   assert.match(ticket, /CANCELAR ENTREGA DIRETA — NÃO RETIRAR DA COZINHA/);
 });
