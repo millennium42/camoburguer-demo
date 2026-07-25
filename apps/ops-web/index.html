@@ -355,6 +355,39 @@
       </form>
     </dialog>
 
+    <!-- MODAL: VÍNCULO TARDIO COM COMANDA -->
+    <dialog id="tab-assignment-dialog" aria-labelledby="tab-assignment-title">
+      <form id="tab-assignment-form" class="stack">
+        <div class="section-heading">
+          <div>
+            <h2 id="tab-assignment-title">Vincular pedido à comanda</h2>
+            <p id="tab-assignment-order" class="lede"></p>
+          </div>
+          <button type="button" class="icon-button" data-dialog-close="tab-assignment-dialog" aria-label="Fechar">×</button>
+        </div>
+        <input type="hidden" name="orderId" />
+        <p class="assignment-note">O vínculo não altera itens, total, estoque, status ou ticket original.</p>
+        <label>Destino
+          <select name="destination" required>
+            <option value="existing">Comanda aberta</option>
+            <option value="new">Criar nova comanda ou mesa</option>
+          </select>
+        </label>
+        <label id="tab-assignment-existing">Comanda aberta
+          <select name="tabId"></select>
+        </label>
+        <fieldset id="tab-assignment-new" class="stack" hidden>
+          <legend>Nova comanda</legend>
+          <label>Tipo
+            <select name="kind"><option value="tab">Comanda</option><option value="table">Mesa</option></select>
+          </label>
+          <label>Identificador<input name="label" maxlength="120" placeholder="Ex.: 12, Balcão Ana" /></label>
+          <label>Cliente (opcional)<input name="customerName" maxlength="160" /></label>
+        </fieldset>
+        <button type="submit" class="primary">Confirmar vínculo</button>
+      </form>
+    </dialog>
+
     <!-- MODAL: CANCELAMENTO DE ITEM -->
     <dialog id="cancellation-dialog" aria-labelledby="cancellation-title">
       <form id="cancellation-form" class="stack">
@@ -499,6 +532,6 @@
 
     <div id="print-area"></div>
 
-    <script type="module" src="./main.js?v=20"></script>
+    <script type="module" src="./main.js?v=21"></script>
   </body>
 </html>

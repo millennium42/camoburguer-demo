@@ -7,6 +7,9 @@ const state = {
   inventoryAttempt: null,
   paymentAttempt: null,
   paymentReversalAttempt: null,
+  tabAssignmentAttempt: null,
+  tabAssignmentOrderId: null,
+  tabAssignmentOpener: null,
   integrationAttempts: {},
   tabs: [],
   activeTabId: null,
@@ -187,6 +190,19 @@ export function nextOrderAttempt(previous, payload, makeKey = () => crypto.rando
   return previous?.fingerprint === fingerprint
     ? previous
     : { key: makeKey(), fingerprint };
+}
+
+export function tabAssignmentPayload(data) {
+  if (data.get("destination") === "existing") {
+    return { tabId: String(data.get("tabId") || "").trim() };
+  }
+  return {
+    newTab: {
+      kind: String(data.get("kind") || "tab").trim(),
+      label: String(data.get("label") || "").trim(),
+      customerName: String(data.get("customerName") || "").trim()
+    }
+  };
 }
 
 function integrationAttempt(orderId, action, payload = {}) {
@@ -436,7 +452,7 @@ function renderTabs() {
         <div class="mini-meta"><span>${escapeHtml(tab.customerName || "Sem cliente")}</span><span>${tab.rounds.length} rodada(s)</span><span>${formatWhen(tab.openedAt)}</span></div>
         <div class="mini-meta"><span>Pago: ${money(tab.paid)}</span><strong>Restante: ${money(tab.balance)}</strong><span>${tab.paymentMethod ? paymentLabels[tab.paymentMethod] : "Não pago"}</span></div>
         <div class="tab-rounds">${tab.rounds.map((round) => `<div class="round-row ${round.roundKind === "cancellation" ? "cancellation" : ""}">
-          <strong>${round.roundKind === "cancellation" ? "Cancelamento" : `Rodada ${round.roundNumber}`} ${round.roundKind === "production" && !["ifood", "deliverymuch", "olaclick"].includes(round.source) ? `<button type="button" data-edit-discount-order="${escapeHtml(round.id)}" data-current-discount="${round.discountPercent || 0}" class="small link-primary">Desconto (${round.discountPercent || 0}%)</button>` : ""}</strong>
+          <strong>${round.roundKind === "cancellation" ? "Cancelamento" : `Rodada ${round.roundNumber}`}${round.discountPercent ? ` · desconto ${round.discountPercent}%` : ""}</strong>
           ${(round.items || []).map((item) => {
             const cancelled = tab.rounds.filter((candidate) => candidate.reversesOrderId === round.id)
               .flatMap((candidate) => candidate.items || [])
@@ -536,6 +552,51 @@ function orderActions(order) {
   return actions;
 }
 
+function syncTabAssignmentFields() {
+  const form = $("#tab-assignment-form");
+  if (!form) return;
+  const existing = form.elements.destination.value === "existing";
+  $("#tab-assignment-existing").hidden = !existing;
+  $("#tab-assignment-new").hidden = existing;
+  form.elements.tabId.required = existing;
+  form.elements.label.required = !existing;
+}
+
+function openTabAssignment(orderId, opener) {
+  const order = state.orders.find((item) =>
+    item.id === orderId && item.tabAssignmentEligibility?.eligible
+  );
+  if (!order) {
+    notify("O pedido não está mais elegível para vínculo. Atualize a tela.", "error");
+    refreshSafe();
+    return;
+  }
+  const form = $("#tab-assignment-form");
+  state.tabAssignmentOrderId = order.id;
+  state.tabAssignmentAttempt = null;
+  state.tabAssignmentOpener = opener;
+  form.reset();
+  form.elements.orderId.value = order.id;
+  form.elements.customerName.value = order.customerName || "";
+  form.elements.tabId.innerHTML = state.tabs.map((tab) =>
+    `<option value="${escapeHtml(tab.id)}">${escapeHtml(tab.kind === "table" ? `Mesa ${tab.label}` : `Comanda ${tab.label}`)}${tab.customerName ? ` · ${escapeHtml(tab.customerName)}` : ""}</option>`
+  ).join("");
+  form.elements.destination.value = state.tabs.length ? "existing" : "new";
+  $("#tab-assignment-order").textContent = `${order.customerName || "Cliente"} · ${money(order.total)} · ${statusLabels[order.status] || order.status}`;
+  syncTabAssignmentFields();
+  $("#tab-assignment-dialog").showModal();
+  (state.tabs.length ? form.elements.tabId : form.elements.label).focus();
+}
+
+function clearTabAssignment() {
+  const opener = state.tabAssignmentOpener;
+  state.tabAssignmentAttempt = null;
+  state.tabAssignmentOrderId = null;
+  state.tabAssignmentOpener = null;
+  $("#tab-assignment-form")?.reset();
+  if (opener?.isConnected) opener.focus();
+}
+
 function renderOrders() {
   const list = $("#orders-list");
   const authList = $("#auth-list");
@@ -593,6 +654,8 @@ function renderOrders() {
           <span class="pill ${order.status === 'completed' ? 'open' : order.status === 'cancelled' ? 'danger' : ''}">${escapeHtml(statusLabels[order.status] || order.status)}</span>
           <span>${formatWhen(order.createdAt)}</span>
           ${order.syncStatus && order.syncStatus !== 'synchronized' ? `<span class="pill warning">Sync: ${escapeHtml(order.syncStatus)}</span>` : ""}
+          ${order.tabId ? `<span class="pill open">${escapeHtml(order.metadata?.tabLabel || "Comanda")} · rodada ${order.roundNumber}</span>` : ""}
+          ${order.metadata?.tabAssignment ? '<span class="pill warning">Vinculado após o ticket</span>' : ""}
           ${order.discountPercent ? `<span>Desconto ${order.discountPercent}%</span>` : ""}
           <strong>${money(order.total)}</strong>
         </div>
@@ -601,6 +664,9 @@ function renderOrders() {
           ${orderActions(order).map(([action, label]) => `
             <button type="button" data-order-action="${action}" data-order-id="${escapeHtml(order.id)}">${escapeHtml(label)}</button>
           `).join("")}
+          ${order.tabAssignmentEligibility?.eligible
+            ? `<button type="button" class="secondary" data-assign-tab="${escapeHtml(order.id)}">Vincular à comanda</button>`
+            : ""}
           <button type="button" data-reprint="${escapeHtml(order.id)}">Reimprimir</button>
         </div>
       </div>
@@ -1186,6 +1252,11 @@ function wireCart() {
         return;
       }
 
+      if (button.dataset.assignTab) {
+        openTabAssignment(button.dataset.assignTab, button);
+        return;
+      }
+
       if (button.dataset.printShift) {
         button.disabled = true;
         try {
@@ -1320,32 +1391,6 @@ function wireCart() {
         notify(error.message, "error");
       } finally {
         button.disabled = false;
-      }
-      return;
-    }
-    if (button.dataset.editDiscountOrder) {
-      const orderId = button.dataset.editDiscountOrder;
-      const currentDiscount = button.dataset.currentDiscount || "0";
-      const val = prompt("Informe a porcentagem de desconto para esta rodada (0 a 100):", currentDiscount);
-      if (val !== null) {
-        const discountPercent = Number(val);
-        if (Number.isFinite(discountPercent) && discountPercent >= 0 && discountPercent <= 100) {
-          button.disabled = true;
-          try {
-            await api(`/orders/${orderId}/discount`, {
-              method: "PATCH",
-              body: JSON.stringify({ discountPercent })
-            });
-            notify(`Desconto de ${discountPercent}% aplicado à rodada com sucesso.`);
-            await refreshAll();
-          } catch (error) {
-            notify(error.message, "error");
-          } finally {
-            button.disabled = false;
-          }
-        } else {
-          notify("Desconto inválido. Informe um valor numérico entre 0 e 100.", "error");
-        }
       }
       return;
     }
@@ -1572,6 +1617,40 @@ function wireCatalogAdmin() {
 }
 
 function wireForms() {
+  const tabAssignmentDialog = $("#tab-assignment-dialog");
+  const tabAssignmentForm = $("#tab-assignment-form");
+  tabAssignmentForm?.elements.destination.addEventListener("change", syncTabAssignmentFields);
+  tabAssignmentDialog?.addEventListener("close", clearTabAssignment);
+  tabAssignmentForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (!form.reportValidity()) return;
+    const orderId = state.tabAssignmentOrderId;
+    if (!orderId || orderId !== form.elements.orderId.value) {
+      return notify("Pedido de origem não está mais disponível.", "error");
+    }
+    const payload = tabAssignmentPayload(new FormData(form));
+    const operation = { orderId, payload };
+    state.tabAssignmentAttempt = nextOrderAttempt(state.tabAssignmentAttempt, operation);
+    const submit = form.querySelector('[type="submit"]');
+    submit.disabled = true;
+    try {
+      const result = await api(`/orders/${orderId}/tab-assignment`, {
+        method: "POST",
+        headers: { "Idempotency-Key": state.tabAssignmentAttempt.key },
+        body: JSON.stringify(payload)
+      });
+      tabAssignmentDialog.close();
+      await refreshAll();
+      notify(`${result.tab.kind === "table" ? "Mesa" : "Comanda"} ${result.tab.label} vinculada. O ticket original foi preservado.`);
+    } catch (error) {
+      notify(`${error.message}. A seleção foi mantida para tentar novamente.`, "error");
+      (form.elements.destination.value === "existing" ? form.elements.tabId : form.elements.label).focus();
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
   $("#finance-filter-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);

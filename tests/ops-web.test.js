@@ -11,7 +11,8 @@ import {
   resolveActiveCatalogCategory,
   sameCatalogAdminSession,
   setItemDiscount,
-  setItemQuantity
+  setItemQuantity,
+  tabAssignmentPayload
 } from "../apps/ops-web/main.js";
 
 test("carrinho acumula itens e permite alterar quantidade", () => {
@@ -196,6 +197,35 @@ test("UI expõe comandas e reutiliza o formulário de pedidos", async () => {
   assert.match(script, /\/tabs\?status=open/);
   assert.match(script, /`\/tabs\/\$\{state\.activeTabId\}\/rounds`/);
   assert.match(script, /\$\("#order-modal"\)\?\.showModal\(\)/);
+});
+
+test("vínculo tardio mantém contrato exclusivo, retry e seleção em erro", async () => {
+  const [html, script] = await Promise.all([
+    readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8")
+  ]);
+  const existing = new FormData();
+  existing.set("destination", "existing");
+  existing.set("tabId", " tab-1 ");
+  assert.deepEqual(tabAssignmentPayload(existing), { tabId: "tab-1" });
+  const created = new FormData();
+  created.set("destination", "new");
+  created.set("kind", "table");
+  created.set("label", " Mesa 7 ");
+  created.set("customerName", " Ana ");
+  assert.deepEqual(tabAssignmentPayload(created), {
+    newTab: { kind: "table", label: "Mesa 7", customerName: "Ana" }
+  });
+  assert.match(html, /id="tab-assignment-dialog"/);
+  assert.match(html, /name="destination"/);
+  assert.match(html, /O vínculo não altera itens, total, estoque, status ou ticket original/);
+  assert.match(script, /order\.tabAssignmentEligibility\?\.eligible/);
+  assert.match(script, /data-assign-tab=/);
+  assert.match(script, /state\.tabAssignmentAttempt = nextOrderAttempt\(state\.tabAssignmentAttempt, operation\)/);
+  assert.match(script, /\/orders\/\$\{orderId\}\/tab-assignment/);
+  assert.match(script, /A seleção foi mantida para tentar novamente/);
+  assert.match(script, /Vinculado após o ticket/);
+  assert.doesNotMatch(script, /data-edit-discount-order/);
 });
 
 test("UI corrige rodada enviada por diálogo e endpoint de cancelamento", async () => {
