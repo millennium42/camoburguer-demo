@@ -12,6 +12,22 @@ Um pedido local já confirmado pode ser vinculado uma única vez a comanda abert
 
 O vínculo atribui `tabId`, próximo `roundNumber` e metadados auditáveis sem alterar itens, total, status, estoque, forma de pagamento histórica ou ticket emitido. A liquidação futura passa a ocorrer pelas parcelas da comanda. Não há transferência entre comandas nesta versão.
 
+### Contrato de vínculo tardio
+
+`POST /orders/:orderId/tab-assignment` exige o cabeçalho `Idempotency-Key` e exatamente um dos corpos:
+
+```json
+{ "tabId": "id-da-comanda-aberta" }
+```
+
+```json
+{ "newTab": { "kind": "tab", "label": "Comanda 12", "customerName": "Ana" } }
+```
+
+`kind` aceita `tab` ou `table`. A primeira atribuição retorna `201`; replay da mesma chave, pedido e payload retorna `200` com `repeated: true`. Chave reutilizada com outro payload, destino fechado/duplicado ou pedido inelegível retorna `409`; pedidos e comandas inexistentes retornam `404`. A resposta contém `assignment`, `order`, `tab` e `repeated`.
+
+Uma atribuição efetiva emite uma vez `order.tab.assigned` no stream `/events/orders`, com a mesma resposta em `payload`. Replay não emite novo evento. Depois do vínculo, desconto direto no pedido é bloqueado; correções usam rodada negativa da comanda.
+
 ## Estados
 
 - `received`

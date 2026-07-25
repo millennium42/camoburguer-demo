@@ -28,6 +28,41 @@ async function request(base, path, { method = "GET", body, headers = {}, expecte
 
 const api = (path, options) => request(apiBase, path, options);
 
+async function observeOrderEvents() {
+  const controller = new AbortController();
+  const response = await fetch(`${apiBase}/events/orders`, { signal: controller.signal });
+  assert.equal(response.status, 200);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const events = [];
+  let buffer = "";
+  const pump = (async () => {
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split("\n\n");
+        buffer = blocks.pop() || "";
+        for (const block of blocks) {
+          const data = block.split("\n").find((line) => line.startsWith("data: "))?.slice(6);
+          if (data) events.push(JSON.parse(data));
+        }
+      }
+    } catch (error) {
+      if (error.name !== "AbortError") throw error;
+    }
+  })();
+  return {
+    events,
+    async close() {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      controller.abort();
+      await pump;
+    }
+  };
+}
+
 const web = await fetch(webBase);
 assert.equal(web.status, 200);
 assert.match(await web.text(), /Pedidos, cozinha e financeiro/);
@@ -155,7 +190,6 @@ await database.query(
    VALUES ($1, 'counter', 'confirmed', 'Pedido legado', 'pickup', '', 24, 0, $2::jsonb, '{}'::jsonb)`,
   [legacyOrderId, JSON.stringify([{ id: `legacy-line-${runId}`, sku: "x-simples", name: "X-SIMPLES", quantity: 1, price: 24, addons: [] }])]
 );
-await database.end();
 await api(`/orders/${legacyOrderId}/status`, { method: "PATCH", body: { status: "cancelled" } });
 assert.equal((await api("/inventory")).balances.find((item) => item.category === "xis").quantity, initialXis);
 const stockKey = `smoke-stock-${runId}`;
@@ -171,6 +205,225 @@ assert.equal((await api("/inventory/xis/adjustments", {
   headers: { "Idempotency-Key": stockKey },
   body: { delta: 5, reason: "Carga do smoke" }
 })).repeated, true);
+
+const assignableOrder = await api("/orders", {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-assignable-order-${runId}` },
+  body: {
+    customerName: "Cliente para vínculo",
+    fulfillmentMode: "local",
+    paymentMethod: "cash",
+    items: [{ sku: smokeBurgerSku, quantity: 1 }]
+  },
+  expected: [201]
+});
+const originalOrderSnapshot = structuredClone(assignableOrder);
+assert.deepEqual(
+  (await api("/orders")).items.find((order) => order.id === assignableOrder.id).tabAssignmentEligibility,
+  { eligible: true, reason: null }
+);
+const originalJobs = await database.query(
+  "SELECT * FROM print_jobs WHERE order_id = $1 ORDER BY created_at, id",
+  [assignableOrder.id]
+);
+assert.equal(originalJobs.rowCount, 1);
+const stockMovementsBeforeAssignment = Number((await database.query(
+  "SELECT COUNT(*) FROM stock_movements"
+)).rows[0].count);
+const assignmentTarget = await api("/tabs", {
+  method: "POST",
+  body: { kind: "table", label: `Vínculo-${runId}`, customerName: "Cliente para vínculo" },
+  expected: [201]
+});
+const assignmentKey = `smoke-assignment-${runId}`;
+const orderEvents = await observeOrderEvents();
+const assigned = await api(`/orders/${assignableOrder.id}/tab-assignment`, {
+  method: "POST",
+  headers: { "Idempotency-Key": assignmentKey },
+  body: { tabId: assignmentTarget.id },
+  expected: [201]
+});
+assert.equal(assigned.repeated, false);
+assert.equal(assigned.order.tabId, assignmentTarget.id);
+assert.equal(assigned.order.roundNumber, 1);
+for (const field of ["status", "paymentMethod", "total"]) {
+  assert.deepEqual(assigned.order[field], originalOrderSnapshot[field]);
+}
+assert.deepEqual(assigned.order.items, originalOrderSnapshot.items);
+const replayedAssignment = await api(`/orders/${assignableOrder.id}/tab-assignment`, {
+  method: "POST",
+  headers: { "Idempotency-Key": assignmentKey },
+  body: { tabId: assignmentTarget.id }
+});
+assert.equal(replayedAssignment.repeated, true);
+assert.equal(replayedAssignment.assignment.id, assigned.assignment.id);
+await orderEvents.close();
+assert.equal(orderEvents.events.filter((event) =>
+  event.type === "order.tab.assigned" && event.payload.assignment.id === assigned.assignment.id
+).length, 1);
+assert.deepEqual(
+  (await api("/orders")).items.find((order) => order.id === assignableOrder.id).tabAssignmentEligibility,
+  { eligible: false, reason: "already_assigned" }
+);
+await api(`/orders/${assignableOrder.id}/discount`, {
+  method: "PATCH",
+  body: { discountPercent: 10 },
+  expected: [409]
+});
+assert.equal((await api("/orders")).items.find((order) => order.id === assignableOrder.id).total, originalOrderSnapshot.total);
+await api(`/orders/${assignableOrder.id}/tab-assignment`, {
+  method: "POST",
+  headers: { "Idempotency-Key": assignmentKey },
+  body: { newTab: { label: `Divergente-${runId}` } },
+  expected: [409]
+});
+const assignmentEffects = await database.query(
+  `SELECT
+    (SELECT COUNT(*)::int FROM order_tab_assignments WHERE order_id = $1) AS assignments,
+    (SELECT COUNT(*)::int FROM finance_entries WHERE order_id = $1) AS finance_entries,
+    (SELECT COUNT(*)::int FROM print_jobs WHERE order_id = $1) AS print_jobs`,
+  [assignableOrder.id]
+);
+assert.deepEqual(assignmentEffects.rows[0], { assignments: 1, finance_entries: 0, print_jobs: 1 });
+assert.equal(Number((await database.query("SELECT COUNT(*) FROM stock_movements")).rows[0].count), stockMovementsBeforeAssignment);
+const assignedReprint = await api(`/orders/${assignableOrder.id}/reprint`, { method: "POST", body: {} });
+assert.equal(assignedReprint.printJob.content, originalJobs.rows[0].content);
+assert.equal(assignedReprint.printJob.metadata.sourceJobId, originalJobs.rows[0].id);
+const persistedReprint = await database.query("SELECT * FROM print_jobs WHERE id = $1", [assignedReprint.printJob.id]);
+assert.equal(persistedReprint.rows[0].content, originalJobs.rows[0].content);
+
+const missingLabel = `Sem-órfã-${runId}`;
+await api(`/orders/missing-${runId}/tab-assignment`, {
+  method: "POST",
+  headers: { "Idempotency-Key": `missing-assignment-${runId}` },
+  body: { newTab: { label: missingLabel } },
+  expected: [404]
+});
+assert.equal((await api("/tabs?status=open")).items.some((item) => item.label === missingLabel), false);
+
+async function expectBlockedAssignment(orderId, reason, label) {
+  const beforeTabs = (await api("/tabs?status=open")).items.filter((item) => item.label === label).length;
+  const blocked = await api(`/orders/${orderId}/tab-assignment`, {
+    method: "POST",
+    headers: { "Idempotency-Key": `blocked-${orderId}-${runId}` },
+    body: { newTab: { label } },
+    expected: [409]
+  });
+  if (reason) assert.equal(blocked.reason, reason);
+  assert.equal((await api("/tabs?status=open")).items.filter((item) => item.label === label).length, beforeTabs);
+  assert.equal(Number((await database.query(
+    "SELECT COUNT(*) FROM order_tab_assignments WHERE order_id = $1",
+    [orderId]
+  )).rows[0].count), 0);
+}
+
+for (const [status, reason] of [
+  ["received", "status_not_eligible"],
+  ["completed", "status_not_eligible"],
+  ["cancelled", "status_not_eligible"]
+]) {
+  const orderId = `blocked-${status}-${runId}`;
+  await database.query(
+    `INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, items)
+     VALUES ($1, 'counter', $2, 'Bloqueado', 'local', 'cash', 0, '[]'::jsonb)`,
+    [orderId, status]
+  );
+  await expectBlockedAssignment(orderId, reason, `Bloqueio-${status}-${runId}`);
+}
+
+const appPaidOrderId = `blocked-app-paid-${runId}`;
+await database.query(
+  `INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, items)
+   VALUES ($1, 'counter', 'confirmed', 'Bloqueado', 'local', 'app_paid', 0, '[]'::jsonb)`,
+  [appPaidOrderId]
+);
+await expectBlockedAssignment(appPaidOrderId, "app_paid", `Bloqueio-app-${runId}`);
+
+const integratedOrderId = `blocked-integrated-${runId}`;
+await database.query(
+  `INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, items)
+   VALUES ($1, 'counter', 'confirmed', 'Bloqueado', 'local', 'cash', 0, '[]'::jsonb)`,
+  [integratedOrderId]
+);
+await database.query(
+  `INSERT INTO channel_mappings (id, order_id, channel, merchant_id, external_id, sync_status)
+   VALUES ($1,$2,'ifood','smoke',$3,'synchronized')`,
+  [`mapping-${runId}`, integratedOrderId, `external-${runId}`]
+);
+await expectBlockedAssignment(integratedOrderId, "integrated_order", `Bloqueio-integrado-${runId}`);
+
+const financedOrderId = `blocked-finance-${runId}`;
+await database.query(
+  `INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, items)
+   VALUES ($1, 'counter', 'confirmed', 'Bloqueado', 'local', 'cash', 10, '[]'::jsonb)`,
+  [financedOrderId]
+);
+await database.query(
+  `INSERT INTO finance_entries (id, order_id, type, amount, payment_method, source, label, occurred_at)
+   VALUES ($1,$2,'sale',10,'cash','counter','Venda bloqueante',NOW())`,
+  [`finance-${runId}`, financedOrderId]
+);
+await expectBlockedAssignment(financedOrderId, "finance_already_recorded", `Bloqueio-financeiro-${runId}`);
+
+const duplicateTarget = await api("/tabs", {
+  method: "POST",
+  body: { label: `Duplicada-${runId}` },
+  expected: [201]
+});
+const duplicateLabelOrder = await api("/orders", {
+  method: "POST",
+  headers: { "Idempotency-Key": `duplicate-label-order-${runId}` },
+  body: { fulfillmentMode: "local", items: [{ sku: smokeBatataSku, quantity: 1 }] },
+  expected: [201]
+});
+await expectBlockedAssignment(duplicateLabelOrder.id, null, duplicateTarget.label);
+
+const newTabOrder = await api("/orders", {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-new-tab-order-${runId}` },
+  body: { fulfillmentMode: "local", items: [{ sku: smokeBatataSku, quantity: 1 }] },
+  expected: [201]
+});
+const newTabKey = `smoke-new-tab-assignment-${runId}`;
+const newTabAssignment = await api(`/orders/${newTabOrder.id}/tab-assignment`, {
+  method: "POST",
+  headers: { "Idempotency-Key": newTabKey },
+  body: { newTab: { kind: "table", label: `Nova-mesa-${runId}`, customerName: "Ana" } },
+  expected: [201]
+});
+const newTabReplay = await api(`/orders/${newTabOrder.id}/tab-assignment`, {
+  method: "POST",
+  headers: { "Idempotency-Key": newTabKey },
+  body: { newTab: { kind: "table", label: `Nova-mesa-${runId}`, customerName: "Ana" } }
+});
+assert.equal(newTabReplay.repeated, true);
+assert.equal(newTabReplay.assignment.id, newTabAssignment.assignment.id);
+assert.equal(newTabReplay.tab.rounds.length, 1);
+
+const raceOrder = await api("/orders", {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-assignment-race-order-${runId}` },
+  body: { fulfillmentMode: "local", items: [{ sku: smokeBatataSku, quantity: 1 }] },
+  expected: [201]
+});
+const raceTargets = await Promise.all(["A", "B"].map((suffix) => api("/tabs", {
+  method: "POST",
+  body: { label: `Vínculo-corrida-${suffix}-${runId}` },
+  expected: [201]
+})));
+const assignmentRace = await Promise.all(raceTargets.map(async (candidate, index) => {
+  const response = await fetch(`${apiBase}/orders/${raceOrder.id}/tab-assignment`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "Idempotency-Key": `assignment-race-${index}-${runId}` },
+    body: JSON.stringify({ tabId: candidate.id })
+  });
+  return response.status;
+}));
+assert.deepEqual(assignmentRace.sort(), [201, 409]);
+assert.equal(Number((await database.query(
+  "SELECT COUNT(*) FROM order_tab_assignments WHERE order_id = $1",
+  [raceOrder.id]
+)).rows[0].count), 1);
 
 const tab = await api("/tabs", {
   method: "POST",
@@ -663,6 +916,8 @@ await request(printBase, "/print-jobs", {
   headers: printHeaders,
   expected: [409]
 });
+
+await database.end();
 
 console.log(JSON.stringify({
   ok: true,

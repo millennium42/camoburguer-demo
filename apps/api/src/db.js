@@ -75,6 +75,17 @@ CREATE TABLE IF NOT EXISTS orders (
   )
 );
 
+CREATE TABLE IF NOT EXISTS order_tab_assignments (
+  id TEXT PRIMARY KEY,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE RESTRICT,
+  tab_id TEXT NOT NULL REFERENCES service_tabs(id) ON DELETE RESTRICT,
+  round_number INTEGER NOT NULL CHECK (round_number > 0),
+  normalized_payload JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (order_id)
+);
+
 CREATE TABLE IF NOT EXISTS print_jobs (
   id TEXT PRIMARY KEY,
   order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -266,6 +277,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS finance_entries_one_order_effect
 CREATE UNIQUE INDEX IF NOT EXISTS finance_entries_one_payment_effect
   ON finance_entries (payment_id) WHERE payment_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS channel_mappings_order_id ON channel_mappings (order_id);
+CREATE INDEX IF NOT EXISTS order_tab_assignments_tab_id ON order_tab_assignments (tab_id);
 CREATE INDEX IF NOT EXISTS channel_events_status ON channel_events (status) WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS channel_commands_pending ON channel_commands (channel, status, next_attempt_at) WHERE status IN ('pending', 'processing');
 

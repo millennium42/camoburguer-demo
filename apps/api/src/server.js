@@ -40,6 +40,11 @@ import {
   lockCatalogItems,
   updateCatalogItem
 } from "./catalog-repository.js";
+import {
+  normalizeTabAssignmentPayload,
+  sameTabAssignment,
+  tabAssignmentEligibility
+} from "./order-tab-assignment.js";
 
 const app = Fastify({ logger: true });
 const db = createDb(config.databaseUrl);
@@ -186,7 +191,9 @@ async function getOrderByIdempotencyKey(idempotencyKey, executor = db) {
 
 async function listOrders() {
   const { rows } = await db.query(`
-    SELECT o.*, cm.sync_status, cm.external_id, cm.channel
+    SELECT o.*, cm.sync_status, cm.external_id, cm.channel,
+      EXISTS (SELECT 1 FROM channel_mappings mapping WHERE mapping.order_id = o.id) AS has_channel_mapping,
+      EXISTS (SELECT 1 FROM finance_entries entry WHERE entry.order_id = o.id) AS has_finance_entry
     FROM orders o
     LEFT JOIN channel_mappings cm ON o.id = cm.order_id
     ORDER BY o.created_at DESC
@@ -197,8 +204,45 @@ async function listOrders() {
       order.syncStatus = row.sync_status;
       order.externalId = row.external_id;
     }
+    order.tabAssignmentEligibility = tabAssignmentEligibility(order, {
+      hasChannelMapping: row.has_channel_mapping,
+      hasFinanceEntry: row.has_finance_entry
+    });
     return order;
   });
+}
+
+function mapOrderTabAssignment(row) {
+  return {
+    id: row.id,
+    idempotencyKey: row.idempotency_key,
+    orderId: row.order_id,
+    tabId: row.tab_id,
+    roundNumber: row.round_number,
+    normalizedPayload: row.normalized_payload,
+    createdAt: new Date(row.created_at).toISOString()
+  };
+}
+
+async function getOrderTabAssignmentByKey(idempotencyKey, executor = db) {
+  const { rows } = await executor.query(
+    "SELECT * FROM order_tab_assignments WHERE idempotency_key = $1",
+    [idempotencyKey]
+  );
+  return rows[0] ? mapOrderTabAssignment(rows[0]) : null;
+}
+
+async function orderAssignmentFlags(orderId, executor = db) {
+  const { rows } = await executor.query(
+    `SELECT
+      EXISTS (SELECT 1 FROM channel_mappings WHERE order_id = $1) AS has_channel_mapping,
+      EXISTS (SELECT 1 FROM finance_entries WHERE order_id = $1) AS has_finance_entry`,
+    [orderId]
+  );
+  return {
+    hasChannelMapping: rows[0].has_channel_mapping,
+    hasFinanceEntry: rows[0].has_finance_entry
+  };
 }
 
 async function getTab(tabId, executor = db, forUpdate = false) {
@@ -522,12 +566,29 @@ async function reservePrintJob(order, reason = "confirmed", executor = db) {
   return rows[0] ? mapPrintJob(rows[0]) : null;
 }
 
-async function getPrimaryPrintJob(orderId) {
-  const { rows } = await db.query(
+async function getPrimaryPrintJob(orderId, executor = db) {
+  const { rows } = await executor.query(
     "SELECT * FROM print_jobs WHERE order_id = $1 AND reason IN ('confirmed', 'cancellation') ORDER BY created_at LIMIT 1",
     [orderId]
   );
   return rows[0] ? mapPrintJob(rows[0]) : null;
+}
+
+async function reserveReprintJob(original, executor = db) {
+  const { rows } = await executor.query(
+    `INSERT INTO print_jobs (
+      id, order_id, reason, status, printer_name, content, attempts, error, metadata
+    ) VALUES ($1,$2,'reprint','pending',$3,$4,0,NULL,$5::jsonb)
+    RETURNING *`,
+    [
+      randomUUID(),
+      original.orderId,
+      original.printerName,
+      original.content,
+      JSON.stringify({ reason: "reprint", sourceJobId: original.id })
+    ]
+  );
+  return mapPrintJob(rows[0]);
 }
 
 async function dispatchPrintJob(job) {
@@ -568,7 +629,12 @@ async function dispatchPrintJob(job) {
         payload.status || "printed",
         payload.printerName || job.printerName,
         payload.error || null,
-        JSON.stringify({ ...(payload.metadata || {}), bridgeJobId: payload.id, reason: job.reason })
+        JSON.stringify({
+          ...(job.metadata || {}),
+          ...(payload.metadata || {}),
+          bridgeJobId: payload.id,
+          reason: job.reason
+        })
       ]
     );
     return mapPrintJob(updated.rows[0]);
@@ -1213,6 +1279,7 @@ app.patch("/orders/:orderId/discount", async (request, reply) => {
   const result = await db.transaction(async (client) => {
     const order = await getOrder(request.params.orderId, client, true);
     if (!order) return { notFound: true };
+    if (order.tabId) return { forbiddenTab: true };
     if (["ifood", "deliverymuch", "olaclick"].includes(order.source)) {
       return { forbiddenApp: true };
     }
@@ -1227,18 +1294,143 @@ app.patch("/orders/:orderId/discount", async (request, reply) => {
   });
 
   if (result.notFound) return reply.code(404).send({ message: "Pedido não encontrado" });
+  if (result.forbiddenTab) return reply.code(409).send({ message: "Use um ticket corretivo para alterar itens da comanda" });
   if (result.forbiddenApp) return reply.code(400).send({ message: "Desconto não pode ser alterado em pedidos de aplicativos externos" });
 
   emitOrderEvent("order.updated", result.saved);
   return result.saved;
 });
 
+app.post("/orders/:orderId/tab-assignment", async (request, reply) => {
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
+  let normalizedPayload;
+  try {
+    normalizedPayload = normalizeTabAssignmentPayload(request.body);
+  } catch (error) {
+    return reply.code(400).send({ message: error.message });
+  }
+
+  let result;
+  try {
+    result = await db.transaction(async (client) => {
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`order-tab-assignment:${idempotencyKey}`]);
+      const replay = await getOrderTabAssignmentByKey(idempotencyKey, client);
+      if (replay) {
+        if (!sameTabAssignment(replay, request.params.orderId, normalizedPayload)) {
+          return { idempotencyConflict: true };
+        }
+        return {
+          assignment: replay,
+          order: await getOrder(replay.orderId, client),
+          tab: await tabView(await getTab(replay.tabId, client), client),
+          repeated: true
+        };
+      }
+
+      let tab = null;
+      if (normalizedPayload.tabId) {
+        tab = await getTab(normalizedPayload.tabId, client, true);
+        if (!tab) return { tabNotFound: true };
+        if (tab.status !== "open") return { tabClosed: true };
+      }
+
+      const order = await getOrder(request.params.orderId, client, true);
+      if (!order) return { orderNotFound: true };
+      const eligibility = tabAssignmentEligibility(order, await orderAssignmentFlags(order.id, client));
+      if (!eligibility.eligible) return { ineligible: eligibility };
+
+      const assignedAt = new Date().toISOString();
+      if (!tab) {
+        const { newTab } = normalizedPayload;
+        const { rows } = await client.query(
+          `INSERT INTO service_tabs (id, kind, label, customer_name, status, opened_at)
+           VALUES ($1,$2,$3,$4,'open',$5) RETURNING *`,
+          [randomUUID(), newTab.kind, newTab.label, newTab.customerName, assignedAt]
+        );
+        tab = mapTab(rows[0]);
+      }
+
+      const roundResult = await client.query(
+        "SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM orders WHERE tab_id = $1",
+        [tab.id]
+      );
+      const roundNumber = Number(roundResult.rows[0].next_round);
+      const assignmentId = randomUUID();
+      const auditMetadata = {
+        tabLabel: tab.label,
+        tabAssignment: {
+          assignmentId,
+          assignedAt,
+          originalPaymentMethod: order.paymentMethod
+        }
+      };
+      const { rows: orderRows } = await client.query(
+        `UPDATE orders
+         SET tab_id = $2,
+             round_number = $3,
+             metadata = metadata || $4::jsonb,
+             updated_at = $5
+         WHERE id = $1 AND tab_id IS NULL
+         RETURNING *`,
+        [order.id, tab.id, roundNumber, JSON.stringify(auditMetadata), assignedAt]
+      );
+      if (!orderRows[0]) return { ineligible: { eligible: false, reason: "already_assigned" } };
+      const { rows: assignmentRows } = await client.query(
+        `INSERT INTO order_tab_assignments (
+          id, idempotency_key, order_id, tab_id, round_number, normalized_payload, created_at
+        ) VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7) RETURNING *`,
+        [assignmentId, idempotencyKey, order.id, tab.id, roundNumber, JSON.stringify(normalizedPayload), assignedAt]
+      );
+      return {
+        assignment: mapOrderTabAssignment(assignmentRows[0]),
+        order: mapOrder(orderRows[0]),
+        tab: await tabView(tab, client),
+        repeated: false
+      };
+    });
+  } catch (error) {
+    if (error.code === "23505") {
+      const replay = await getOrderTabAssignmentByKey(idempotencyKey);
+      if (replay && sameTabAssignment(replay, request.params.orderId, normalizedPayload)) {
+        return reply.send({
+          assignment: replay,
+          order: await getOrder(replay.orderId),
+          tab: await tabView(await getTab(replay.tabId)),
+          repeated: true
+        });
+      }
+      return reply.code(409).send({ message: "Já existe uma comanda aberta com este identificador" });
+    }
+    throw error;
+  }
+
+  if (result.idempotencyConflict) return reply.code(409).send({ message: "Idempotency-Key já usada com outra atribuição" });
+  if (result.orderNotFound) return reply.code(404).send({ message: "Pedido não encontrado" });
+  if (result.tabNotFound) return reply.code(404).send({ message: "Comanda não encontrada" });
+  if (result.tabClosed) return reply.code(409).send({ message: "Comanda não está aberta" });
+  if (result.ineligible) return reply.code(409).send({
+    code: "ORDER_TAB_ASSIGNMENT_INELIGIBLE",
+    message: "Pedido não pode ser vinculado a uma comanda",
+    reason: result.ineligible.reason
+  });
+  if (!result.repeated) emitOrderEvent("order.tab.assigned", result);
+  return reply.code(result.repeated ? 200 : 201).send(result);
+});
+
 app.post("/orders/:orderId/reprint", async (request, reply) => {
-  const order = await getOrder(request.params.orderId);
-  if (!order) return reply.code(404).send({ message: "Pedido não encontrado" });
-  const printJob = await dispatchPrintJob(await reservePrintJob(order, "reprint"));
+  const result = await db.transaction(async (client) => {
+    const order = await getOrder(request.params.orderId, client);
+    if (!order) return { notFound: true };
+    const original = await getPrimaryPrintJob(order.id, client);
+    if (!original) return { missingOriginal: true };
+    return { order, printJob: await reserveReprintJob(original, client) };
+  });
+  if (result.notFound) return reply.code(404).send({ message: "Pedido não encontrado" });
+  if (result.missingOriginal) return reply.code(409).send({ message: "Ticket original não encontrado" });
+  const printJob = await dispatchPrintJob(result.printJob);
   emitOrderEvent(printJob.status === "printed" ? "ticket.printed" : "ticket.print.failed", {
-    orderId: order.id,
+    orderId: result.order.id,
     printJob
   });
   return { ok: true, printJob };
