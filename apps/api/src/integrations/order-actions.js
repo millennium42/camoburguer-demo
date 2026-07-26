@@ -136,6 +136,13 @@ export async function applyIntegratedTransition(orderId, nextStatus, db, executo
     const order = await getOrderWithMapping(orderId, client);
     if (!order?.mapping) throw new Error("Pedido de integração não encontrado");
     if (order.status === nextStatus) return { saved: order, repeated: true };
+    if (
+      order.status === "ready"
+      && !requiresKitchenPreparation(order.items)
+      && ["in_preparation", "ready"].includes(nextStatus)
+    ) {
+      return { saved: order, repeated: true };
+    }
 
     const updated = transitionOrder(order, nextStatus);
     const saved = await db.updateOrder(updated, order.status, client);

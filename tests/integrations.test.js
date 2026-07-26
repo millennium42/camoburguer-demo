@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createOrderAction } from "../apps/api/src/integrations/order-actions.js";
+import {
+  applyIntegratedTransition,
+  createOrderAction
+} from "../apps/api/src/integrations/order-actions.js";
 import { ingestExternalOrder } from "../apps/api/src/integrations/order-ingestion.js";
 import {
   mapIFoodOrderItem,
@@ -234,4 +237,40 @@ test("eventos iFood legados e atuais convergem para estados canônicos", () => {
   assert.equal(normalizeIFoodEventType({ fullCode: "ORDER_CONFIRMED", code: "CONFIRMED" }), "CONFIRMED");
   assert.equal(normalizeIFoodEventType({ fullCode: "ORDER_CANCELLED", code: "CANCELLED" }), "CANCELLED");
   assert.equal(normalizeIFoodEventType({ fullCode: "PREPARATION_ENDED", code: "SEPARATION_ENDED" }), "READY_TO_PICKUP");
+});
+
+test("eventos de preparo preservam pedido externo somente de entrega direta como pronto", async () => {
+  const directReadyRow = {
+    ...orderRow(),
+    status: "ready",
+    items: [{
+      id: "line-direct",
+      sku: "bala-parceiro",
+      name: "Bala",
+      quantity: 1,
+      price: 3,
+      addons: [],
+      stockCategory: null,
+      preparationMode: "direct_handoff"
+    }]
+  };
+  const executor = {
+    async query(sql) {
+      if (sql.includes("row_to_json(cm.*)")) return { rows: [directReadyRow] };
+      throw new Error(`SQL inesperado: ${sql}`);
+    }
+  };
+  const db = {
+    async updateOrder() {
+      throw new Error("evento de preparo direto não deve alterar o pedido");
+    }
+  };
+
+  const preparation = await applyIntegratedTransition("order-1", "in_preparation", db, executor);
+  const ready = await applyIntegratedTransition("order-1", "ready", db, executor);
+
+  assert.equal(preparation.repeated, true);
+  assert.equal(preparation.saved.status, "ready");
+  assert.equal(ready.repeated, true);
+  assert.equal(ready.saved.status, "ready");
 });

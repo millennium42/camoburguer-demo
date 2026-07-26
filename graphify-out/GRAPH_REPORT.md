@@ -1,14 +1,14 @@
 # Graph Report - graphify-worktree  (2026-07-26)
 
 ## Corpus Check
-- 93 files · ~57,087 words
+- 93 files · ~57,217 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 274 nodes · 430 edges · 18 communities detected
+- 274 nodes · 431 edges · 18 communities detected
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS
 - Token cost: 0 input · 0 output
-- Edge kinds: contains: 244 · imports: 105 · calls: 80 · imports_from: 1
+- Edge kinds: contains: 244 · imports: 106 · calls: 80 · imports_from: 1
 
 
 ## Input Scope
@@ -137,7 +137,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.05608322026232474 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.06561085972850679 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06636500754147813 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
   _Cohesion score 0.0858974358974359 - nodes in this community are weakly interconnected._
 - **Should `Community 3` be split into smaller, more focused modules?**
