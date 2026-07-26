@@ -57,7 +57,9 @@ export function calculateOrderTotal(items = [], discountPercent = 0) {
 export function createOrder(input, {
   catalog = CATALOG,
   allowCustomItems = false,
-  preserveItemSnapshots = false
+  preserveItemSnapshots = false,
+  useCatalogCommercialSnapshot = true,
+  validateCatalogAvailability = true
 } = {}) {
   const source = assertEnum(input.source || "counter", ORDER_SOURCES, "source");
   const fulfillmentMode = assertEnum(
@@ -78,7 +80,9 @@ export function createOrder(input, {
     if (!catalogItem && !allowCustomItems && !preserveItemSnapshots) {
       throw new Error("Item não encontrado no cardápio");
     }
-    if (!preserveItemSnapshots && catalogItem && !catalogItem.available) throw new Error("Item indisponível no cardápio");
+    if (!preserveItemSnapshots && validateCatalogAvailability && catalogItem && !catalogItem.available) {
+      throw new Error("Item indisponível no cardápio");
+    }
     const addonSkus = (item.addons || []).map((addon) => String(addon.sku || ""));
     if (new Set(addonSkus).size !== addonSkus.length) throw new Error("Adicional duplicado");
     if (!preserveItemSnapshots && addonSkus.length && catalogItem && !catalogItem.allowsAddons) {
@@ -98,9 +102,17 @@ export function createOrder(input, {
       return { ...addon, quantity: 1 };
     });
     const quantity = Number(item.quantity ?? 1);
-    const price = Number(catalogItem?.price ?? item.price ?? 0);
+    const price = Number(
+      useCatalogCommercialSnapshot && catalogItem
+        ? catalogItem.price
+        : item.price ?? catalogItem?.price ?? 0
+    );
     const discountPercent = normalizeDiscountPercent(item.discountPercent, "Desconto do item");
-    const name = String(catalogItem?.name || item.name || "").trim();
+    const name = String(
+      useCatalogCommercialSnapshot && catalogItem
+        ? catalogItem.name
+        : item.name || catalogItem?.name || ""
+    ).trim();
     if (!name || !Number.isInteger(quantity) || quantity <= 0) {
       throw new Error("Item de pedido inválido");
     }

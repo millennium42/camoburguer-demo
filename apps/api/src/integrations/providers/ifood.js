@@ -123,6 +123,24 @@ function ifoodItemNotes(item) {
     .join(" | ");
 }
 
+export function mapIFoodOrderItem(item) {
+  const sku = String(
+    item.externalCode
+      || item.product?.externalCode
+      || item.product?.sku
+      || item.sku
+      || ""
+  ).trim() || null;
+  return {
+    id: item.uniqueId || item.id,
+    sku,
+    name: item.name,
+    price: Number(item.totalPrice ?? item.price ?? item.unitPrice * item.quantity) / Number(item.quantity || 1),
+    quantity: item.quantity,
+    notes: ifoodItemNotes(item)
+  };
+}
+
 const EVENT_ACTIONS = new Map([
   ["CONFIRMED", "accept"],
   ["CANCELLED", "cancel"],
@@ -263,13 +281,7 @@ export default function createIFoodAdapter(config, db) {
         deliveryAddress: fulfillmentMode === "delivery" ? ifoodDeliveryAddress(orderDetails) : null,
         fulfillmentMode,
         paymentMethod: ifoodPaymentMethod(orderDetails),
-        items: (orderDetails.items || []).map((item) => ({
-          id: item.uniqueId || item.id,
-          name: item.name,
-          price: Number(item.totalPrice ?? item.price ?? item.unitPrice * item.quantity) / Number(item.quantity || 1),
-          quantity: item.quantity,
-          notes: ifoodItemNotes(item)
-        })),
+        items: (orderDetails.items || []).map(mapIFoodOrderItem),
         createdAt: orderDetails.createdAt || event.createdAt,
         metadata: {
           ifoodOrder: orderDetails,

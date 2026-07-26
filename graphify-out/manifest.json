@@ -1,11 +1,15 @@
 {
+  "apps/api/src/catalog-repository.js": {
+    "mtime": 1785025424733.5603,
+    "hash": "75931b5700c755aad0ee5da5af60a8b7"
+  },
   "apps/api/src/config.js": {
     "mtime": 1784668369868.6382,
     "hash": "4211ba0ede063a3a9c382630c84609c1"
   },
   "apps/api/src/db.js": {
-    "mtime": 1784671378301.433,
-    "hash": "69796ee17921afc0e5dd79cc6778fef1"
+    "mtime": 1784689913067.1685,
+    "hash": "ff753deeac78896a08e19f0ae2e7a2a5"
   },
   "apps/api/src/integrations/http-client.js": {
     "mtime": 1784605802304.9377,
@@ -20,28 +24,32 @@
     "hash": "d5b31ee108a4e9c62072b3abf335d4d0"
   },
   "apps/api/src/integrations/order-actions.js": {
-    "mtime": 1784668942554.3867,
-    "hash": "a84615b3a6003e5f595decf894ebf686"
+    "mtime": 1784678755814.0894,
+    "hash": "475a4dd1796dc915f8e4781b24c62600"
   },
   "apps/api/src/integrations/order-ingestion.js": {
-    "mtime": 1784667760794.3503,
-    "hash": "c8c72bcc12685530994ea0a9d39a279d"
+    "mtime": 1785025424735.5544,
+    "hash": "6e27256b119a71a916d1b7dd40996912"
   },
   "apps/api/src/integrations/polling-runner.js": {
     "mtime": 1784668725034.8694,
     "hash": "5e5f8e95ceaa015d07c1640626b47270"
   },
   "apps/api/src/integrations/providers/deliverymuch.js": {
-    "mtime": 1784670717769.9624,
-    "hash": "0144c9f726d54750ccf5c5e4a740887c"
+    "mtime": 1785023996697.4783,
+    "hash": "248520562ae93083f9e32b2877ae72ed"
   },
   "apps/api/src/integrations/providers/ifood.js": {
-    "mtime": 1784670696727.7861,
-    "hash": "dd9a86a0722395e0f8ea4a05d6e8a20c"
+    "mtime": 1785023996697.4783,
+    "hash": "62be4c2a483da9c4105b8e76a3cb2d76"
+  },
+  "apps/api/src/order-tab-assignment.js": {
+    "mtime": 1784690736653.0354,
+    "hash": "94d0b00129ba138542c842d0f91964f7"
   },
   "apps/api/src/server.js": {
-    "mtime": 1784671378301.433,
-    "hash": "fe2e8af3bcab30f7a2df80eabd48c883"
+    "mtime": 1785021893069.2166,
+    "hash": "ee42b8f18192471224ae3af650d88326"
   },
   "apps/api/src/sse.js": {
     "mtime": 1784667705099.961,
@@ -52,8 +60,8 @@
     "hash": "43f63ae4ef8f5b1240c6aebf9b4930b2"
   },
   "apps/ops-web/main.js": {
-    "mtime": 1784671569276.9177,
-    "hash": "8ad31c074176c3820f445bdeeb8b322f"
+    "mtime": 1785021893072.4792,
+    "hash": "33b706e926015c88469ec21035878532"
   },
   "apps/print-bridge/src/server.js": {
     "mtime": 1784671378301.433,
@@ -64,12 +72,12 @@
     "hash": "b249a22afbd5d15bfecb7f70a153ba73"
   },
   "packages/domain/catalog.js": {
-    "mtime": 1784605808157.1982,
-    "hash": "28eb95568993b9c4ae945a2c93c429b3"
+    "mtime": 1784677741949.0989,
+    "hash": "338fe04218fd8a529de2afeee038dc08"
   },
   "packages/domain/index.js": {
-    "mtime": 1784668425061.243,
-    "hash": "20e1249d37a953cfd61002c6ce157166"
+    "mtime": 1785023996681.8335,
+    "hash": "8f10a9bf8640a29d28c02e2c4eed8b29"
   },
   "packages/finance-core/index.js": {
     "mtime": 1784611240862.432,
@@ -84,36 +92,40 @@
     "hash": "835db31acb3730f645750d1a24fe73f0"
   },
   "scripts/seed-demo.mjs": {
-    "mtime": 1784668977005.3354,
-    "hash": "e9f8321de0cd3d911d2698cf3949e158"
+    "mtime": 1784680206955.3928,
+    "hash": "eeb87ec995b09a142e364ba904c6d6fe"
   },
   "scripts/simulate-order.mjs": {
     "mtime": 1784605809444.3845,
     "hash": "19d103c406f6141c3e6dc95a4e860b62"
   },
   "tests/domain.test.js": {
-    "mtime": 1784668806584.2468,
-    "hash": "f77ea1869d793175ff1e38021fa0d3e7"
+    "mtime": 1785021893074.6616,
+    "hash": "a211b41e3b897c23e2bdf7f4d4323518"
   },
   "tests/finance.test.js": {
-    "mtime": 1784605812743.7424,
-    "hash": "2d2f4f5c3912720935076cb92deedbb8"
+    "mtime": 1784678024276.441,
+    "hash": "9ea16b01d398b1914787ae95e8d78db2"
   },
   "tests/integrations.test.js": {
-    "mtime": 1784670606715.9707,
-    "hash": "e9d75feecba7e6ec65d55e1d14abf252"
+    "mtime": 1785025424736.553,
+    "hash": "ad63637fe1d7098afe8a6ab2bd6a9b8c"
   },
   "tests/ops-web.test.js": {
-    "mtime": 1784657217491.4155,
-    "hash": "66a56b32482bbecf66dea261e5265650"
+    "mtime": 1785021893074.6616,
+    "hash": "d2401b6090e72c982b1e8a87120f63b5"
+  },
+  "tests/order-tab-assignment.test.js": {
+    "mtime": 1784690736653.0354,
+    "hash": "f19f1681d99c081882bc7415e44bb8ad"
   },
   "tests/print-bridge.test.js": {
     "mtime": 1784668890721.8489,
     "hash": "684e7c849ecc1597258e7955269b6842"
   },
   "tests/smoke.mjs": {
-    "mtime": 1784671448847.5608,
-    "hash": "13e6d9bda45c703886089b58300ba3f5"
+    "mtime": 1785021893074.6616,
+    "hash": "47638d4092f54aeaa0eb49b7230f983f"
   },
   "AGENTS.md": {
     "mtime": 1784605801919.7646,
@@ -128,28 +140,28 @@
     "hash": "0878c3dd7dc040c41015cddc423d8268"
   },
   "apps/ops-web/index.html": {
-    "mtime": 1784656598760.2761,
-    "hash": "0428c4eb2c9384d2bde9139917679333"
+    "mtime": 1785022199041.6987,
+    "hash": "286d78644854287363b02c679b523bc6"
   },
   "docker-compose.yml": {
-    "mtime": 1784668339281.7827,
-    "hash": "94468be21764a22071a9ee48f4c073e1"
+    "mtime": 1784678855891.3042,
+    "hash": "f08172226cf92e77042c1c6a56c4fb75"
   },
   "docs/5w2h-evolucao.md": {
     "mtime": 1784617784844.0967,
     "hash": "e90ec754f653209cbe8707db4cf85561"
   },
   "docs/DOCUMENTACAO_CENTRAL.md": {
-    "mtime": 1784671621043.4795,
-    "hash": "59496d589c02389d0b8f6052acdc76ca"
+    "mtime": 1785025424738.556,
+    "hash": "5833e53fe3d196acd9eea8daeed0d043"
   },
   "docs/RENDER_DEPLOY.md": {
     "mtime": 1784670275084.474,
     "hash": "0e582545d5196510a72bdfdfeeac06b7"
   },
   "docs/arquitetura-do-sistema.md": {
-    "mtime": 1784670166197.7534,
-    "hash": "71a6b4a36a2b718313c9f1c556c88cd4"
+    "mtime": 1784680869506.015,
+    "hash": "637150f007f1d98a97d80f66c3ef8a18"
   },
   "docs/auditoria-commit-a-commit.md": {
     "mtime": 1784670018787.7625,
@@ -168,8 +180,8 @@
     "hash": "01980cef3bca0f014e0c99a9cb1462c5"
   },
   "docs/ciclo-do-pedido.md": {
-    "mtime": 1784670207739.1138,
-    "hash": "282da3baf0c5cf4caf6d2b40e649fe9f"
+    "mtime": 1784691421248.2178,
+    "hash": "de69585df761a57dcaed060d9f62eb98"
   },
   "docs/ciclo-financeiro.md": {
     "mtime": 1784605806553.6226,
@@ -180,20 +192,20 @@
     "hash": "468bb83dbbf1317473e96c1741714259"
   },
   "docs/estoque.md": {
-    "mtime": 1784605806807.3784,
-    "hash": "637dc3c1f2be98b9b9a6adcd8ccbe98b"
+    "mtime": 1784677238595.6616,
+    "hash": "38d8ff84c292aed86d5e4934cadf49aa"
   },
   "docs/guia-de-desenvolvimento.md": {
-    "mtime": 1784671621043.4795,
-    "hash": "0609329018a441044a2b3b88c630c3cf"
+    "mtime": 1784687662265.5195,
+    "hash": "7af3701f99cf411c8650dfb950cd47dd"
   },
   "docs/padrao-ticket-cozinha.md": {
-    "mtime": 1784670128800.7842,
-    "hash": "35d27f74f728aeebf2b99f82f1effd34"
+    "mtime": 1785021893074.6616,
+    "hash": "09137def2170a4e25cfab10b996e7328"
   },
   "docs/pagamentos-comandas.md": {
-    "mtime": 1784605807174.7087,
-    "hash": "7e825e8d84c898969b04e0ccb7da267a"
+    "mtime": 1784677238595.6616,
+    "hash": "dd42ab2ae1d3155eb18ed83bae18384f"
   },
   "docs/relatorio-validacao.md": {
     "mtime": 1784672289822.5935,

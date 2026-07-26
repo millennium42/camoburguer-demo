@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createOrderAction } from "../apps/api/src/integrations/order-actions.js";
 import { ingestExternalOrder } from "../apps/api/src/integrations/order-ingestion.js";
-import { normalizeIFoodEventType } from "../apps/api/src/integrations/providers/ifood.js";
+import {
+  mapIFoodOrderItem,
+  normalizeIFoodEventType
+} from "../apps/api/src/integrations/providers/ifood.js";
+import { mapDeliveryMuchOrderItem } from "../apps/api/src/integrations/providers/deliverymuch.js";
 
 const now = "2026-07-21T12:00:00.000Z";
 
@@ -91,6 +95,84 @@ test("ingestão externa cria um pedido completo e mapeamento estável", async ()
   assert.equal(insertedOrder.roundKind, "production");
   assert.equal(insertedOrder.total, 25);
   assert.equal(insertedOrder.metadata.externalOrderId, "external-1");
+});
+
+test("ingestão externa usa classificação operacional sem sobrescrever a venda do parceiro", async () => {
+  let insertedOrder;
+  const executor = {
+    async query(sql, values) {
+      if (sql.startsWith("SELECT * FROM channel_mappings")) return { rows: [] };
+      if (sql.includes("FROM catalog_items")) {
+        assert.deepEqual(values[0], ["bala-parceiro"]);
+        assert.equal(sql.includes("archived_at IS NULL"), false);
+        return { rows: [{
+          sku: "bala-parceiro",
+          name: "Bala do catálogo",
+          category: "Bomboniere",
+          price: 2,
+          description: "",
+          stock_category: null,
+          allows_addons: false,
+          preparation_mode: "direct_handoff",
+          available: false,
+          origin: "operator",
+          source_version: null,
+          archived_at: now,
+          created_at: now,
+          updated_at: now
+        }] };
+      }
+      if (sql.startsWith("INSERT INTO channel_mappings")) {
+        return { rows: [mappingRow({ order_id: values[1] })] };
+      }
+      throw new Error(`SQL inesperado: ${sql}`);
+    }
+  };
+  const db = {
+    async insertOrder(order) {
+      insertedOrder = order;
+      return order;
+    }
+  };
+
+  await ingestExternalOrder({
+    source: "ifood",
+    externalMerchantId: "merchant-1",
+    externalOrderId: "external-direct",
+    externalStatus: "PLACED",
+    customerName: "Cliente parceiro",
+    fulfillmentMode: "pickup",
+    items: [{
+      id: "line-direct",
+      sku: "bala-parceiro",
+      name: "Bala vendida no parceiro",
+      quantity: 1,
+      price: 3.5
+    }]
+  }, executor, db);
+
+  assert.equal(insertedOrder.items[0].name, "Bala vendida no parceiro");
+  assert.equal(insertedOrder.items[0].price, 3.5);
+  assert.equal(insertedOrder.items[0].category, "Bomboniere");
+  assert.equal(insertedOrder.items[0].preparationMode, "direct_handoff");
+  assert.equal(insertedOrder.items[0].stockCategory, null);
+});
+
+test("adapters propagam SKU confiável quando o parceiro o fornece", () => {
+  assert.equal(mapIFoodOrderItem({
+    uniqueId: "line-1",
+    externalCode: " refrigerante-lata ",
+    name: "Refrigerante parceiro",
+    unitPrice: 6,
+    quantity: 1
+  }).sku, "refrigerante-lata");
+  assert.equal(mapDeliveryMuchOrderItem({
+    id: "line-2",
+    sku: " bala-parceiro ",
+    name: "Bala",
+    price: 3,
+    quantity: 1
+  }).sku, "bala-parceiro");
 });
 
 test("ação integrada conserva a chave do cliente e o id externo", async () => {

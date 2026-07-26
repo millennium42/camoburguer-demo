@@ -27,12 +27,12 @@ export async function listCatalogItems(executor, { includeArchived = false } = {
   return rows.map(mapCatalogItem);
 }
 
-export async function lockCatalogItems(items, executor) {
+export async function lockCatalogItems(items, executor, { includeArchived = false } = {}) {
   const skus = [...new Set((items || []).map((item) => String(item.sku || "").trim()).filter(Boolean))].sort();
   if (!skus.length) return [];
   const { rows } = await executor.query(
     `SELECT * FROM catalog_items
-     WHERE sku = ANY($1::text[]) AND archived_at IS NULL
+     WHERE sku = ANY($1::text[])${includeArchived ? "" : " AND archived_at IS NULL"}
      ORDER BY sku FOR SHARE`,
     [skus]
   );

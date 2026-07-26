@@ -38,7 +38,7 @@ Este arquivo é um índice, não uma segunda cópia dos contratos. Em caso de di
 - Ticket enviado não é reescrito; correção gera efeito/ticket compensatório.
 - Pagamento/estorno preserva histórico; saldo da comanda usa centavos.
 - Financeiro é gerencial v1, sem fiscal e sem CMV por receita.
-- SKU conhecido usa preço/nome do snapshot canônico.
+- Captura manual usa preço/nome do snapshot canônico; adapters preservam a venda do parceiro e usam SKU conhecido somente para classificação operacional.
 - Evento externo é persistido antes de ACK.
 - Cozinha imprime pelo `print_job`/bridge; navegador só imprime relatório de turno.
 - CORS/rate limit não substituem autenticação.

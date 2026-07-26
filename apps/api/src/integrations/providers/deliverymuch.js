@@ -10,6 +10,25 @@ import {
 } from "../integration-repository.js";
 import { activateAcceptedOrder, applyIntegratedTransition } from "../order-actions.js";
 
+export function mapDeliveryMuchOrderItem(item) {
+  const sku = String(
+    item.sku
+      || item.externalCode
+      || item.product?.sku
+      || item.product?.externalCode
+      || item.product?.code
+      || ""
+  ).trim() || null;
+  return {
+    id: item.id || randomUUID(),
+    sku,
+    name: item.name,
+    quantity: item.quantity,
+    price: Number(item.price),
+    notes: item.notes || ""
+  };
+}
+
 export default function createDeliveryMuchAdapter(config, db) {
   let tokenCache = null;
 
@@ -138,13 +157,7 @@ export default function createDeliveryMuchAdapter(config, db) {
           fulfillmentMode: externalOrder.fulfillmentMode === "pickup" ? "pickup" : "delivery",
           deliveryAddress: externalOrder.deliveryAddress?.formattedAddress || null,
           createdAt: externalOrder.createdAt,
-          items: (externalOrder.items || []).map((item) => ({
-            id: item.id || randomUUID(),
-            name: item.name,
-            quantity: item.quantity,
-            price: Number(item.price),
-            notes: item.notes || ""
-          })),
+          items: (externalOrder.items || []).map(mapDeliveryMuchOrderItem),
           metadata: { deliveryMuchOrder: externalOrder }
         }, executor, db);
         if (ingestion.repeated) {

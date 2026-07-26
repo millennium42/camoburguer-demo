@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { createOrder } from "@camoburguer/domain";
+import { lockCatalogItems } from "../catalog-repository.js";
 import { findChannelMapping, insertChannelMapping } from "./integration-repository.js";
 
 
@@ -23,6 +24,7 @@ export async function ingestExternalOrder(input, executor, db) {
   }
 
   const idempotencyKey = [input.source, externalMerchantId, externalOrderId].join(":");
+  const catalog = await lockCatalogItems(input.items, executor, { includeArchived: true });
   const order = createOrder({
     id: randomUUID(),
     source: input.source,
@@ -39,7 +41,12 @@ export async function ingestExternalOrder(input, executor, db) {
       externalMerchantId,
       externalOrderId
     }
-  }, { allowCustomItems: true });
+  }, {
+    allowCustomItems: true,
+    catalog,
+    useCatalogCommercialSnapshot: false,
+    validateCatalogAvailability: false
+  });
 
   const savedOrder = await db.insertOrder(order, executor);
 

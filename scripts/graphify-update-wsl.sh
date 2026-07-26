@@ -16,8 +16,11 @@ command -v graphify >/dev/null
 command -v rsync >/dev/null
 
 mkdir -p "$staging_dir"
-rsync -a --delete \
+rsync -a --delete --delete-excluded \
   --exclude='.git' \
+  --exclude='.graphify' \
+  --exclude='checkpoint-store' \
+  --exclude='docs/prompt-planejamento-cardapio-comandas.md' \
   --exclude='node_modules' \
   --exclude='graphify-out' \
   "$source_dir/" "$staging_dir/"
