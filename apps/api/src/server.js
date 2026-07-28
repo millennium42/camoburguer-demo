@@ -495,34 +495,49 @@ async function changeStock(order, multiplier, reason, executor, sourceOrderId = 
   const requirements = calculateStockRequirements(order.items);
   const movements = [];
   for (const category of Object.keys(requirements).sort()) {
-    const delta = Number(requirements[category]) * multiplier;
-    if (reason === "cancellation") {
+    const rawDelta = Number(requirements[category]) * multiplier;
+    const isLoss = reason === "cancellation_loss";
+    const delta = isLoss ? 0 : rawDelta;
+    
+    if (reason === "cancellation" || isLoss) {
       const sale = await executor.query(
         "SELECT 1 FROM stock_movements WHERE order_id = $1 AND category = $2 AND reason = 'sale'",
         [sourceOrderId, category]
       );
       if (!sale.rows[0]) continue;
     }
-    const { rows } = await executor.query(
-      "SELECT * FROM stock_balances WHERE category = $1 FOR UPDATE",
-      [category]
-    );
+    
+    let currentQuantity = 0;
+    if (!isLoss) {
+      const { rows } = await executor.query(
+        "SELECT * FROM stock_balances WHERE category = $1 FOR UPDATE",
+        [category]
+      );
+      currentQuantity = Number(rows[0]?.quantity || 0);
+    }
+    
+    const metadata = { roundKind: order.roundKind };
+    if (isLoss) metadata.lostQuantity = Math.abs(rawDelta);
+    
     const inserted = await executor.query(
       `INSERT INTO stock_movements (id, category, delta, reason, order_id, metadata, created_at)
        VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7) ON CONFLICT DO NOTHING RETURNING *`,
-      [randomUUID(), category, delta, reason, order.id, JSON.stringify({ roundKind: order.roundKind }), new Date().toISOString()]
+      [randomUUID(), category, delta, reason, order.id, JSON.stringify(metadata), new Date().toISOString()]
     );
     if (!inserted.rows[0]) continue;
-    const nextQuantity = Number(rows[0].quantity) + delta;
-    if (nextQuantity < 0) {
-      const error = new Error(`Estoque insuficiente para ${category}`);
-      error.statusCode = 409;
-      throw error;
+    
+    if (!isLoss) {
+      const nextQuantity = currentQuantity + delta;
+      if (nextQuantity < 0) {
+        const error = new Error(`Estoque insuficiente para ${category}`);
+        error.statusCode = 409;
+        throw error;
+      }
+      await executor.query(
+        "UPDATE stock_balances SET quantity = $2, updated_at = NOW() WHERE category = $1",
+        [category, nextQuantity]
+      );
     }
-    await executor.query(
-      "UPDATE stock_balances SET quantity = $2, updated_at = NOW() WHERE category = $1",
-      [category, nextQuantity]
-    );
     movements.push(inserted.rows[0]);
   }
   return movements;
@@ -1291,7 +1306,11 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
         }
       }));
       const saved = await insertOrder(cancellation, client);
-      if (original.status === "confirmed") await changeStock(saved, 1, "cancellation", client, original.id);
+      if (original.status === "confirmed") {
+        await changeStock(saved, 1, "cancellation", client, original.id);
+      } else if (["in_preparation", "ready"].includes(original.status)) {
+        await changeStock(saved, 1, "cancellation_loss", client, original.id);
+      }
       const printJob = await reservePrintJob(saved, "cancellation", client);
       await completeIdempotency(client, idempotencyKey, {
         resultType: "order",
@@ -1592,7 +1611,11 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
     const saved = await updateOrder(updated, previousStatus, client);
     if (!saved) return { conflict: true };
     if (!saved.tabId && ["confirmed", "in_preparation", "ready"].includes(previousStatus) && nextStatus === "cancelled") {
-      await changeStock(saved, 1, "cancellation", client, saved.id);
+      if (previousStatus === "confirmed") {
+        await changeStock(saved, 1, "cancellation", client, saved.id);
+      } else {
+        await changeStock(saved, 1, "cancellation_loss", client, saved.id);
+      }
     }
 
     const printJob = nextStatus === "confirmed"
