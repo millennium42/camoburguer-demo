@@ -182,16 +182,67 @@ app.addHook("preHandler", async (request, reply) => {
   }
 });
 
+function sanitizeForAudit(data) {
+  if (!data) return null;
+  const clone = structuredClone(data);
+  const sanitizeRec = (obj) => {
+    if (Array.isArray(obj)) obj.forEach(sanitizeRec);
+    else if (obj && typeof obj === 'object') {
+      const redacts = ['password', 'token', 'csrfToken', 'secret', 'customerName', 'customerPhone', 'bearer'];
+      for (const key of Object.keys(obj)) {
+        if (redacts.includes(key)) obj[key] = '[REDACTED]';
+        else sanitizeRec(obj[key]);
+      }
+    }
+  };
+  sanitizeRec(clone);
+  return clone;
+}
+
+async function auditMutation(client, request, action, stateBefore, stateAfter, result = "success") {
+  if (!request?.auth?.user) return;
+  const idempotencyKey = request.headers ? (request.headers["idempotency-key"] || request.body?.idempotencyKey || null) : null;
+  const path = request.url ? request.url.split("?")[0] : "internal";
+  await client.query(
+    `INSERT INTO audit_events 
+     (id, actor_id, action, resource_path, idempotency_key, correlation_id, state_before, state_after, result) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9)`,
+    [
+      randomUUID(),
+      request.auth.user.id,
+      action,
+      path,
+      idempotencyKey,
+      idempotencyKey || null,
+      JSON.stringify(sanitizeForAudit(stateBefore)),
+      JSON.stringify(sanitizeForAudit(stateAfter)),
+      result
+    ]
+  );
+}
+
 app.addHook("onResponse", async (request, reply) => {
-  if (!request.auth?.user || !isMutation(request.method) || reply.statusCode >= 400) return;
+  if (!request.auth?.user || isMutation(request.method) || reply.statusCode >= 400) return;
   const path = request.url.split("?")[0];
-  if (path.startsWith("/auth/")) return;
+  if (path.startsWith("/auth/") || path.startsWith("/audit")) return;
   await db.query(
-    "INSERT INTO audit_events (id, actor_id, action, resource_path) VALUES ($1, $2, $3, $4)",
-    [randomUUID(), request.auth.user.id, request.method, path]
+    "INSERT INTO audit_events (id, actor_id, action, resource_path, result) VALUES ($1, $2, $3, $4, $5)",
+    [randomUUID(), request.auth.user.id, `telemetry.${request.method.toLowerCase()}`, path, "success"]
   );
 });
 
+app.get("/audit", async (request, reply) => {
+  if (!requireDemoAdmin(request, reply)) return reply;
+  const limit = Math.max(1, Math.min(100, Number(request.query.limit) || 50));
+  const page = Math.max(1, Number(request.query.page) || 1);
+  const offset = (page - 1) * limit;
+  
+  const { rows } = await db.query(
+    "SELECT * FROM audit_events ORDER BY occurred_at DESC LIMIT $1 OFFSET $2",
+    [limit, offset]
+  );
+  return { items: rows };
+});
 app.post("/auth/login", async (request, reply) => {
   const result = await login(db, {
     username: request.body?.username,
@@ -1199,8 +1250,10 @@ app.post("/tabs/:tabId/rounds", async (request, reply) => {
       metadata: { ...(request.body?.metadata || {}), tabLabel: tab.label }
     }, { catalog }));
     const saved = await insertOrder(order, client);
+      await auditMutation(client, request, "tab.round_added", null, saved);
     await changeStock(saved, -1, "sale", client);
     const printJob = await reservePrintJob(saved, "confirmed", client);
+    await auditMutation(client, request, "order.created", null, saved);
     await completeIdempotency(client, idempotencyKey, {
       resultType: "order",
       resultId: saved.id,
@@ -1308,6 +1361,7 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
         await changeStock(saved, 1, "cancellation_loss", client, original.id);
       }
       const printJob = await reservePrintJob(saved, "cancellation", client);
+      await auditMutation(client, request, "order.cancelled", original, saved);
       await completeIdempotency(client, idempotencyKey, {
         resultType: "order",
         resultId: saved.id,
