@@ -5,6 +5,8 @@ const state = {
   orderAttempt: null,
   cancellationAttempt: null,
   inventoryAttempt: null,
+  roundAttempt: null,
+  adjustmentAttempt: null,
   paymentAttempt: null,
   paymentReversalAttempt: null,
   tabAssignmentAttempt: null,
@@ -22,21 +24,22 @@ const state = {
   shifts: [],
   activeCatalogCategory: null,
   isCreatingNewTabInOrder: false,
-  catalogAdminToken: "",
   catalogAdminGeneration: 0,
   catalogAdminItems: [],
   catalogAdminEditSku: null,
   catalogAdminEditUpdatedAt: null,
   catalogAdminArchiveSku: null,
   catalogAdminArchiveUpdatedAt: null,
-  catalogAdminArchiveOpener: null
+  catalogAdminArchiveOpener: null,
+  csrfToken: "",
+  currentUser: null,
+  sseConnected: false,
+  eventSources: []
 };
 
-const apiBase = typeof window === "undefined"
-  ? ""
-  : (window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1")
-      ? `${window.location.protocol}//${window.location.hostname}:3001`
-      : `${window.location.protocol}//${window.location.hostname.replace('ops-web', 'api')}`);
+// O painel e a API compartilham a mesma origem em /app e /api-raiz.
+// Isso mantém cookies SameSite=Strict fora de qualquer fluxo cross-site.
+const apiBase = "";
 
 
 const sourceLabels = {
@@ -46,6 +49,11 @@ const sourceLabels = {
   deliverymuch: "🟠 Delivery Much",
   olaclick: "🟢 OlaClick"
 };
+
+function isIntegratedOrder(order) {
+  return order?.hasChannelMapping === true
+    || ["ifood", "deliverymuch"].includes(order?.source);
+}
 
 const fulfillmentLabels = {
   delivery: "🛵 Delivery",
@@ -295,7 +303,11 @@ function formatWhen(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "Horário não informado"
-    : date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+    : date.toLocaleString("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: state.financeSummary?.businessTimeZone || "America/Sao_Paulo"
+    });
 }
 
 function syncStamp(label) {
@@ -610,7 +622,7 @@ function renderOrders() {
   const authList = $("#auth-list");
   const authCard = $("#auth-queue-card");
 
-  const authOrders = state.orders.filter(o => o.status === "received" && ["ifood", "deliverymuch"].includes(o.source));
+  const authOrders = state.orders.filter((order) => order.status === "received" && isIntegratedOrder(order));
   const normalOrders = state.orders.filter(o => !authOrders.includes(o));
 
   if (authOrders.length) {
@@ -656,7 +668,7 @@ function renderOrders() {
     .map((order) => `
       <div class="order-card">
         <div class="order-meta">
-          <span class="pill ${['ifood', 'deliverymuch'].includes(order.source) ? 'warning' : ''}">${escapeHtml(sourceLabels[order.source] || order.source)}</span>
+          <span class="pill ${isIntegratedOrder(order) ? 'warning' : ''}">${escapeHtml(sourceLabels[order.source] || order.source)}</span>
           <span>${escapeHtml(fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode)}</span>
           <span>${escapeHtml(order.customerName || "Cliente")}</span>
           <span class="pill ${order.status === 'completed' ? 'open' : order.status === 'cancelled' ? 'danger' : ''}">${escapeHtml(statusLabels[order.status] || order.status)}</span>
@@ -739,6 +751,8 @@ function renderFinanceSummary() {
       <div class="stat"><span>Pedidos concluídos</span><strong>${summary.totalOrders}</strong></div>
       <div class="stat"><span>Ticket médio</span><strong>${money(summary.ticketAverage)}</strong></div>
       <div class="stat"><span>Recebimentos por forma</span><strong>${Object.entries(summary.paymentsByMethod).map(([method, amount]) => `${escapeHtml(paymentLabels[method] || method)}: ${money(amount)}`).join(" · ") || "Sem vendas"}</strong></div>
+      <div class="stat"><span>Fuso operacional</span><strong>${escapeHtml(summary.businessTimeZone || "America/Sao_Paulo")}</strong></div>
+      ${summary.reconciliation?.balanced === false ? `<div class="stat warning"><span>Diferença de reconciliação</span><strong>${money(summary.reconciliation.difference)}</strong></div>` : ""}
     `;
   }
   const quickSummary = $("#quick-finance-summary");
@@ -827,7 +841,10 @@ function renderShifts() {
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
   if (options.body && !headers.has("content-type")) headers.set("content-type", "application/json");
-  const response = await fetch(`${apiBase}${path}`, { ...options, headers });
+  if (options.method && !["GET", "HEAD"].includes(options.method) && state.csrfToken && path !== "/auth/login") {
+    headers.set("x-csrf-token", state.csrfToken);
+  }
+  const response = await fetch(`${apiBase}${path}`, { ...options, headers, credentials: "include" });
   const text = await response.text();
   let payload = null;
   try {
@@ -839,31 +856,66 @@ async function api(path, options = {}) {
     const errorMsg = typeof payload === "string" ? payload : (payload?.message || payload?.error || (typeof payload === "object" ? JSON.stringify(payload) : "Falha na API"));
     const error = new Error(errorMsg);
     error.status = response.status;
+    if (response.status === 401 && typeof document !== "undefined") showLoginDialog();
     throw error;
   }
   return payload;
 }
 
+function showLoginDialog() {
+  const dialog = $("#login-dialog");
+  if (dialog && !dialog.open) dialog.showModal();
+}
+
+function wireLogin() {
+  const form = $("#login-form");
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const errorNode = $("#login-error");
+    errorNode.hidden = true;
+    try {
+      const body = new FormData(form);
+      const result = await api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ username: body.get("username"), password: body.get("password") })
+      });
+      state.csrfToken = result.csrfToken;
+      state.currentUser = result.user;
+      $("#btn-logout").hidden = false;
+      form.reset();
+      $("#login-dialog").close();
+      wireSse();
+      await refreshSafe();
+    } catch (error) {
+      errorNode.textContent = error.message;
+      errorNode.hidden = false;
+    }
+  });
+  $("#btn-logout")?.addEventListener("click", async () => {
+    try {
+      await api("/auth/logout", { method: "POST", body: JSON.stringify({}) });
+    } finally {
+      for (const source of state.eventSources) source.close();
+      state.eventSources = [];
+      state.sseConnected = false;
+      state.csrfToken = "";
+      state.currentUser = null;
+      $("#btn-logout").hidden = true;
+      showLoginDialog();
+    }
+  });
+}
+
 function lockCatalogAdmin() {
   state.catalogAdminGeneration += 1;
-  state.catalogAdminToken = "";
   state.catalogAdminItems = [];
   state.catalogAdminEditSku = null;
   state.catalogAdminEditUpdatedAt = null;
   state.catalogAdminArchiveSku = null;
   state.catalogAdminArchiveUpdatedAt = null;
   state.catalogAdminArchiveOpener = null;
-  const dialog = $("#catalog-admin-dialog");
-  const auth = $("#catalog-admin-auth");
-  const content = $("#catalog-admin-content");
-  if (auth) {
-    auth.hidden = false;
-    auth.reset();
-  }
-  if (content) content.hidden = true;
   if ($("#catalog-archive-confirm")) $("#catalog-archive-confirm").hidden = true;
   [
-    '#catalog-admin-auth [type="submit"]',
     '#catalog-item-form [type="submit"]',
     "#catalog-archive-submit"
   ].forEach((selector) => {
@@ -871,34 +923,27 @@ function lockCatalogAdmin() {
     if (control) control.disabled = false;
   });
   $("#catalog-admin-list")?.replaceChildren();
-  if (dialog?.open) auth?.elements.token.focus();
 }
 
 function catalogAdminSession() {
-  return { generation: state.catalogAdminGeneration, token: state.catalogAdminToken };
+  return { generation: state.catalogAdminGeneration };
 }
 
 export function sameCatalogAdminSession(session, current) {
-  return Boolean(session?.token)
-    && session.generation === current.generation
-    && session.token === current.token;
+  return session?.generation === current.generation;
 }
 
 function catalogAdminSessionIsCurrent(session) {
   return sameCatalogAdminSession(session, {
-    generation: state.catalogAdminGeneration,
-    token: state.catalogAdminToken
+    generation: state.catalogAdminGeneration
   });
 }
 
 async function catalogAdminApi(path, options = {}, session = catalogAdminSession()) {
   try {
-    return await api(path, {
-      ...options,
-      headers: { ...options.headers, authorization: `Bearer ${session.token}` }
-    });
+    return await api(path, options);
   } catch (error) {
-    if ((error.status === 401 || error.status === 503) && catalogAdminSessionIsCurrent(session)) {
+    if ((error.status === 401 || error.status === 403) && catalogAdminSessionIsCurrent(session)) {
       error.catalogAdminSessionInvalidated = true;
       lockCatalogAdmin();
     }
@@ -1146,10 +1191,19 @@ function wireCart() {
     $("#tab-modal")?.showModal();
   });
 
-  $("#btn-quick-catalog-admin")?.addEventListener("click", () => {
+  $("#btn-quick-catalog-admin")?.addEventListener("click", async () => {
+    if (state.currentUser?.role !== "admin") return notify("Acesso exclusivo de administrador.", "error");
     const dialog = $("#catalog-admin-dialog");
     dialog?.showModal();
-    $("#catalog-admin-auth input[name=token]")?.focus();
+    state.catalogAdminGeneration += 1;
+    const session = catalogAdminSession();
+    try {
+      await refreshCatalogAdminList(session);
+      resetCatalogItemForm();
+    } catch (error) {
+      notify(error.message, "error");
+      dialog?.close();
+    }
   });
 
   $("#btn-quick-stock")?.addEventListener("click", () => {
@@ -1397,14 +1451,21 @@ function wireCart() {
       button.disabled = true;
       try {
         const discountPercent = Number($("#active-comanda-discount")?.value || 0);
+        const roundPayload = {
+          tabId: state.activeTabId,
+          items: state.orderItems,
+          discountPercent
+        };
+        state.roundAttempt = nextOrderAttempt(state.roundAttempt, roundPayload);
         await api(`/tabs/${state.activeTabId}/rounds`, {
           method: "POST",
-          headers: { "Idempotency-Key": crypto.randomUUID() },
+          headers: { "Idempotency-Key": state.roundAttempt.key },
           body: JSON.stringify({
             items: state.orderItems,
             discountPercent
           })
         });
+        state.roundAttempt = null;
         notify(`Rodada lançada com sucesso para ${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label}!`);
         state.orderItems = [];
         state.activeTabId = null;
@@ -1449,11 +1510,11 @@ function wireCart() {
         const orderId = button.dataset.orderId || button.dataset.orderStatus; // fallback para botões velhos
         const action = button.dataset.orderAction || button.dataset.status;
         const order = state.orders.find((item) => item.id === orderId);
-        const channelAction = action === "cancelled"
+        const channelAction = action === "cancelled" && isIntegratedOrder(order)
           ? "cancel"
-          : action === "in_preparation" && order?.source === "ifood"
+          : action === "in_preparation" && isIntegratedOrder(order) && order?.source === "ifood"
             ? "start-preparation"
-            : action === "ready" && ["ifood", "deliverymuch"].includes(order?.source)
+            : action === "ready" && isIntegratedOrder(order)
               ? "ready"
               : null;
 
@@ -1469,10 +1530,15 @@ function wireCart() {
           });
           delete state.integrationAttempts[attempt.slot];
         } else {
+          const manualCancellation = action === "cancelled"
+            ? integrationAttempt(orderId, "manual-cancel", { status: action })
+            : null;
           await api(`/orders/${orderId}/status`, {
             method: "PATCH",
+            headers: manualCancellation ? { "Idempotency-Key": manualCancellation.key } : {},
             body: JSON.stringify({ status: action })
           });
+          if (manualCancellation) delete state.integrationAttempts[manualCancellation.slot];
         }
         notify("Status do pedido atualizado.");
       } else if (button.dataset.reprint) {
@@ -1502,44 +1568,14 @@ function wireCart() {
 
 function wireCatalogAdmin() {
   const dialog = $("#catalog-admin-dialog");
-  const authForm = $("#catalog-admin-auth");
   const itemForm = $("#catalog-item-form");
 
   $("#close-catalog-admin")?.addEventListener("click", () => dialog?.close());
   dialog?.addEventListener("close", lockCatalogAdmin);
-  $("#catalog-admin-lock")?.addEventListener("click", () => {
-    lockCatalogAdmin();
-    authForm?.elements.token.focus();
-  });
+  $("#catalog-admin-lock")?.addEventListener("click", () => dialog?.close());
   $("#catalog-admin-new")?.addEventListener("click", resetCatalogItemForm);
   $("#catalog-item-cancel")?.addEventListener("click", resetCatalogItemForm);
   $("#catalog-admin-filter")?.addEventListener("change", renderCatalogAdminList);
-
-  authForm?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!authForm.reportValidity()) return;
-    const token = authForm.elements.token.value;
-    authForm.elements.token.value = "";
-    state.catalogAdminGeneration += 1;
-    state.catalogAdminToken = token;
-    const session = catalogAdminSession();
-    const submit = authForm.querySelector('[type="submit"]');
-    submit.disabled = true;
-    try {
-      const loaded = await refreshCatalogAdminList(session);
-      if (!loaded) return;
-      authForm.hidden = true;
-      $("#catalog-admin-content").hidden = false;
-      resetCatalogItemForm();
-    } catch (error) {
-      if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated) {
-        notify(error.message, "error");
-        if (dialog?.open) authForm.elements.token.focus();
-      }
-    } finally {
-      if (session.generation === state.catalogAdminGeneration) submit.disabled = false;
-    }
-  });
 
   itemForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1926,14 +1962,19 @@ function wireForms() {
     submit.disabled = true;
     try {
       const formData = new FormData(form);
+      const payload = {
+        shiftId: shift.id,
+        kind: formData.get("kind"),
+        amount: Number(formData.get("amount")),
+        reason: formData.get("reason")
+      };
+      state.adjustmentAttempt = nextOrderAttempt(state.adjustmentAttempt, payload);
       await api(`/cash-shifts/${shift.id}/adjustments`, {
         method: "POST",
-        body: JSON.stringify({
-          kind: formData.get("kind"),
-          amount: Number(formData.get("amount")),
-          reason: formData.get("reason")
-        })
+        headers: { "Idempotency-Key": state.adjustmentAttempt.key },
+        body: JSON.stringify(payload)
       });
+      state.adjustmentAttempt = null;
       form.reset();
       dialog.close();
       await refreshAll();
@@ -1970,9 +2011,24 @@ function wireForms() {
 }
 
 function wireSse() {
-  const orderEvents = new EventSource(`${apiBase}/events/orders`);
-  const financeEvents = new EventSource(`${apiBase}/events/finance`);
-  orderEvents.onmessage = () => {
+  if (state.sseConnected) return;
+  state.sseConnected = true;
+  const orderEvents = new EventSource(`${apiBase}/events/orders`, { withCredentials: true });
+  const financeEvents = new EventSource(`${apiBase}/events/finance`, { withCredentials: true });
+  state.eventSources = [orderEvents, financeEvents];
+  const seenEventIds = new Set();
+  orderEvents.onmessage = (event) => {
+    try {
+      const envelope = JSON.parse(event.data);
+      const eventId = envelope?.payload?.eventId;
+      if (eventId && seenEventIds.has(eventId)) return;
+      if (eventId) {
+        seenEventIds.add(eventId);
+        if (seenEventIds.size > 100) seenEventIds.delete(seenEventIds.values().next().value);
+      }
+    } catch {
+      // Eventos legados continuam provocando refetch seguro.
+    }
     refreshSafe();
     const session = catalogAdminSession();
     refreshCatalogAdminList(session).catch((error) => {
@@ -1982,6 +2038,7 @@ function wireSse() {
   financeEvents.onmessage = refreshSafe;
   orderEvents.onopen = financeEvents.onopen = () => {
     $("#api-status").textContent = "API conectada";
+    refreshSafe();
   };
   orderEvents.onerror = financeEvents.onerror = () => {
     $("#api-status").textContent = "Reconectando atualizações...";
@@ -1989,12 +2046,12 @@ function wireSse() {
 }
 
 if (typeof document !== "undefined") {
+  wireLogin();
   wireTabs();
   wireCart();
   wireCatalogAdmin();
   wireForms();
-  wireSse();
   syncDeliveryAddress();
   renderOrderItems();
-  refreshSafe();
+  showLoginDialog();
 }

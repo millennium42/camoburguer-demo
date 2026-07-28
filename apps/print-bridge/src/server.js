@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import "dotenv/config";
@@ -23,10 +24,33 @@ app.addHook("onSend", async (_request, reply, payload) => {
 
 app.get("/health", async () => ({ ok: true, service: "print-bridge" }));
 
-app.post("/print-jobs", async (request, reply) => {
+function authorize(request, reply) {
   if (bridgeToken && !equalSecret(request.headers.authorization, `Bearer ${bridgeToken}`)) {
-    return reply.code(401).send({ error: "Não autorizado" });
+    reply.code(401).send({ error: "Não autorizado" });
+    return false;
   }
+  return true;
+}
+
+app.get("/print-jobs/:orderId/:jobId", async (request, reply) => {
+  if (!authorize(request, reply)) return reply;
+  const orderId = safeId(request.params.orderId, "orderId");
+  const jobId = safeId(request.params.jobId, "jobId");
+  try {
+    const content = await readFile(join(spoolDir, `${orderId}-${jobId}.txt`), "utf8");
+    return {
+      id: jobId,
+      status: "already_printed",
+      receipt: createHash("sha256").update(content).digest("hex")
+    };
+  } catch (error) {
+    if (error.code === "ENOENT") return reply.code(404).send({ error: "Recibo não encontrado" });
+    throw error;
+  }
+});
+
+app.post("/print-jobs", async (request, reply) => {
+  if (!authorize(request, reply)) return reply;
 
   const body = request.body || {};
   const orderId = safeId(body.orderId, "orderId");
@@ -51,7 +75,7 @@ app.post("/print-jobs", async (request, reply) => {
 
   return reply.code(repeated ? 200 : 201).send({
     id: jobId,
-    status: "printed",
+    status: repeated ? "already_printed" : "printed",
     printerName: String(body.printerName || "cozinha-principal").slice(0, 128),
     attempts: repeated ? 0 : 1,
     repeated,
@@ -60,6 +84,24 @@ app.post("/print-jobs", async (request, reply) => {
       reason: String(body.reason || "confirmed").slice(0, 64)
     }
   });
+});
+
+app.post("/privacy/anonymize", async (request, reply) => {
+  if (!authorize(request, reply)) return reply;
+  const artifacts = Array.isArray(request.body?.artifacts) ? request.body.artifacts : [];
+  const sanitized = [];
+  for (const artifact of artifacts) {
+    const orderId = safeId(artifact.orderId, "orderId");
+    const jobId = safeId(artifact.jobId, "jobId");
+    const filepath = join(spoolDir, `${orderId}-${jobId}.txt`);
+    try {
+      await writeFile(filepath, "[TICKET ANONIMIZADO]\n", { encoding: "utf8", flag: "w" });
+      sanitized.push(jobId);
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+  return { ok: true, sanitized };
 });
 
 await app.listen({ host: "0.0.0.0", port });

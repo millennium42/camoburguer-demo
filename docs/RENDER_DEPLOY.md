@@ -2,31 +2,30 @@
 
 ## Limite de uso
 
-O Blueprint publica uma **demo com dados sintéticos**. Ele não adiciona login ao painel/API e o bridge hospedado não alcança a impressora da cozinha. Não habilite iFood/Delivery Much nem grave dados reais antes dos gates da [auditoria técnica](auditoria-tecnica-2026-07-21.md).
+O Blueprint publica uma **demo com dados sintéticos**. O painel/API exige sessão RBAC e o bridge hospedado não alcança a impressora da cozinha. Não habilite iFood/Delivery Much nem grave dados reais antes dos gates da [auditoria técnica](auditoria-tecnica-2026-07-21.md).
 
 ## Recursos
 
 | Recurso | Tipo | Função |
 |---|---|---|
 | `camoburguer-db` | PostgreSQL gerenciado | dados da demo |
-| `camoburguer-api` | web service Node | API, schema, SSE e pollers desabilitados |
+| `camoburguer-api` | web service Node | painel em `/app/`, API, schema, SSE e pollers desabilitados |
 | `camoburguer-bridge` | web service Node | spool remoto demonstrativo |
-| `camoburguer-ops-web` | static site | interface do operador |
 
 URLs esperadas:
 
-- `https://camoburguer-ops-web.onrender.com`
+- `https://camoburguer-api.onrender.com/app/`
 - `https://camoburguer-api.onrender.com`
 - `https://camoburguer-bridge.onrender.com`
 
 ## O que o Blueprint protege
 
 - health checks explícitos da API e bridge;
-- CORS limitado ao domínio do `ops-web`;
-- headers CSP, frame, referrer, permissions e `nosniff` no site;
+- painel e API na mesma origem, compatíveis com `SameSite=Strict`;
+- headers Helmet, frame, referrer, permissions e `nosniff` no mesmo serviço;
 - `PRINT_BRIDGE_TOKEN` aleatório gerado no bridge e referenciado pela API;
 - comunicação API → bridge pelo hostname privado do Render;
-- `DEMO_ADMIN_TOKEN` gerado para seed/anonimização;
+- `ADMIN_BOOTSTRAP_PASSWORD` gerado para o primeiro administrador;
 - bridge recusa startup em produção sem token.
 
 O Render recomenda segredos gerados ou fornecidos fora do repositório e permite copiar uma env var por `fromService.envVarKey`: [Blueprint YAML Reference](https://render.com/docs/blueprint-spec).
@@ -35,7 +34,7 @@ O Render recomenda segredos gerados ou fornecidos fora do repositório e permite
 
 1. Revisar/commitar/pushar as mudanças desejadas.
 2. No Render, criar ou sincronizar um Blueprint apontando para `render.yaml`.
-3. Confirmar banco e três serviços.
+3. Confirmar banco e dois serviços.
 4. Aguardar todos os health checks.
 5. Verificar os logs do primeiro boot.
 6. Confirmar que o frontend servido contém o commit esperado.
@@ -51,8 +50,8 @@ Não presuma que editar `render.yaml` altera serviços existentes imediatamente.
 | `NODE_ENV` | `production` | ativa exigências de segurança do bridge correspondente |
 | `PRINT_BRIDGE_URL` | `fromService.hostport` | `config.js` acrescenta `http://` ao host privado |
 | `PRINT_BRIDGE_TOKEN` | `fromService.envVarKey` | mesmo segredo gerado no bridge |
-| `CORS_ORIGINS` | URL exata do ops web | lista separada por vírgula |
-| `DEMO_ADMIN_TOKEN` | `generateValue: true` | não expor no frontend |
+| `CORS_ORIGINS` | URL exata do serviço | painel e API compartilham a origem |
+| `ADMIN_BOOTSTRAP_PASSWORD` | `generateValue: true` | bootstrap único; não expor no frontend |
 | `AUTO_SEED` | `false` | valor obrigatório; outro valor impede o boot |
 | `APP_ENV` | `demo` | gate de ambiente, insuficiente isoladamente |
 | `DEMO_SEED_ENABLED` | `false` | habilitar apenas durante operação explícita aprovada |
@@ -74,15 +73,20 @@ Não existe seed no boot. `AUTO_SEED` deve permanecer `false`, inclusive em roll
 Para migrar um deploy antigo, altere primeiro essa variável, faça redeploy e confirme que
 o health sobe sem criar dados demonstrativos.
 
-`POST /demo/seed` exige bearer ou `x-admin-token`, `APP_ENV=demo`,
+`POST /demo/seed` exige sessão `admin` e CSRF, `APP_ENV=demo`,
 `DEMO_SEED_ENABLED=true`, `DEMO_SEED_TARGET` sem credenciais e o mesmo alvo em
 `confirmTarget` no corpo. A operação resolve o alvo no PostgreSQL e, em uma única
-transação, bloqueia em ordem fixa e verifica as 13 tabelas. Qualquer estado operacional,
+transação, bloqueia em ordem fixa e verifica as 14 tabelas. Qualquer estado operacional,
 estoque não zero ou catálogo divergente retorna recusa sem mutação. O alvo resolvido pode
 ser obtido nos logs sanitizados de uma recusa controlada; nunca copie `DATABASE_URL`.
 
 Depois de uma carga aprovada, volte `DEMO_SEED_ENABLED=false` e faça redeploy. Não use
 essa operação em produção ou staging compartilhado.
+
+API e SSE são default-deny. O painel e a API devem permanecer no mesmo site;
+cookies são `HttpOnly`, `Secure` e `SameSite=Strict`. O rollback preserva
+autenticação, RBAC e as tabelas `users`, `auth_sessions` e `audit_events`; nunca
+retorna às rotas anônimas ou ao `DEMO_ADMIN_TOKEN`.
 
 O commit `f3191d3`, que fixa `AUTO_SEED=false` no Render, não faz parte de nenhum
 rollback permitido. Rollback de aplicação deve preservá-lo.

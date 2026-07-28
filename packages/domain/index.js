@@ -223,7 +223,7 @@ export function confirmOrder(order) {
   };
 }
 
-export function buildKitchenTicket(order) {
+export function buildKitchenTicket(order, { timeZone = "America/Sao_Paulo" } = {}) {
   const hasKitchen = requiresKitchenPreparation(order.items);
   const cancellationHeader = order.roundKind === "cancellation"
     ? [hasKitchen ? "*** CANCELAMENTO / RETIRAR ***" : "*** CANCELAMENTO / ENTREGA DIRETA ***"]
@@ -234,7 +234,7 @@ export function buildKitchenTicket(order) {
     ...(order.reversesOrderId ? [`Corrige pedido: ${order.reversesOrderId.slice(0, 8).toUpperCase()}`] : []),
     ...(order.tabId ? [`Comanda: ${order.metadata?.tabLabel || order.tabId}`, `Rodada: ${order.roundNumber}`] : []),
     `Horário: ${new Date(order.createdAt).toLocaleString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
+      timeZone,
       hour: "2-digit",
       minute: "2-digit"
     })}`,

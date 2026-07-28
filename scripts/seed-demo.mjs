@@ -6,6 +6,7 @@ export const PROTECTED_TABLES = Object.freeze([
   "catalog_items",
   "orders",
   "order_tab_assignments",
+  "idempotency_records",
   "print_jobs",
   "stock_balances",
   "stock_movements",
@@ -288,14 +289,37 @@ export async function runSeedDemo(db, options = {}) {
 
 export async function requestDemoSeed({
   apiBase = "http://127.0.0.1:3001",
-  token,
+  username = "admin",
+  password,
   confirmedTarget,
   fetchImpl = fetch
 }) {
-  const response = await fetchImpl(`${String(apiBase).replace(/\/+$/, "")}/demo/seed`, {
+  const base = String(apiBase).replace(/\/+$/, "");
+  const loginResponse = await fetchImpl(`${base}/auth/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ username, password: String(password || "") })
+  });
+  const loginText = await loginResponse.text();
+  let loginPayload;
+  try {
+    loginPayload = loginText ? JSON.parse(loginText) : null;
+  } catch {
+    loginPayload = { error: loginText };
+  }
+  if (!loginResponse.ok) {
+    const error = new Error(loginPayload?.error || `Login administrativo recusado com HTTP ${loginResponse.status}.`);
+    error.statusCode = loginResponse.status;
+    error.code = loginPayload?.code || "auth_error";
+    throw error;
+  }
+  const setCookies = loginResponse.headers.getSetCookie?.() || [loginResponse.headers.get("set-cookie") || ""];
+  const cookie = setCookies.map((value) => value.split(";")[0]).filter(Boolean).join("; ");
+  const response = await fetchImpl(`${base}/demo/seed`, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${String(token || "")}`,
+      cookie,
+      "x-csrf-token": loginPayload.csrfToken,
       "content-type": "application/json"
     },
     body: JSON.stringify({ confirmTarget: String(confirmedTarget || "") })
@@ -323,12 +347,13 @@ if (process.argv[1] && process.argv[1].endsWith("seed-demo.mjs")) {
     ?.slice("--confirm-target=".length);
   requestDemoSeed({
     apiBase: process.env.DEMO_API_URL || process.env.API_BASE_URL,
-    token: process.env.DEMO_ADMIN_TOKEN,
+    username: process.env.ADMIN_USERNAME || "admin",
+    password: process.env.ADMIN_PASSWORD || process.env.ADMIN_BOOTSTRAP_PASSWORD,
     confirmedTarget: confirmation
   }).then((payload) => {
     console.log(payload?.message || "Banco de dados preenchido com dados de demonstração.");
   }).catch((err) => {
     console.error("Seed recusado:", err.code || "internal_error", err.message);
-    process.exit(1);
+    process.exitCode = 1;
   });
 }

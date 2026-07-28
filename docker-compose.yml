@@ -24,11 +24,12 @@ services:
       PRINT_BRIDGE_TOKEN: local-print-bridge-token
       DEFAULT_PRINTER: cozinha-principal
       AUTO_SEED: "false"
-      DEMO_ADMIN_TOKEN: ${DEMO_ADMIN_TOKEN:-}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
       APP_ENV: demo
       DEMO_SEED_ENABLED: ${DEMO_SEED_ENABLED:-false}
       DEMO_SEED_TARGET: ${DEMO_SEED_TARGET:-}
-      CORS_ORIGINS: http://localhost:8081,http://127.0.0.1:8081
+      BUSINESS_TIME_ZONE: ${BUSINESS_TIME_ZONE:-America/Sao_Paulo}
+      CORS_ORIGINS: http://localhost:3001,http://127.0.0.1:3001
     ports:
       - "3001:3001"
     depends_on:
@@ -61,22 +62,14 @@ services:
       timeout: 5s
       retries: 12
 
-  ops-web:
-    build:
-      context: .
-      dockerfile: apps/ops-web/Dockerfile
-    ports:
-      - "8081:80"
-    depends_on:
-      api:
-        condition: service_healthy
-
   event-simulator:
     build:
       context: .
       dockerfile: apps/event-simulator/Dockerfile
     environment:
       API_BASE_URL: http://api:3001
+      DEMO_ADMIN_USERNAME: admin
+      DEMO_ADMIN_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
     depends_on:
       api:
         condition: service_healthy

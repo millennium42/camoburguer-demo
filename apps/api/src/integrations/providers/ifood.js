@@ -1,10 +1,8 @@
 import { requestForm, requestJson } from "../http-client.js";
 import { ingestExternalOrder } from "../order-ingestion.js";
 import {
-  getPendingCommands,
   getOrderWithMapping,
   insertChannelEvent,
-  updateChannelCommand,
   updateChannelMapping
 } from "../integration-repository.js";
 import { activateAcceptedOrder, applyIntegratedTransition } from "../order-actions.js";
@@ -209,41 +207,11 @@ export default function createIFoodAdapter(config, db) {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
+        "x-idempotency-key": command.correlationId || command.id,
         ...(body ? { "Content-Type": "application/json" } : {})
       },
       ...(body ? { body: JSON.stringify(body) } : {})
     });
-  }
-
-  async function processPendingCommands(executor) {
-    const pendingCommands = await getPendingCommands("ifood", executor);
-    for (const command of pendingCommands) {
-      try {
-        await sendCommand(command);
-        await updateChannelCommand(command.id, {
-          status: "awaiting_event",
-          completedAt: null,
-          error: null
-        }, executor);
-      } catch (error) {
-        const attempts = command.attempts + 1;
-        await updateChannelCommand(command.id, {
-          attempts,
-          status: attempts >= 3 ? "failed" : "pending",
-          error: error.message,
-          nextAttemptAt: new Date(Date.now() + 30_000).toISOString()
-        }, executor);
-        if (attempts >= 3) {
-          const order = await getOrderWithMapping(command.orderId, executor);
-          if (order?.mapping) {
-            await updateChannelMapping(order.mapping.id, {
-              syncStatus: "failed",
-              syncError: error.message
-            }, executor);
-          }
-        }
-      }
-    }
   }
 
   async function findInternalOrder(externalOrderId, executor) {
@@ -257,20 +225,65 @@ export default function createIFoodAdapter(config, db) {
     return rows[0] || null;
   }
 
-  async function completeCommand(orderId, action, executor) {
-    if (!action) return;
-    await executor.query(
-      `UPDATE channel_commands
-       SET status = 'completed', completed_at = NOW(), error = NULL
-       WHERE order_id = $1 AND action = $2 AND status = 'awaiting_event'`,
-      [orderId, action]
-    );
+  function eventCorrelation(event) {
+    return String(event?.correlationId || event?.metadata?.correlationId || "").trim() || null;
   }
 
-  async function processEvent(event, executor) {
+  async function completeCommand(orderId, action, event, executor) {
+    if (!action) return false;
+    const correlationId = eventCorrelation(event);
+    const { rows: candidates } = await executor.query(
+      `SELECT command.id
+       FROM channel_commands command
+       JOIN channel_mappings mapping ON mapping.order_id = command.order_id
+       WHERE command.order_id = $1
+         AND command.action = $2
+         AND command.status IN ('awaiting_event', 'ambiguous')
+         AND mapping.external_id = $3
+         AND ($4::text IS NULL OR command.correlation_id = $4)
+       ORDER BY command.created_at`,
+      [orderId, action, String(event.orderId), correlationId]
+    );
+    if (candidates.length !== 1) return false;
+    await executor.query(
+      `UPDATE channel_commands
+       SET status = 'completed', completed_at = NOW(), error = NULL,
+           event_deadline_at = NULL, lease_owner = NULL, lease_expires_at = NULL
+       WHERE id = $1 AND status IN ('awaiting_event', 'ambiguous')`,
+      [candidates[0].id]
+    );
+    return true;
+  }
+
+  async function failCommand(orderId, action, event, reason, executor) {
+    const correlationId = eventCorrelation(event);
+    const { rows: candidates } = await executor.query(
+      `SELECT command.id
+       FROM channel_commands command
+       JOIN channel_mappings mapping ON mapping.order_id = command.order_id
+       WHERE command.order_id = $1
+         AND command.action = $2
+         AND command.status IN ('awaiting_event', 'ambiguous')
+         AND mapping.external_id = $3
+         AND ($4::text IS NULL OR command.correlation_id = $4)
+       ORDER BY command.created_at`,
+      [orderId, action, String(event.orderId), correlationId]
+    );
+    if (candidates.length !== 1) return false;
+    await executor.query(
+      `UPDATE channel_commands
+       SET status = 'dead_letter', completed_at = NOW(), dead_lettered_at = NOW(),
+           event_deadline_at = NULL, lease_owner = NULL, lease_expires_at = NULL,
+           error = $2
+       WHERE id = $1 AND status IN ('awaiting_event', 'ambiguous')`,
+      [candidates[0].id, reason]
+    );
+    return true;
+  }
+
+  async function processEvent(event, orderDetails, executor) {
     const type = normalizeIFoodEventType(event);
     if (type === "PLACED") {
-      const orderDetails = await fetchOrderDetails(event.orderId);
       const fulfillmentMode = ifoodFulfillmentMode(orderDetails.orderType);
       await ingestExternalOrder({
         source: "ifood",
@@ -297,12 +310,7 @@ export default function createIFoodAdapter(config, db) {
 
     if (type === "CANCELLATION_REQUEST_FAILED") {
       const reason = String(event.metadata?.reason || "Solicitação rejeitada pelo iFood");
-      await executor.query(
-        `UPDATE channel_commands
-         SET status = 'failed', completed_at = NOW(), error = $2
-         WHERE order_id = $1 AND action IN ('accept', 'cancel') AND status = 'awaiting_event'`,
-        [local.order_id, reason]
-      );
+      await failCommand(local.order_id, "cancel", event, reason, executor);
       await updateChannelMapping(local.mapping_id, {
         externalStatus: type,
         syncStatus: "failed",
@@ -318,28 +326,39 @@ export default function createIFoodAdapter(config, db) {
     }
 
     const action = EVENT_ACTIONS.get(type);
-    await completeCommand(local.order_id, action, executor);
+    await completeCommand(local.order_id, action, event, executor);
     await updateChannelMapping(local.mapping_id, {
       externalStatus: type,
       syncStatus: action ? "synchronized" : "external_event_received"
     }, executor);
   }
 
-  async function poll(executor) {
-    if (!config.ifood.enabled) return { ackIds: [] };
-
+  async function fetchBatch() {
+    if (!config.ifood.enabled) return { entries: [] };
     try {
-      await processPendingCommands(executor);
       const events = await fetchEvents();
-      if (!Array.isArray(events) || events.length === 0) return { ackIds: [] };
-
+      if (!Array.isArray(events) || events.length === 0) return { entries: [] };
       events.sort((a, b) => Date.parse(a.createdAt || 0) - Date.parse(b.createdAt || 0));
-      const ackIds = [];
-
+      const entries = [];
       for (const event of events) {
         if (!event?.id || !event?.orderId || (!event?.fullCode && !event?.code)) {
           throw new Error("Evento iFood inválido");
         }
+        const orderDetails = normalizeIFoodEventType(event) === "PLACED"
+          ? await fetchOrderDetails(event.orderId)
+          : null;
+        entries.push({ event, orderDetails });
+      }
+      return { entries };
+    } catch (error) {
+      if (error.statusCode === 401) clearIFoodToken(config.ifood);
+      throw error;
+    }
+  }
+
+  async function persistBatch(batch, executor) {
+      const ackIds = [];
+      for (const { event, orderDetails } of batch.entries || []) {
         const savedEvent = await insertChannelEvent({
           id: event.id,
           channel: "ifood",
@@ -352,21 +371,70 @@ export default function createIFoodAdapter(config, db) {
           occurredAt: event.createdAt
         }, executor);
 
-        if (savedEvent) await processEvent(event, executor);
+        if (savedEvent) await processEvent(event, orderDetails, executor);
         ackIds.push(event.id);
       }
-
       return { ackIds };
-    } catch (error) {
-      if (error.statusCode === 401) clearIFoodToken(config.ifood);
-      throw error;
+  }
+
+  async function reconcileCommand(command) {
+    const details = await fetchOrderDetails(command.payload.externalOrderId);
+    const status = String(details?.status || details?.orderStatus || "").toUpperCase();
+    const applied = command.action === "accept"
+      ? ["CONFIRMED", "PREPARATION_STARTED", "READY_TO_PICKUP", "CONCLUDED", "CANCELLED"].includes(status)
+      : command.action === "cancel"
+      ? status === "CANCELLED"
+      : command.action === "startPreparation"
+      ? ["PREPARATION_STARTED", "READY_TO_PICKUP", "CONCLUDED"].includes(status)
+      : command.action === "ready"
+      ? ["READY_TO_PICKUP", "CONCLUDED"].includes(status)
+      : false;
+    return applied
+      ? { state: "applied", externalStatus: status }
+      : { state: "unknown", reason: `Status iFood inconclusivo: ${status || "ausente"}` };
+  }
+
+  async function finalizeCommand(command, executor, { reconciled }) {
+    if (!reconciled) {
+      return {
+        status: "awaiting_event",
+        completedAt: null,
+        lastHttpStatus: 200,
+        eventDeadlineAt: new Date(Date.now() + 2 * 60_000).toISOString()
+      };
     }
+    if (command.action === "accept") {
+      await activateAcceptedOrder(command.orderId, db, executor);
+    } else {
+      const nextStatus = {
+        cancel: "cancelled",
+        startPreparation: "in_preparation",
+        ready: "ready"
+      }[command.action];
+      if (nextStatus) await applyIntegratedTransition(command.orderId, nextStatus, db, executor);
+    }
+    const local = await getOrderWithMapping(command.orderId, executor);
+    if (local?.mapping) {
+      await updateChannelMapping(local.mapping.id, {
+        syncStatus: "synchronized",
+        syncError: null
+      }, executor);
+    }
+    return {
+      status: "completed",
+      completedAt: new Date().toISOString(),
+      lastHttpStatus: 200
+    };
   }
 
   return {
     channel: "ifood",
     pollIntervalMs: Math.max(config.ifood.pollIntervalMs, 30_000),
-    poll,
+    fetchBatch,
+    persistBatch,
+    sendCommand,
+    reconcileCommand,
+    finalizeCommand,
     afterCommit: async ({ ackIds }) => {
       try {
         await sendAcknowledgment(ackIds);

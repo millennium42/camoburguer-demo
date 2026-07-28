@@ -7,6 +7,50 @@ const { Pool, types } = pg;
 types.setTypeParser(1700, (value) => Number(value));
 
 const schemaSql = `
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'operator', 'kitchen')),
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  credential_changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS auth_sessions (
+  id TEXT PRIMARY KEY,
+  token_hash TEXT NOT NULL UNIQUE,
+  csrf_hash TEXT NOT NULL,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL,
+  last_seen_at TIMESTAMPTZ NOT NULL,
+  idle_expires_at TIMESTAMPTZ NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ NULL
+);
+
+ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS csrf_hash TEXT NULL;
+CREATE INDEX IF NOT EXISTS auth_sessions_active_token ON auth_sessions (token_hash) WHERE revoked_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS audit_events (
+  id TEXT PRIMARY KEY,
+  actor_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  action TEXT NOT NULL,
+  resource_path TEXT NOT NULL,
+  occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS privacy_requests (
+  id TEXT PRIMARY KEY,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  fingerprint TEXT NOT NULL CHECK (fingerprint ~ '^[0-9a-f]{64}$'),
+  status TEXT NOT NULL CHECK (status IN ('processing', 'db_completed', 'completed', 'pending_external_cleanup')),
+  result JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS audit_events_actor_time ON audit_events (actor_id, occurred_at DESC);
+
 CREATE TABLE IF NOT EXISTS service_tabs (
   id TEXT PRIMARY KEY,
   kind TEXT NOT NULL,
@@ -85,6 +129,27 @@ CREATE TABLE IF NOT EXISTS order_tab_assignments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (order_id)
 );
+
+CREATE TABLE IF NOT EXISTS idempotency_records (
+  idempotency_key TEXT PRIMARY KEY,
+  operation TEXT NOT NULL,
+  resource TEXT NOT NULL,
+  fingerprint TEXT NOT NULL CHECK (fingerprint ~ '^[0-9a-f]{64}$'),
+  canonical_version TEXT NOT NULL,
+  result_type TEXT NULL,
+  result_id TEXT NULL,
+  response_status INTEGER NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ NULL,
+  CONSTRAINT idempotency_result_complete CHECK (
+    (result_id IS NULL AND result_type IS NULL AND response_status IS NULL AND completed_at IS NULL)
+    OR
+    (result_id IS NOT NULL AND result_type IS NOT NULL AND response_status BETWEEN 200 AND 299 AND completed_at IS NOT NULL)
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idempotency_records_resource
+  ON idempotency_records (operation, resource);
 
 CREATE TABLE IF NOT EXISTS print_jobs (
   id TEXT PRIMARY KEY,
@@ -213,10 +278,33 @@ CREATE TABLE IF NOT EXISTS channel_commands (
   next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   response_payload JSONB NULL,
   error TEXT NULL,
+  correlation_id TEXT NULL,
+  lease_owner TEXT NULL,
+  lease_expires_at TIMESTAMPTZ NULL,
+  last_attempt_at TIMESTAMPTZ NULL,
+  sent_at TIMESTAMPTZ NULL,
+  reconciled_at TIMESTAMPTZ NULL,
+  last_http_status INTEGER NULL,
+  event_deadline_at TIMESTAMPTZ NULL,
+  dead_lettered_at TIMESTAMPTZ NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   completed_at TIMESTAMPTZ NULL,
   UNIQUE (channel, idempotency_key)
 );
+
+ALTER TABLE channel_commands ADD COLUMN IF NOT EXISTS correlation_id TEXT NULL;
+ALTER TABLE channel_commands ADD COLUMN IF NOT EXISTS lease_owner TEXT NULL;
+ALTER TABLE channel_commands ADD COLUMN IF NOT EXISTS lease_expires_at TIMESTAMPTZ NULL;
+ALTER TABLE channel_commands ADD COLUMN IF NOT EXISTS last_attempt_at TIMESTAMPTZ NULL;
+ALTER TABLE channel_commands ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ NULL;
+ALTER TABLE channel_commands ADD COLUMN IF NOT EXISTS reconciled_at TIMESTAMPTZ NULL;
+ALTER TABLE channel_commands ADD COLUMN IF NOT EXISTS last_http_status INTEGER NULL;
+ALTER TABLE channel_commands ADD COLUMN IF NOT EXISTS event_deadline_at TIMESTAMPTZ NULL;
+ALTER TABLE channel_commands ADD COLUMN IF NOT EXISTS dead_lettered_at TIMESTAMPTZ NULL;
+UPDATE channel_commands SET correlation_id = id WHERE correlation_id IS NULL;
+UPDATE channel_commands
+SET event_deadline_at = NOW()
+WHERE status = 'awaiting_event' AND event_deadline_at IS NULL;
 
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key TEXT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tab_id TEXT NULL REFERENCES service_tabs(id) ON DELETE SET NULL;
@@ -227,6 +315,29 @@ ALTER TABLE orders ALTER COLUMN payment_method DROP NOT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT NULL;
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_percent NUMERIC(5,2) NOT NULL DEFAULT 0;
 ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS reason TEXT NOT NULL DEFAULT 'confirmed';
+ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS lease_owner TEXT NULL;
+ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS lease_expires_at TIMESTAMPTZ NULL;
+ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS error_class TEXT NULL;
+ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS last_error_code TEXT NULL;
+ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS last_attempt_at TIMESTAMPTZ NULL;
+ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS printed_at TIMESTAMPTZ NULL;
+ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS dead_lettered_at TIMESTAMPTZ NULL;
+ALTER TABLE print_jobs ADD COLUMN IF NOT EXISTS history JSONB NOT NULL DEFAULT '[]'::jsonb;
+UPDATE print_jobs SET status = 'retry_wait', next_attempt_at = NOW()
+WHERE status = 'failed'
+   OR (
+     status = 'sending'
+     AND (lease_expires_at IS NULL OR lease_expires_at <= NOW())
+   );
+DO $migration$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'print_jobs_status_check') THEN
+    ALTER TABLE print_jobs ADD CONSTRAINT print_jobs_status_check
+      CHECK (status IN ('pending', 'sending', 'retry_wait', 'printed', 'dead_letter')) NOT VALID;
+  END IF;
+END $migration$;
+ALTER TABLE print_jobs VALIDATE CONSTRAINT print_jobs_status_check;
 UPDATE print_jobs
 SET reason = COALESCE(NULLIF(metadata->>'reason', ''), reason);
 UPDATE orders SET fulfillment_mode = 'local' WHERE fulfillment_mode IN ('counter', 'dine_in');
@@ -280,6 +391,8 @@ CREATE INDEX IF NOT EXISTS channel_mappings_order_id ON channel_mappings (order_
 CREATE INDEX IF NOT EXISTS order_tab_assignments_tab_id ON order_tab_assignments (tab_id);
 CREATE INDEX IF NOT EXISTS channel_events_status ON channel_events (status) WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS channel_commands_pending ON channel_commands (channel, status, next_attempt_at) WHERE status IN ('pending', 'processing');
+CREATE INDEX IF NOT EXISTS channel_commands_recovery ON channel_commands (channel, status, lease_expires_at, next_attempt_at)
+  WHERE status IN ('pending', 'processing', 'ambiguous', 'awaiting_event');
 
 DO $migration$
 BEGIN
@@ -369,31 +482,221 @@ export function createDb(connectionString) {
         client.release();
       }
     },
-    async anonymizeCustomerData(searchTerm) {
+    async anonymizeCustomerData(searchTerm, { requestId, idempotencyKey, requestFingerprint }) {
       const term = String(searchTerm || "").trim();
       const anonymizedText = "[DADO ANONIMIZADO LGPD]";
-      const ordersQuery = `
-        UPDATE orders 
-        SET customer_name = $2, delivery_address = $2
-        WHERE POSITION(LOWER($1) IN LOWER(customer_name)) > 0
-           OR POSITION(LOWER($1) IN LOWER(COALESCE(delivery_address, ''))) > 0
-        RETURNING id;
-      `;
-      const tabsQuery = `
-        UPDATE service_tabs 
-        SET customer_name = $2
-        WHERE POSITION(LOWER($1) IN LOWER(COALESCE(customer_name, ''))) > 0
-        RETURNING id;
-      `;
+      const redactJson = (value) => {
+        if (Array.isArray(value)) return value.map(redactJson);
+        if (value && typeof value === "object") {
+          return Object.fromEntries(Object.entries(value).map(([key, nested]) => [key, redactJson(nested)]));
+        }
+        return typeof value === "string" ? anonymizedText : value;
+      };
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        const ordersRes = await client.query(ordersQuery, [term, anonymizedText]);
-        const tabsRes = await client.query(tabsQuery, [term, anonymizedText]);
+        await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`privacy:${idempotencyKey}`]);
+        const existing = await client.query(
+          "SELECT * FROM privacy_requests WHERE idempotency_key = $1 FOR UPDATE",
+          [idempotencyKey]
+        );
+        if (existing.rows[0]) {
+          if (existing.rows[0].fingerprint !== requestFingerprint) {
+            const error = new Error("Idempotency-Key já usada para outra anonimização");
+            error.statusCode = 409;
+            error.code = "idempotency_payload_mismatch";
+            throw error;
+          }
+          await client.query("COMMIT");
+          return {
+            requestId: existing.rows[0].id,
+            status: existing.rows[0].status,
+            ...existing.rows[0].result,
+            repeated: true
+          };
+        }
+        await client.query(
+          `INSERT INTO privacy_requests (id, idempotency_key, fingerprint, status)
+           VALUES ($1,$2,$3,'processing')`,
+          [requestId, idempotencyKey, requestFingerprint]
+        );
+
+        const { rows: orders } = await client.query(
+          `SELECT * FROM orders
+           WHERE POSITION(LOWER($1) IN LOWER(
+             customer_name || ' ' || COALESCE(delivery_address, '') || ' ' || notes || ' '
+             || items::text || ' ' || metadata::text
+           )) > 0
+           FOR UPDATE`,
+          [term]
+        );
+        const orderIds = orders.map((row) => row.id);
+        const tabIds = [...new Set(orders.map((row) => row.tab_id).filter(Boolean))];
+        for (const row of orders) {
+          await client.query(
+            `UPDATE orders
+             SET customer_name = $2,
+                 delivery_address = CASE WHEN fulfillment_mode = 'delivery' THEN $2 ELSE NULL END,
+                 notes = $2, items = $3::jsonb, metadata = $4::jsonb, updated_at = NOW()
+             WHERE id = $1`,
+            [row.id, anonymizedText, JSON.stringify(redactJson(row.items)), JSON.stringify(redactJson(row.metadata))]
+          );
+        }
+
+        const { rows: tabs } = await client.query(
+          `SELECT * FROM service_tabs
+           WHERE id = ANY($2::text[])
+              OR POSITION(LOWER($1) IN LOWER(COALESCE(customer_name, ''))) > 0
+           FOR UPDATE`,
+          [term, tabIds]
+        );
+        for (const row of tabs) {
+          await client.query("UPDATE service_tabs SET customer_name = $2 WHERE id = $1", [row.id, anonymizedText]);
+        }
+        const allTabIds = [...new Set([...tabIds, ...tabs.map((row) => row.id)])];
+
+        const { rows: finance } = await client.query(
+          `SELECT * FROM finance_entries
+           WHERE order_id = ANY($2::text[])
+              OR POSITION(LOWER($1) IN LOWER(metadata::text || ' ' || label)) > 0
+           FOR UPDATE`,
+          [term, orderIds]
+        );
+        for (const row of finance) {
+          await client.query(
+            "UPDATE finance_entries SET label = $2, metadata = $3::jsonb WHERE id = $1",
+            [row.id, anonymizedText, JSON.stringify(redactJson(row.metadata))]
+          );
+        }
+
+        const { rows: mappings } = await client.query(
+          `SELECT * FROM channel_mappings
+           WHERE order_id = ANY($2::text[])
+              OR POSITION(
+                   LOWER($1)
+                   IN LOWER(metadata::text || ' ' || merchant_id || ' ' || external_id)
+                 ) > 0
+           FOR UPDATE`,
+          [term, orderIds]
+        );
+        const externalIds = mappings.map((row) => row.external_id);
+        for (const row of mappings) {
+          await client.query(
+            `UPDATE channel_mappings
+             SET merchant_id = $2, external_id = $3, metadata = $4::jsonb,
+                 sync_error = NULL, updated_at = NOW()
+             WHERE id = $1`,
+            [
+              row.id,
+              `anon-merchant:${row.id}`,
+              `anon-order:${row.id}`,
+              JSON.stringify(redactJson(row.metadata))
+            ]
+          );
+        }
+
+        const { rows: events } = await client.query(
+          `SELECT * FROM channel_events
+           WHERE external_order_id = ANY($2::text[])
+              OR POSITION(
+                   LOWER($1)
+                   IN LOWER(
+                     payload::text || ' ' ||
+                     external_event_id || ' ' ||
+                     COALESCE(merchant_id, '') || ' ' ||
+                     COALESCE(error, '')
+                   )
+                 ) > 0
+           FOR UPDATE`,
+          [term, externalIds]
+        );
+        for (const row of events) {
+          await client.query(
+            `UPDATE channel_events
+             SET external_event_id = $2,
+                 merchant_id = CASE WHEN merchant_id IS NULL THEN NULL ELSE $3 END,
+                 external_order_id = CASE WHEN external_order_id IS NULL THEN NULL ELSE $4 END,
+                 payload = $5::jsonb, error = NULL
+             WHERE id = $1`,
+            [
+              row.id,
+              `anon-event:${row.id}`,
+              `anon-merchant:${row.id}`,
+              `anon-order:${row.id}`,
+              JSON.stringify(redactJson(row.payload))
+            ]
+          );
+        }
+
+        const jsonTables = [
+          ["channel_commands", "payload", "order_id", orderIds],
+          ["order_tab_assignments", "normalized_payload", "order_id", orderIds],
+          ["tab_payments", "metadata", "tab_id", allTabIds],
+          ["stock_movements", "metadata", "order_id", orderIds]
+        ];
+        const jsonCounts = {};
+        for (const [table, column, relation, ids] of jsonTables) {
+          const { rows } = await client.query(
+            `SELECT id, ${column} AS payload FROM ${table}
+             WHERE ${relation} = ANY($2::text[])
+                OR POSITION(LOWER($1) IN LOWER(${column}::text)) > 0
+             FOR UPDATE`,
+            [term, ids]
+          );
+          for (const row of rows) {
+            await client.query(
+              `UPDATE ${table}
+               SET ${column} = $2::jsonb
+                   ${table === "channel_commands" ? ", error = NULL" : ""}
+                   ${table === "stock_movements" ? ", reason = $3" : ""}
+               WHERE id = $1`,
+              table === "stock_movements"
+                ? [row.id, JSON.stringify(redactJson(row.payload)), anonymizedText]
+                : [row.id, JSON.stringify(redactJson(row.payload))]
+            );
+          }
+          jsonCounts[table] = rows.length;
+        }
+        const { rows: shifts } = await client.query(
+          `UPDATE cash_shifts SET notes = $2
+           WHERE POSITION(LOWER($1) IN LOWER(notes)) > 0
+           RETURNING id`,
+          [term, anonymizedText]
+        );
+        const { rows: printJobs } = await client.query(
+          `UPDATE print_jobs
+           SET content = '[TICKET ANONIMIZADO]', error = NULL,
+               metadata = jsonb_build_object('privacyRequestId', $2::text)
+           WHERE order_id = ANY($3::text[])
+              OR POSITION(LOWER($1) IN LOWER(content)) > 0
+           RETURNING id, order_id`,
+          [term, requestId, orderIds]
+        );
+
+        const result = {
+          anonymizedOrders: orders.length,
+          anonymizedTabs: tabs.length,
+          anonymizedFinanceEntries: finance.length,
+          anonymizedMappings: mappings.length,
+          anonymizedEvents: events.length,
+          anonymizedPrintJobs: printJobs.length,
+          anonymizedCashShifts: shifts.length,
+          anonymizedJsonRecords: jsonCounts,
+          printArtifacts: printJobs.map((row) => ({ jobId: row.id, orderId: row.order_id })),
+          backupPolicy: "provider_retention_not_modified"
+        };
+        await client.query(
+          `UPDATE privacy_requests
+           SET status = 'db_completed', result = $2::jsonb, updated_at = NOW()
+           WHERE id = $1`,
+          [requestId, JSON.stringify(result)]
+        );
         await client.query("COMMIT");
         return {
-          anonymizedOrders: ordersRes.rowCount,
-          anonymizedTabs: tabsRes.rowCount
+          requestId,
+          status: "db_completed",
+          ...result,
+          repeated: false
         };
       } catch (error) {
         await client.query("ROLLBACK");
@@ -401,6 +704,15 @@ export function createDb(connectionString) {
       } finally {
         client.release();
       }
+    },
+    async completePrivacyRequest(requestId, status, result) {
+      const { rows } = await pool.query(
+        `UPDATE privacy_requests
+         SET status = $2, result = $3::jsonb, updated_at = NOW()
+         WHERE id = $1 RETURNING *`,
+        [requestId, status, JSON.stringify(result)]
+      );
+      return rows[0];
     },
     async close() {
       await pool.end();
@@ -428,6 +740,7 @@ export function mapOrder(row) {
     discountPercent: Number(row.discount_percent || 0),
     items: row.items || [],
     metadata: row.metadata || {},
+    hasChannelMapping: Boolean(row.has_channel_mapping),
     createdAt: new Date(row.created_at).toISOString(),
     updatedAt: new Date(row.updated_at).toISOString()
   };
@@ -539,6 +852,15 @@ export function mapChannelCommand(row) {
     nextAttemptAt: new Date(row.next_attempt_at).toISOString(),
     responsePayload: row.response_payload,
     error: row.error,
+    correlationId: row.correlation_id || row.id,
+    leaseOwner: row.lease_owner,
+    leaseExpiresAt: row.lease_expires_at ? new Date(row.lease_expires_at).toISOString() : null,
+    lastAttemptAt: row.last_attempt_at ? new Date(row.last_attempt_at).toISOString() : null,
+    sentAt: row.sent_at ? new Date(row.sent_at).toISOString() : null,
+    reconciledAt: row.reconciled_at ? new Date(row.reconciled_at).toISOString() : null,
+    lastHttpStatus: row.last_http_status == null ? null : Number(row.last_http_status),
+    eventDeadlineAt: row.event_deadline_at ? new Date(row.event_deadline_at).toISOString() : null,
+    deadLetteredAt: row.dead_lettered_at ? new Date(row.dead_lettered_at).toISOString() : null,
     createdAt: new Date(row.created_at).toISOString(),
     completedAt: row.completed_at ? new Date(row.completed_at).toISOString() : null
   };

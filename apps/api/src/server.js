@@ -1,5 +1,7 @@
 import Fastify from "fastify";
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
@@ -29,6 +31,16 @@ import {
 import { assertSafeAutoSeed, config } from "./config.js";
 import { createDb, mapFinanceEntry, mapOrder, mapShift, mapTab, mapTabPayment } from "./db.js";
 import { createSseHub } from "./sse.js";
+import {
+  authenticate,
+  changePassword,
+  ensureBootstrapAdmin,
+  hasPermission,
+  login,
+  permissionForRequest,
+  revokeSession,
+  validateCsrf
+} from "./auth.js";
 import integrationRoutes from "./integrations/integration-routes.js";
 import { startIntegrationPolling } from "./integrations/polling-runner.js";
 import { runSeedDemo } from "../../../scripts/seed-demo.mjs";
@@ -45,6 +57,22 @@ import {
   sameTabAssignment,
   tabAssignmentEligibility
 } from "./order-tab-assignment.js";
+import {
+  cancellationFingerprintPayload,
+  claimIdempotency,
+  completeIdempotency,
+  fingerprint,
+  moneyCents,
+  orderFingerprintPayload
+} from "./idempotency.js";
+import {
+  assertBridgeStatus,
+  assertPrintPayloadSize,
+  classifyPrintFailure,
+  printBackoffMs,
+  printPayload,
+  PRINT_MAX_ATTEMPTS
+} from "./print-queue.js";
 
 assertSafeAutoSeed(process.env.AUTO_SEED);
 
@@ -54,6 +82,8 @@ const sse = createSseHub();
 const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_paid"];
 const STOCK_CATEGORIES = ["xis", "dog", "hamburguer"];
 const PREPARATION_MODES = ["kitchen", "direct_handoff"];
+const OPS_WEB_DIR = fileURLToPath(new URL("../../ops-web/", import.meta.url));
+const PUBLIC_UI_PATHS = new Set(["/app", "/app/", "/app/main.js", "/app/styles.css"]);
 
 await app.register(helmet, {
   contentSecurityPolicy: false,
@@ -70,28 +100,145 @@ await app.register(cors, {
   origin(origin, callback) {
     callback(null, !origin || config.corsOrigins.includes(origin));
   },
+  credentials: true,
   strictPreflight: true
 });
 
-function equalSecret(actual, expected) {
-  const left = Buffer.from(String(actual || ""));
-  const right = Buffer.from(String(expected || ""));
-  return left.length === right.length && timingSafeEqual(left, right);
+function requireDemoAdmin(request, reply) {
+  if (request.auth?.user?.role === "admin") return true;
+  reply.code(403).send({ error: "Permissao insuficiente" });
+  return false;
 }
 
-function requireDemoAdmin(request, reply) {
-  if (!config.demoAdminToken) {
-    reply.code(503).send({ error: "Operação administrativa desabilitada" });
-    return false;
-  }
-  const bearer = String(request.headers.authorization || "").replace(/^Bearer\s+/i, "");
-  const supplied = bearer || request.headers["x-admin-token"];
-  if (!equalSecret(supplied, config.demoAdminToken)) {
-    reply.code(401).send({ error: "Não autorizado" });
-    return false;
-  }
-  return true;
+function sendIdempotencyConflict(reply, code) {
+  return reply.code(409).send({
+    code,
+    message: code === "legacy_idempotency_unverifiable"
+      ? "Chave idempotente legada sem fingerprint verificavel"
+      : "Idempotency-Key ja usada com outra operacao, recurso ou payload"
+  });
 }
+
+function abortTransaction(statusCode, message) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  throw error;
+}
+
+function readCookie(request, name) {
+  const pair = String(request.headers.cookie || "").split(";").map((item) => item.trim())
+    .find((item) => item.startsWith(`${name}=`));
+  return pair ? decodeURIComponent(pair.slice(name.length + 1)) : "";
+}
+
+function setSessionCookies(reply, token, csrfToken) {
+  const base = `Path=/; SameSite=Strict${config.authCookieSecure ? "; Secure" : ""}`;
+  reply.header("set-cookie", [
+    `camoburguer_session=${encodeURIComponent(token)}; ${base}; HttpOnly`,
+    `camoburguer_csrf=${encodeURIComponent(csrfToken)}; ${base}`
+  ]);
+}
+
+function clearSessionCookies(reply) {
+  const secure = config.authCookieSecure ? "; Secure" : "";
+  reply.header("set-cookie", [
+    `camoburguer_session=; Path=/; SameSite=Strict${secure}; HttpOnly; Max-Age=0`,
+    `camoburguer_csrf=; Path=/; SameSite=Strict${secure}; Max-Age=0`
+  ]);
+}
+
+function isPublicRequest(request) {
+  const path = request.url.split("?")[0];
+  const preflight = request.method === "OPTIONS"
+    && config.corsOrigins.includes(String(request.headers.origin || ""))
+    && Boolean(request.headers["access-control-request-method"]);
+  const publicUi = request.method === "GET" && PUBLIC_UI_PATHS.has(path);
+  return preflight || publicUi || path === "/health" || (request.method === "POST" && path === "/auth/login");
+}
+
+function isMutation(method) {
+  return !["GET", "HEAD", "OPTIONS"].includes(method);
+}
+
+app.addHook("preHandler", async (request, reply) => {
+  if (isPublicRequest(request)) return;
+  const path = request.url.split("?")[0];
+  const session = await authenticate(db, readCookie(request, "camoburguer_session"));
+  if (!session) return reply.code(401).send({ error: "Nao autorizado" });
+  request.auth = session;
+  if (isMutation(request.method)) {
+    const suppliedCsrf = String(request.headers["x-csrf-token"] || "");
+    if (suppliedCsrf !== readCookie(request, "camoburguer_csrf") || !validateCsrf(session, suppliedCsrf)) {
+      return reply.code(403).send({ error: "CSRF invalido" });
+    }
+  }
+  if (path === "/auth/logout" || path === "/auth/password") return;
+  const permission = permissionForRequest(request.method, path);
+  if (!permission) return reply.code(401).send({ error: "Rota nao classificada" });
+  if (!hasPermission(session.user.role, permission)) {
+    return reply.code(403).send({ error: "Permissao insuficiente" });
+  }
+  if (session.user.role === "kitchen" && path.startsWith("/orders") && isMutation(request.method)) {
+    const status = request.body?.status;
+    if (request.method !== "PATCH" || !["in_preparation", "ready"].includes(status)) {
+      return reply.code(403).send({ error: "Permissao insuficiente" });
+    }
+  }
+});
+
+app.addHook("onResponse", async (request, reply) => {
+  if (!request.auth?.user || !isMutation(request.method) || reply.statusCode >= 400) return;
+  const path = request.url.split("?")[0];
+  if (path.startsWith("/auth/")) return;
+  await db.query(
+    "INSERT INTO audit_events (id, actor_id, action, resource_path) VALUES ($1, $2, $3, $4)",
+    [randomUUID(), request.auth.user.id, request.method, path]
+  );
+});
+
+app.post("/auth/login", async (request, reply) => {
+  const result = await login(db, {
+    username: request.body?.username,
+    password: request.body?.password,
+    ip: request.ip
+  });
+  if (!result.ok) return reply.code(result.rateLimited ? 429 : 401).send(result.body);
+  setSessionCookies(reply, result.token, result.csrfToken);
+  return { user: result.user, csrfToken: result.csrfToken, expiresAt: result.expiresAt.toISOString() };
+});
+
+app.post("/auth/logout", async (request, reply) => {
+  try {
+    await revokeSession(db, readCookie(request, "camoburguer_session"));
+  } finally {
+    clearSessionCookies(reply);
+  }
+  return reply.code(204).send();
+});
+
+app.post("/auth/password", async (request, reply) => {
+  await changePassword(db, request.auth.user.id, request.body?.currentPassword, request.body?.newPassword);
+  await db.query(
+    "INSERT INTO audit_events (id, actor_id, action, resource_path) VALUES ($1, $2, $3, $4)",
+    [randomUUID(), request.auth.user.id, "CREDENTIAL_CHANGE", "/auth/password"]
+  );
+  clearSessionCookies(reply);
+  return reply.code(204).send();
+});
+
+app.get("/app", async (_request, reply) => reply.redirect("/app/"));
+app.get("/app/", async (_request, reply) => {
+  reply.type("text/html; charset=utf-8");
+  return readFile(`${OPS_WEB_DIR}/index.html`);
+});
+app.get("/app/main.js", async (_request, reply) => {
+  reply.type("text/javascript; charset=utf-8");
+  return readFile(`${OPS_WEB_DIR}/main.js`);
+});
+app.get("/app/styles.css", async (_request, reply) => {
+  reply.type("text/css; charset=utf-8");
+  return readFile(`${OPS_WEB_DIR}/styles.css`);
+});
 
 function normalizeCatalogItem(input, current = null) {
   for (const field of ["allowsAddons", "available"]) {
@@ -177,7 +324,10 @@ async function insertOrder(order, executor = db) {
 
 async function getOrder(orderId, executor = db, forUpdate = false) {
   const { rows } = await executor.query(
-    `SELECT * FROM orders WHERE id = $1${forUpdate ? " FOR UPDATE" : ""}`,
+    `SELECT o.*,
+       EXISTS (SELECT 1 FROM channel_mappings mapping WHERE mapping.order_id = o.id) AS has_channel_mapping
+     FROM orders o
+     WHERE o.id = $1${forUpdate ? " FOR UPDATE OF o" : ""}`,
     [orderId]
   );
   return rows[0] ? mapOrder(rows[0]) : null;
@@ -185,7 +335,9 @@ async function getOrder(orderId, executor = db, forUpdate = false) {
 
 async function getOrderByIdempotencyKey(idempotencyKey, executor = db) {
   const { rows } = await executor.query(
-    "SELECT * FROM orders WHERE idempotency_key = $1",
+    `SELECT o.*,
+       EXISTS (SELECT 1 FROM channel_mappings mapping WHERE mapping.order_id = o.id) AS has_channel_mapping
+     FROM orders o WHERE o.idempotency_key = $1`,
     [idempotencyKey]
   );
   return rows[0] ? mapOrder(rows[0]) : null;
@@ -545,11 +697,25 @@ function mapPrintJob(row) {
     content: row.content,
     attempts: row.attempts,
     error: row.error,
-    metadata: row.metadata || {}
+    errorClass: row.error_class,
+    lastErrorCode: row.last_error_code,
+    nextAttemptAt: row.next_attempt_at ? new Date(row.next_attempt_at).toISOString() : null,
+    printedAt: row.printed_at ? new Date(row.printed_at).toISOString() : null,
+    deadLetteredAt: row.dead_lettered_at ? new Date(row.dead_lettered_at).toISOString() : null,
+    metadata: row.metadata || {},
+    history: row.history || []
   };
 }
 
 async function reservePrintJob(order, reason = "confirmed", executor = db) {
+  const pending = {
+    id: randomUUID(),
+    orderId: order.id,
+    reason,
+    printerName: config.defaultPrinter,
+    content: buildKitchenTicket(order, { timeZone: config.businessTimeZone })
+  };
+  assertPrintPayloadSize(pending);
   const { rows } = await executor.query(
     `INSERT INTO print_jobs (
       id, order_id, reason, status, printer_name, content, attempts, error, metadata
@@ -557,11 +723,11 @@ async function reservePrintJob(order, reason = "confirmed", executor = db) {
     ON CONFLICT DO NOTHING
     RETURNING *`,
     [
-      randomUUID(),
-      order.id,
-      reason,
-      config.defaultPrinter,
-      buildKitchenTicket(order),
+      pending.id,
+      pending.orderId,
+      pending.reason,
+      pending.printerName,
+      pending.content,
       JSON.stringify({ reason })
     ]
   );
@@ -577,91 +743,200 @@ async function getPrimaryPrintJob(orderId, executor = db) {
 }
 
 async function reserveReprintJob(original, executor = db) {
+  const pending = {
+    id: randomUUID(),
+    orderId: original.orderId,
+    reason: "reprint",
+    printerName: original.printerName,
+    content: original.content
+  };
+  assertPrintPayloadSize(pending);
   const { rows } = await executor.query(
     `INSERT INTO print_jobs (
       id, order_id, reason, status, printer_name, content, attempts, error, metadata
     ) VALUES ($1,$2,'reprint','pending',$3,$4,0,NULL,$5::jsonb)
     RETURNING *`,
     [
-      randomUUID(),
-      original.orderId,
-      original.printerName,
-      original.content,
+      pending.id,
+      pending.orderId,
+      pending.printerName,
+      pending.content,
       JSON.stringify({ reason: "reprint", sourceJobId: original.id })
     ]
   );
   return mapPrintJob(rows[0]);
 }
 
-async function dispatchPrintJob(job) {
+const printWorkerId = `api-${randomUUID()}`;
+
+async function claimPrintJob(jobId = null) {
+  const { rows } = await db.query(
+    `WITH candidate AS (
+       SELECT id FROM print_jobs
+       WHERE ($1::text IS NULL OR id = $1)
+         AND (
+           status = 'pending'
+           OR (status = 'retry_wait' AND next_attempt_at <= NOW())
+           OR (status = 'sending' AND lease_expires_at < NOW())
+         )
+       ORDER BY next_attempt_at, created_at, id
+       FOR UPDATE SKIP LOCKED
+       LIMIT 1
+     )
+     UPDATE print_jobs job
+     SET status = 'sending',
+         attempts = attempts + 1,
+         lease_owner = $2,
+         lease_expires_at = NOW() + INTERVAL '30 seconds',
+         last_attempt_at = NOW(),
+         error = NULL
+     FROM candidate
+     WHERE job.id = candidate.id
+     RETURNING job.*`,
+    [jobId, printWorkerId]
+  );
+  return rows[0] ? mapPrintJob(rows[0]) : null;
+}
+
+function bridgeHeaders() {
+  return {
+    "content-type": "application/json",
+    ...(config.printBridgeToken ? { authorization: `Bearer ${config.printBridgeToken}` } : {})
+  };
+}
+
+async function readBridgeJson(response, action) {
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch {
+    const error = new Error(`Print bridge retornou JSON inválido ao ${action}`);
+    error.permanent = true;
+    error.code = "PRINT_BRIDGE_INVALID_JSON";
+    throw error;
+  }
+}
+
+async function finalizePrintedJob(job, payload, reconciled = false) {
+  assertBridgeStatus(payload?.status);
   const { rows } = await db.query(
     `UPDATE print_jobs
-     SET status = 'sending', attempts = attempts + 1, error = NULL
-     WHERE id = $1 AND status = 'pending'
+     SET status = 'printed', printer_name = $3, error = NULL, error_class = NULL,
+         last_error_code = NULL, lease_owner = NULL, lease_expires_at = NULL,
+         printed_at = NOW(),
+         metadata = $4::jsonb,
+         history = history || jsonb_build_array(jsonb_build_object(
+           'at', NOW(), 'event', $5::text, 'attempt', attempts
+         ))
+     WHERE id = $1 AND lease_owner = $2
      RETURNING *`,
-    [job.id]
+    [
+      job.id,
+      printWorkerId,
+      payload.printerName || job.printerName,
+      JSON.stringify({
+        ...(job.metadata || {}),
+        ...(payload.metadata || {}),
+        bridgeJobId: payload.id || job.id,
+        receipt: payload.receipt || null,
+        reason: job.reason,
+        reconciled
+      }),
+      reconciled ? "reconciled" : "spooled"
+    ]
   );
-  if (!rows[0]) return job;
+  return rows[0] ? mapPrintJob(rows[0]) : job;
+}
+
+async function reconcilePrintJob(job) {
+  const response = await fetch(
+    `${config.printBridgeUrl}/print-jobs/${encodeURIComponent(job.orderId)}/${encodeURIComponent(job.id)}`,
+    {
+      headers: bridgeHeaders(),
+      signal: AbortSignal.timeout(5000)
+    }
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    const error = new Error(`Print bridge respondeu ${response.status} ao reconciliar`);
+    error.statusCode = response.status;
+    throw error;
+  }
+  const payload = await readBridgeJson(response, "reconciliar");
+  assertBridgeStatus(payload?.status);
+  return payload;
+}
+
+async function failPrintJob(job, error) {
+  const errorClass = classifyPrintFailure(error);
+  const deadLetter = errorClass === "permanent" || job.attempts >= PRINT_MAX_ATTEMPTS;
+  const nextAttempt = new Date(Date.now() + printBackoffMs(job.attempts, job.id)).toISOString();
+  const { rows } = await db.query(
+    `UPDATE print_jobs
+     SET status = $3,
+         error = $4,
+         error_class = $5,
+         last_error_code = $6,
+         next_attempt_at = $7,
+         dead_lettered_at = CASE WHEN $3 = 'dead_letter' THEN NOW() ELSE NULL END,
+         lease_owner = NULL,
+         lease_expires_at = NULL,
+         history = history || jsonb_build_array(jsonb_build_object(
+           'at', NOW(), 'event', $3::text, 'attempt', attempts,
+           'class', $5::text, 'code', $6::text
+         ))
+     WHERE id = $1 AND lease_owner = $2
+     RETURNING *`,
+    [
+      job.id,
+      printWorkerId,
+      deadLetter ? "dead_letter" : "retry_wait",
+      String(error.message || "Falha de impressão").slice(0, 1000),
+      errorClass,
+      String(error.code || error.statusCode || "PRINT_BRIDGE_UNAVAILABLE").slice(0, 128),
+      nextAttempt
+    ]
+  );
+  return rows[0] ? mapPrintJob(rows[0]) : job;
+}
+
+async function dispatchPrintJob(candidate) {
+  const job = await claimPrintJob(candidate?.id || null);
+  if (!job) return candidate || null;
 
   try {
+    assertPrintPayloadSize(job);
+    if (job.attempts > 1) {
+      const receipt = await reconcilePrintJob(job);
+      if (receipt) return finalizePrintedJob(job, receipt, true);
+    }
     const response = await fetch(`${config.printBridgeUrl}/print-jobs`, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(config.printBridgeToken ? { authorization: `Bearer ${config.printBridgeToken}` } : {})
-      },
+      headers: bridgeHeaders(),
       signal: AbortSignal.timeout(5000),
-      body: JSON.stringify({
-        jobId: job.id,
-        orderId: job.orderId,
-        printerName: job.printerName,
-        content: job.content,
-        reason: job.reason
-      })
+      body: JSON.stringify(printPayload(job))
     });
-    if (!response.ok) throw new Error(`Print bridge respondeu ${response.status}`);
-    const payload = await response.json();
-    const updated = await db.query(
-      `UPDATE print_jobs
-       SET status = $2, printer_name = $3, error = $4, metadata = $5::jsonb
-       WHERE id = $1
-       RETURNING *`,
-      [
-        job.id,
-        payload.status || "printed",
-        payload.printerName || job.printerName,
-        payload.error || null,
-        JSON.stringify({
-          ...(job.metadata || {}),
-          ...(payload.metadata || {}),
-          bridgeJobId: payload.id,
-          reason: job.reason
-        })
-      ]
-    );
-    return mapPrintJob(updated.rows[0]);
+    if (!response.ok) {
+      const error = new Error(`Print bridge respondeu ${response.status}`);
+      error.statusCode = response.status;
+      throw error;
+    }
+    const payload = await readBridgeJson(response, "imprimir");
+    return finalizePrintedJob(job, payload, payload?.status === "already_printed");
   } catch (error) {
-    const failed = await db.query(
-      `UPDATE print_jobs SET status = 'failed', error = $2 WHERE id = $1 RETURNING *`,
-      [job.id, error.message]
-    );
-    return mapPrintJob(failed.rows[0]);
+    return failPrintJob(job, error);
   }
 }
 
 let printRecoveryInFlight = false;
-async function recoverPrintJobs(includeInterrupted = false) {
+async function recoverPrintJobs() {
   if (printRecoveryInFlight) return;
   printRecoveryInFlight = true;
   try {
-    await db.query(
-      `UPDATE print_jobs SET status = 'pending'
-       WHERE status = 'failed'${includeInterrupted ? " OR status = 'sending'" : ""}`
-    );
-    const { rows } = await db.query(
-      "SELECT * FROM print_jobs WHERE status = 'pending' ORDER BY created_at LIMIT 20"
-    );
-    for (const row of rows) await dispatchPrintJob(mapPrintJob(row));
+    for (let index = 0; index < 20; index += 1) {
+      const result = await dispatchPrintJob();
+      if (!result) break;
+    }
   } finally {
     printRecoveryInFlight = false;
   }
@@ -873,50 +1148,60 @@ app.get("/tabs/:tabId", async (request, reply) => {
 app.post("/tabs/:tabId/rounds", async (request, reply) => {
   const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
   if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
-  const existing = await getOrderByIdempotencyKey(idempotencyKey);
-  if (existing) return existing.tabId === request.params.tabId
-    ? existing
-    : reply.code(409).send({ message: "Chave idempotente já usada em outra operação" });
-
-  let result;
-  try {
-    result = await db.transaction(async (client) => {
-      const tab = await getTab(request.params.tabId, client, true);
-      if (!tab) return { notFound: true };
-      if (tab.status !== "open") return { conflict: true };
-      const { rows } = await client.query(
-        "SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM orders WHERE tab_id = $1",
-        [tab.id]
-      );
-      const catalog = await lockCatalogItems(request.body?.items, client);
-      const order = confirmOrder(createOrder({
-        ...(request.body || {}),
-        idempotencyKey,
-        tabId: tab.id,
-        roundNumber: Number(rows[0].next_round),
-        source: "counter",
-        fulfillmentMode: "local",
-        paymentMethod: null,
-        customerName: request.body?.customerName || tab.customerName || tab.label,
-        metadata: { ...(request.body?.metadata || {}), tabLabel: tab.label }
-      }, { catalog }));
-      const saved = await insertOrder(order, client);
-      await changeStock(saved, -1, "sale", client);
-      return { saved, printJob: await reservePrintJob(saved, "confirmed", client) };
+  const requestFingerprint = fingerprint(orderFingerprintPayload(request.body || {}, {
+    source: "counter",
+    fulfillmentMode: "local",
+    paymentMethod: null,
+    tabId: request.params.tabId
+  }));
+  const result = await db.transaction(async (client) => {
+    const claim = await claimIdempotency(client, {
+      key: idempotencyKey,
+      operation: "tab-round:create",
+      resource: `tab:${request.params.tabId}`,
+      requestFingerprint
     });
-  } catch (error) {
-    if (error.code === "23505") {
-      const duplicate = await getOrderByIdempotencyKey(idempotencyKey);
-      if (duplicate) return duplicate.tabId === request.params.tabId
-        ? duplicate
-        : reply.code(409).send({ message: "Chave idempotente já usada em outra operação" });
+    if (claim.conflict) return { idempotencyConflict: claim.conflict };
+    if (claim.repeated) {
+      const saved = await getOrder(claim.resultId, client);
+      return saved
+        ? { saved, repeated: true, responseStatus: claim.responseStatus }
+        : { idempotencyConflict: "idempotency_result_missing" };
     }
-    throw error;
-  }
+    const tab = await getTab(request.params.tabId, client, true);
+    if (!tab) abortTransaction(404, "Comanda não encontrada");
+    if (tab.status !== "open") abortTransaction(409, "Comanda não está aberta");
+    const { rows } = await client.query(
+      "SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM orders WHERE tab_id = $1",
+      [tab.id]
+    );
+    const catalog = await lockCatalogItems(request.body?.items, client);
+    const order = confirmOrder(createOrder({
+      ...(request.body || {}),
+      idempotencyKey,
+      tabId: tab.id,
+      roundNumber: Number(rows[0].next_round),
+      source: "counter",
+      fulfillmentMode: "local",
+      paymentMethod: null,
+      customerName: request.body?.customerName || tab.customerName || tab.label,
+      metadata: { ...(request.body?.metadata || {}), tabLabel: tab.label }
+    }, { catalog }));
+    const saved = await insertOrder(order, client);
+    await changeStock(saved, -1, "sale", client);
+    const printJob = await reservePrintJob(saved, "confirmed", client);
+    await completeIdempotency(client, idempotencyKey, {
+      resultType: "order",
+      resultId: saved.id,
+      responseStatus: 201
+    });
+    return { saved, printJob, repeated: false, responseStatus: 201 };
+  });
+  if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: "Comanda não está aberta" });
-  emitOrderEvent("tab.round.created", result.saved);
-  if (result.saved.status === "ready") {
+  if (!result.repeated) emitOrderEvent("tab.round.created", result.saved);
+  if (!result.repeated && result.saved.status === "ready") {
     emitOrderEvent("order.status.changed", {
       orderId: result.saved.id,
       previousStatus: "confirmed",
@@ -924,27 +1209,38 @@ app.post("/tabs/:tabId/rounds", async (request, reply) => {
       order: result.saved
     });
   }
-  if (result.printJob) await dispatchPrintJob(result.printJob);
-  return reply.code(201).send(result.saved);
+  if (!result.repeated && result.printJob) await dispatchPrintJob(result.printJob);
+  return reply.code(result.responseStatus).send(result.saved);
 });
 
 app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) => {
   const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
   if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
-  const existing = await getOrderByIdempotencyKey(idempotencyKey);
-  if (existing) return existing.tabId === request.params.tabId && existing.reversesOrderId === request.params.orderId
-    ? existing
-    : reply.code(409).send({ message: "Chave idempotente já usada em outra operação" });
-
-  let result;
-  try {
-    result = await db.transaction(async (client) => {
+  const requestFingerprint = fingerprint(cancellationFingerprintPayload({
+    tabId: request.params.tabId,
+    orderId: request.params.orderId,
+    body: request.body || {}
+  }));
+  const result = await db.transaction(async (client) => {
+      const claim = await claimIdempotency(client, {
+        key: idempotencyKey,
+        operation: "tab-round:cancel",
+        resource: `tab:${request.params.tabId}/order:${request.params.orderId}`,
+        requestFingerprint
+      });
+      if (claim.conflict) return { idempotencyConflict: claim.conflict };
+      if (claim.repeated) {
+        const saved = await getOrder(claim.resultId, client);
+        return saved
+          ? { saved, repeated: true, responseStatus: claim.responseStatus }
+          : { idempotencyConflict: "idempotency_result_missing" };
+      }
       const tab = await getTab(request.params.tabId, client, true);
-      if (!tab) return { notFound: true };
-      if (tab.status !== "open") return { conflict: "Comanda não está aberta" };
+      if (!tab) abortTransaction(404, "Comanda não encontrada");
+      if (tab.status !== "open") abortTransaction(409, "Comanda não está aberta");
       const original = await getOrder(request.params.orderId, client, true);
       if (!original || original.tabId !== tab.id || original.roundKind !== "production") {
-        return { conflict: "Rodada original inválida" };
+        abortTransaction(409, "Rodada original inválida");
       }
       const { rows: cancellationRows } = await client.query(
         "SELECT items FROM orders WHERE reverses_order_id = $1 AND round_kind = 'cancellation'",
@@ -952,9 +1248,9 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
       );
       const previouslyCancelled = cancellationRows.flatMap((row) => row.items || []);
       const requested = request.body?.items;
-      if (!Array.isArray(requested) || !requested.length) return { invalid: "Informe ao menos um item para cancelar" };
+      if (!Array.isArray(requested) || !requested.length) abortTransaction(400, "Informe ao menos um item para cancelar");
       if (new Set(requested.map((item) => item.itemId)).size !== requested.length) {
-        return { invalid: "Item de cancelamento duplicado" };
+        abortTransaction(400, "Item de cancelamento duplicado");
       }
       const items = [];
       for (const requestedItem of requested) {
@@ -964,7 +1260,7 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
           .filter((item) => item.reversesItemId === requestedItem.itemId)
           .reduce((sum, item) => sum + Number(item.quantity), 0);
         if (!originalItem || !Number.isInteger(quantity) || quantity <= 0 || quantity > originalItem.quantity - cancelledQuantity) {
-          return { invalid: "Quantidade de cancelamento inválida" };
+          abortTransaction(400, "Quantidade de cancelamento inválida");
         }
         items.push({
           ...originalItem,
@@ -996,21 +1292,21 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
       }));
       const saved = await insertOrder(cancellation, client);
       if (original.status === "confirmed") await changeStock(saved, 1, "cancellation", client, original.id);
-      return { saved, printJob: await reservePrintJob(saved, "cancellation", client) };
-    });
-  } catch (error) {
-    if (error.code === "23505") {
-      const duplicate = await getOrderByIdempotencyKey(idempotencyKey);
-      if (duplicate && duplicate.tabId === request.params.tabId && duplicate.reversesOrderId === request.params.orderId) return duplicate;
-    }
-    throw error;
-  }
+      const printJob = await reservePrintJob(saved, "cancellation", client);
+      await completeIdempotency(client, idempotencyKey, {
+        resultType: "order",
+        resultId: saved.id,
+        responseStatus: 201
+      });
+      return { saved, printJob, repeated: false, responseStatus: 201 };
+  });
+  if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: result.conflict });
   if (result.invalid) return reply.code(400).send({ message: result.invalid });
-  emitOrderEvent("tab.round.cancelled", result.saved);
-  if (result.printJob) await dispatchPrintJob(result.printJob);
-  return reply.code(201).send(result.saved);
+  if (!result.repeated) emitOrderEvent("tab.round.cancelled", result.saved);
+  if (!result.repeated && result.printJob) await dispatchPrintJob(result.printJob);
+  return reply.code(result.responseStatus).send(result.saved);
 });
 
 app.post("/tabs/:tabId/payments", async (request, reply) => {
@@ -1137,7 +1433,17 @@ app.post("/tabs/:tabId/close", async (request, reply) => {
        WHERE tab_id = $1 AND status IN ('confirmed', 'in_preparation', 'ready')`,
       [tab.id, new Date().toISOString()]
     );
-    return { saved: await tabView(mapTab(rows[0]), client) };
+    const saved = await tabView(mapTab(rows[0]), client);
+    return {
+      saved,
+      event: {
+        eventId: randomUUID(),
+        version: 1,
+        tabId: saved.id,
+        closedAt: saved.closedAt,
+        roundOrderIds: saved.rounds.map((round) => round.id)
+      }
+    };
   });
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: "Comanda já encerrada" });
@@ -1147,6 +1453,7 @@ app.post("/tabs/:tabId/close", async (request, reply) => {
     balance: result.balance,
     balanceCents: result.balanceCents
   });
+  emitOrderEvent("tab.closed", result.event);
   return result.saved;
 });
 
@@ -1159,36 +1466,46 @@ app.post("/orders", async (request, reply) => {
   if (!idempotencyKey) {
     return reply.code(400).send({ message: "Idempotency-Key e obrigatorio" });
   }
-  const existing = await getOrderByIdempotencyKey(idempotencyKey);
-  if (existing) {
-    const pendingPrintJob = await getPrimaryPrintJob(existing.id);
-    if (pendingPrintJob?.status === "pending") await dispatchPrintJob(pendingPrintJob);
-    return existing;
-  }
-
-  let result;
-  try {
-    result = await db.transaction(async (client) => {
-      const catalog = await lockCatalogItems(request.body?.items, client);
-      const order = confirmOrder(createOrder(
-        { ...(request.body || {}), idempotencyKey },
-        { catalog }
-      ));
-      const saved = await insertOrder(order, client);
-      await changeStock(saved, -1, "sale", client);
-      const printJob = await reservePrintJob(saved, "confirmed", client);
-      return { saved, printJob };
+  if (["ifood", "deliverymuch"].includes(request.body?.source)) {
+    return reply.code(400).send({
+      code: "EXTERNAL_SOURCE_REQUIRES_ADAPTER",
+      message: "Pedidos iFood e Delivery Much devem entrar pelo adapter do canal"
     });
-  } catch (error) {
-    if (error.code === "23505") {
-      const duplicated = await getOrderByIdempotencyKey(idempotencyKey);
-      if (duplicated) return duplicated;
-    }
-    throw error;
   }
-  emitOrderEvent("order.created", result.saved);
-  emitOrderEvent("order.confirmed", result.saved);
-  if (result.saved.status === "ready") {
+  const requestFingerprint = fingerprint(orderFingerprintPayload(request.body || {}));
+  const result = await db.transaction(async (client) => {
+    const claim = await claimIdempotency(client, {
+      key: idempotencyKey,
+      operation: "order:create",
+      resource: "orders",
+      requestFingerprint
+    });
+    if (claim.conflict) return { idempotencyConflict: claim.conflict };
+    if (claim.repeated) {
+      const saved = await getOrder(claim.resultId, client);
+      return saved
+        ? { saved, repeated: true, responseStatus: claim.responseStatus }
+        : { idempotencyConflict: "idempotency_result_missing" };
+    }
+    const catalog = await lockCatalogItems(request.body?.items, client);
+    const order = confirmOrder(createOrder(
+      { ...(request.body || {}), idempotencyKey },
+      { catalog }
+    ));
+    const saved = await insertOrder(order, client);
+    await changeStock(saved, -1, "sale", client);
+    const printJob = await reservePrintJob(saved, "confirmed", client);
+    await completeIdempotency(client, idempotencyKey, {
+      resultType: "order",
+      resultId: saved.id,
+      responseStatus: 201
+    });
+    return { saved, printJob, repeated: false, responseStatus: 201 };
+  });
+  if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
+  if (!result.repeated) emitOrderEvent("order.created", result.saved);
+  if (!result.repeated) emitOrderEvent("order.confirmed", result.saved);
+  if (!result.repeated && result.saved.status === "ready") {
     emitOrderEvent("order.status.changed", {
       orderId: result.saved.id,
       previousStatus: "confirmed",
@@ -1197,7 +1514,7 @@ app.post("/orders", async (request, reply) => {
     });
   }
 
-  if (result.printJob) {
+  if (!result.repeated && result.printJob) {
     const printJob = await dispatchPrintJob(result.printJob);
     emitOrderEvent(printJob.status === "printed" ? "ticket.printed" : "ticket.print.failed", {
       orderId: result.saved.id,
@@ -1205,50 +1522,120 @@ app.post("/orders", async (request, reply) => {
     });
   }
 
-  return reply.code(201).send(result.saved);
+  return reply.code(result.responseStatus).send(result.saved);
 });
 
 app.patch("/orders/:orderId/status", async (request, reply) => {
   const nextStatus = request.body?.status;
+  const cancellationKey = nextStatus === "cancelled"
+    ? String(request.headers["idempotency-key"] || "").trim()
+    : null;
+  const cancellationRequestFingerprint = nextStatus === "cancelled" && cancellationKey
+    ? fingerprint({
+      orderId: request.params.orderId,
+      status: "cancelled",
+      reason: String(request.body?.reason || "").trim()
+    })
+    : null;
   const result = await db.transaction(async (client) => {
     const order = await getOrder(request.params.orderId, client, true);
     if (!order) return { notFound: true };
+    if (order.hasChannelMapping || ["ifood", "deliverymuch"].includes(order.source)) {
+      return { integratedFlowRequired: true };
+    }
     if (order.tabId && nextStatus === "cancelled") return { tabCancellationForbidden: true };
+    if (nextStatus === "cancelled") {
+      if (!cancellationKey) return { missingIdempotencyKey: true };
+      const claim = await claimIdempotency(client, {
+        key: cancellationKey,
+        operation: "order:cancel",
+        resource: `order:${order.id}`,
+        requestFingerprint: cancellationRequestFingerprint
+      });
+      if (claim.conflict) return { idempotencyConflict: claim.conflict };
+      if (claim.repeated) {
+        const saved = await getOrder(claim.resultId, client);
+        return saved
+          ? { saved, previousStatus: saved.status, entries: [], printJob: null, repeated: true }
+          : { idempotencyConflict: "idempotency_result_missing" };
+      }
+    }
     if (order.status === nextStatus) {
+      if (nextStatus === "cancelled") {
+        await completeIdempotency(client, cancellationKey, {
+          resultType: "order",
+          resultId: order.id,
+          responseStatus: 200
+        });
+      }
       return { saved: order, previousStatus: order.status, entries: [], printJob: null, repeated: true };
     }
 
     const previousStatus = order.status;
+    let shift = null;
+    let financeShiftId = null;
+    if (nextStatus === "completed") {
+      shift = await getOpenShift(client);
+      if (!shift) return { noOpenShift: true };
+      financeShiftId = shift.id;
+    } else if (previousStatus === "completed" && nextStatus === "cancelled") {
+      const { rows: saleRows } = await client.query(
+        `SELECT shift_id FROM finance_entries
+         WHERE order_id = $1 AND type = 'sale'
+         ORDER BY occurred_at LIMIT 1 FOR UPDATE`,
+        [order.id]
+      );
+      financeShiftId = saleRows[0]?.shift_id || null;
+      if (financeShiftId) shift = await getShift(financeShiftId, client, true);
+    }
     const updated = transitionOrder(order, nextStatus);
     const saved = await updateOrder(updated, previousStatus, client);
     if (!saved) return { conflict: true };
-    if (!saved.tabId && previousStatus === "confirmed" && nextStatus === "cancelled") {
+    if (!saved.tabId && ["confirmed", "in_preparation", "ready"].includes(previousStatus) && nextStatus === "cancelled") {
       await changeStock(saved, 1, "cancellation", client, saved.id);
     }
 
     const printJob = nextStatus === "confirmed"
       ? await reservePrintJob(saved, "confirmed", client)
       : null;
-    const shift = await getOpenShift(client);
     const entries = saved.tabId ? [] : await insertEntries(buildEntriesFromOrder({
       order: saved,
       previousStatus,
       nextStatus,
-      shiftId: shift?.id || null
+      shiftId: financeShiftId
     }), client);
     const cashDelta = entries
       .filter((entry) => entry.paymentMethod === "cash")
       .reduce((total, entry) => total + Number(entry.amount), 0);
-    if (shift && cashDelta) {
+    if (shift?.status === "open" && cashDelta) {
       await updateShift({
         ...shift,
         expectedAmount: shift.expectedAmount + cashDelta
       }, "open", client);
     }
+    if (nextStatus === "cancelled") {
+      await completeIdempotency(client, cancellationKey, {
+        resultType: "order",
+        resultId: saved.id,
+        responseStatus: 200
+      });
+    }
     return { saved, previousStatus, entries, printJob, repeated: false };
   });
 
   if (result.notFound) return reply.code(404).send({ message: "Pedido não encontrado" });
+  if (result.integratedFlowRequired) return reply.code(409).send({
+    code: "INTEGRATED_FLOW_REQUIRED",
+    message: "Pedido integrado deve ser alterado pelo comando do canal"
+  });
+  if (result.noOpenShift) return reply.code(409).send({
+    code: "CASH_SHIFT_REQUIRED",
+    message: "Abra o turno de caixa antes de concluir o pedido"
+  });
+  if (result.missingIdempotencyKey) {
+    return reply.code(400).send({ message: "Idempotency-Key é obrigatório para cancelamento" });
+  }
+  if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
   if (result.tabCancellationForbidden) return reply.code(409).send({ message: "Use um ticket corretivo para cancelar itens da comanda" });
   if (result.conflict) return reply.code(409).send({ message: "Pedido foi alterado; atualize a tela" });
   if (result.repeated) return result.saved;
@@ -1281,10 +1668,19 @@ app.patch("/orders/:orderId/discount", async (request, reply) => {
   const result = await db.transaction(async (client) => {
     const order = await getOrder(request.params.orderId, client, true);
     if (!order) return { notFound: true };
+    if (order.hasChannelMapping || ["ifood", "deliverymuch"].includes(order.source)) {
+      return { integratedFlowRequired: true };
+    }
     if (order.tabId) return { forbiddenTab: true };
     if (["ifood", "deliverymuch", "olaclick"].includes(order.source)) {
       return { forbiddenApp: true };
     }
+    if (["completed", "cancelled"].includes(order.status)) return { financialEffect: true };
+    const { rows: financeRows } = await client.query(
+      "SELECT 1 FROM finance_entries WHERE order_id = $1 LIMIT 1",
+      [order.id]
+    );
+    if (financeRows[0]) return { financialEffect: true };
     const updated = {
       ...order,
       discountPercent,
@@ -1296,8 +1692,16 @@ app.patch("/orders/:orderId/discount", async (request, reply) => {
   });
 
   if (result.notFound) return reply.code(404).send({ message: "Pedido não encontrado" });
+  if (result.integratedFlowRequired) return reply.code(409).send({
+    code: "INTEGRATED_FLOW_REQUIRED",
+    message: "Pedido integrado deve ser alterado pelo comando do canal"
+  });
   if (result.forbiddenTab) return reply.code(409).send({ message: "Use um ticket corretivo para alterar itens da comanda" });
   if (result.forbiddenApp) return reply.code(400).send({ message: "Desconto não pode ser alterado em pedidos de aplicativos externos" });
+  if (result.financialEffect) return reply.code(409).send({
+    code: "FINANCIAL_EFFECT_IMMUTABLE",
+    message: "Desconto não pode mudar após efeito financeiro ou estado terminal"
+  });
 
   emitOrderEvent("order.updated", result.saved);
   return result.saved;
@@ -1438,6 +1842,53 @@ app.post("/orders/:orderId/reprint", async (request, reply) => {
   return { ok: true, printJob };
 });
 
+app.get("/print-jobs", async (request, reply) => {
+  const status = String(request.query?.status || "").trim();
+  const allowed = ["pending", "sending", "retry_wait", "printed", "dead_letter"];
+  if (status && !allowed.includes(status)) {
+    return reply.code(400).send({ message: "Status de impressão inválido" });
+  }
+  const { rows } = await db.query(
+    `SELECT * FROM print_jobs
+     ${status ? "WHERE status = $1" : ""}
+     ORDER BY created_at DESC
+     LIMIT 100`,
+    status ? [status] : []
+  );
+  return { items: rows.map(mapPrintJob) };
+});
+
+app.post("/print-jobs/:jobId/reprocess", async (request, reply) => {
+  const { rows } = await db.query(
+    `UPDATE print_jobs
+     SET status = 'retry_wait',
+         attempts = 0,
+         next_attempt_at = NOW(),
+         error = NULL,
+         error_class = NULL,
+         last_error_code = NULL,
+         dead_lettered_at = NULL,
+         lease_owner = NULL,
+         lease_expires_at = NULL,
+         history = history || jsonb_build_array(jsonb_build_object(
+           'at', NOW(), 'event', 'manual_reprocess',
+           'actorId', $2::text
+         ))
+     WHERE id = $1 AND status = 'dead_letter'
+     RETURNING *`,
+    [request.params.jobId, request.auth.user.id]
+  );
+  if (!rows[0]) {
+    const existing = await db.query("SELECT status FROM print_jobs WHERE id = $1", [request.params.jobId]);
+    if (!existing.rows[0]) return reply.code(404).send({ message: "Job de impressão não encontrado" });
+    return reply.code(409).send({
+      code: "PRINT_JOB_NOT_DEAD_LETTER",
+      message: "Somente jobs em dead-letter podem ser reprocessados"
+    });
+  }
+  return reply.code(202).send({ ok: true, printJob: mapPrintJob(rows[0]) });
+});
+
 app.get("/kitchen/queue", async () => {
   const items = (await listOrders()).filter((order) =>
     ["confirmed", "in_preparation", "ready"].includes(order.status)
@@ -1447,12 +1898,19 @@ app.get("/kitchen/queue", async () => {
 
 app.get("/finance/entries", async (request) => {
   const entries = await listEntries();
-  return { items: filterEntries(entries, request.query || {}) };
+  return {
+    items: filterEntries(entries, request.query || {}, { timeZone: config.businessTimeZone }),
+    businessTimeZone: config.businessTimeZone
+  };
 });
 
 app.get("/finance/summary", async (request) => {
-  const entries = filterEntries(await listEntries(), request.query || {});
-  return summarizeFinance(entries);
+  const entries = filterEntries(
+    await listEntries(),
+    request.query || {},
+    { timeZone: config.businessTimeZone }
+  );
+  return summarizeFinance(entries, { timeZone: config.businessTimeZone });
 });
 
 app.get("/cash-shifts", async () => ({ items: await listShifts() }));
@@ -1475,16 +1933,51 @@ app.post("/cash-shifts/open", async (request, reply) => {
 });
 
 app.post("/cash-shifts/:shiftId/adjustments", async (request, reply) => {
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  if (!idempotencyKey) return reply.code(400).send({ message: "Idempotency-Key é obrigatório" });
+  const kind = request.body?.kind || "reinforcement";
+  const reason = String(request.body?.reason || "").trim();
+  const requestFingerprint = fingerprint({
+    shiftId: request.params.shiftId,
+    kind,
+    amountCents: moneyCents(request.body?.amount || 0),
+    reason
+  });
   const result = await db.transaction(async (client) => {
+    const claim = await claimIdempotency(client, {
+      key: idempotencyKey,
+      operation: "cash-adjustment:create",
+      resource: `cash-shift:${request.params.shiftId}`,
+      requestFingerprint
+    });
+    if (claim.conflict) return { idempotencyConflict: claim.conflict };
+    if (claim.repeated) {
+      const { rows } = await client.query(
+        "SELECT * FROM finance_entries WHERE id = $1",
+        [claim.resultId]
+      );
+      const shift = await getShift(request.params.shiftId, client);
+      return rows[0] && shift
+        ? { shift, entry: mapFinanceEntry(rows[0]), repeated: true }
+        : { idempotencyConflict: "idempotency_result_missing" };
+    }
     const shift = await getShift(request.params.shiftId, client, true);
-    if (!shift) return { notFound: true };
-    if (shift.status !== "open") return { conflict: true };
+    if (!shift) {
+      const error = new Error("Caixa não encontrado");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (shift.status !== "open") {
+      const error = new Error("O caixa está fechado");
+      error.statusCode = 409;
+      throw error;
+    }
 
     const entry = buildEntryFromAdjustment({
       shift,
-      kind: request.body?.kind || "reinforcement",
+      kind,
       amount: request.body?.amount || 0,
-      reason: request.body?.reason || ""
+      reason
     });
     const updatedShift = await updateShift({
       ...shift,
@@ -1492,12 +1985,17 @@ app.post("/cash-shifts/:shiftId/adjustments", async (request, reply) => {
     }, "open", client);
     if (!updatedShift) return { conflict: true };
     const [savedEntry] = await insertEntries([entry], client);
-    return { shift: updatedShift, entry: savedEntry };
+    await completeIdempotency(client, idempotencyKey, {
+      resultType: "finance_entry",
+      resultId: savedEntry.id,
+      responseStatus: 200
+    });
+    return { shift: updatedShift, entry: savedEntry, repeated: false };
   });
 
-  if (result.notFound) return reply.code(404).send({ message: "Caixa não encontrado" });
+  if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
   if (result.conflict) return reply.code(409).send({ message: "O caixa está fechado" });
-  emitFinanceEvent("cash.adjustment.created", result);
+  if (!result.repeated) emitFinanceEvent("cash.adjustment.created", result);
   return result;
 });
 
@@ -1545,18 +2043,71 @@ app.post("/cash-shifts/:shiftId/close", async (request, reply) => {
 
 app.post("/lgpd/anonymize", async (request, reply) => {
   if (!requireDemoAdmin(request, reply)) return reply;
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim();
+  if (!idempotencyKey) return reply.code(400).send({ error: "Idempotency-Key é obrigatório" });
   const searchTerm = String(request.body?.searchTerm || "").trim();
   if (searchTerm.length < 3) {
     return reply.code(400).send({ error: "Termo de busca (min 3 chars) obrigatorio para anonimizacao" });
   }
-  const result = await db.anonymizeCustomerData(searchTerm);
-  return { success: true, ...result };
+  let result;
+  try {
+    result = await db.anonymizeCustomerData(searchTerm, {
+      requestId: randomUUID(),
+      idempotencyKey,
+      requestFingerprint: fingerprint({ searchTerm })
+    });
+  } catch (error) {
+    if (error.statusCode === 409) return reply.code(409).send({
+      code: error.code || "idempotency_payload_mismatch",
+      error: "Idempotency-Key já usada em outra anonimização"
+    });
+    throw error;
+  }
+
+  const artifacts = result.printArtifacts || [];
+  let cleanupComplete = artifacts.length === 0;
+  let cleanupError = null;
+  if (artifacts.length) {
+    try {
+      const response = await fetch(`${config.printBridgeUrl}/privacy/anonymize`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(config.printBridgeToken ? { authorization: `Bearer ${config.printBridgeToken}` } : {})
+        },
+        body: JSON.stringify({ artifacts }),
+        signal: AbortSignal.timeout(10_000)
+      });
+      cleanupComplete = response.ok;
+      if (!response.ok) cleanupError = `bridge_http_${response.status}`;
+    } catch {
+      cleanupError = "print_bridge_unavailable";
+    }
+  }
+  const { printArtifacts: _privateArtifacts, status: _databaseStatus, ...safeResult } = result;
+  const publicResult = {
+    ...safeResult,
+    externalCleanup: cleanupComplete ? "completed" : "pending",
+    pendingArtifacts: cleanupComplete ? [] : ["print_spool"],
+    backupPolicy: "provider_retention_not_modified"
+  };
+  await db.completePrivacyRequest(
+    result.requestId,
+    cleanupComplete ? "completed" : "pending_external_cleanup",
+    { ...result, cleanupError }
+  );
+  return reply.code(cleanupComplete ? 200 : 202).send({
+    success: cleanupComplete,
+    status: cleanupComplete ? "completed" : "pending_external_cleanup",
+    ...publicResult
+  });
 });
 
 function openEventStream(request, reply, channel) {
   const origin = request.headers.origin;
   if (origin && config.corsOrigins.includes(origin)) {
     reply.raw.setHeader("access-control-allow-origin", origin);
+    reply.raw.setHeader("access-control-allow-credentials", "true");
     reply.raw.setHeader("vary", "Origin");
   }
   reply.raw.setHeader("content-type", "text/event-stream");
@@ -1565,7 +2116,11 @@ function openEventStream(request, reply, channel) {
   reply.raw.setHeader("x-accel-buffering", "no");
   reply.raw.flushHeaders();
   reply.raw.write("retry: 3000\n\n");
-  sse.subscribe(channel, reply);
+  const sessionToken = readCookie(request, "camoburguer_session");
+  sse.subscribe(channel, reply, async () => {
+    const session = await authenticate(db, sessionToken);
+    return Boolean(session && hasPermission(session.user.role, `sse:${channel}`));
+  });
   return reply;
 }
 
@@ -1578,31 +2133,10 @@ app.get("/events/finance", async (request, reply) => {
 });
 
 app.post("/demo/seed", async (request, reply) => {
-  if (!config.demoAdminToken) {
-    return reply.code(503).send({
-      code: "admin_auth_unconfigured",
-      error: "Operação administrativa desabilitada."
-    });
-  }
-  const bearer = String(request.headers.authorization || "").replace(/^Bearer\s+/i, "");
-  const suppliedToken = bearer || request.headers["x-admin-token"];
-  if (!suppliedToken) {
-    return reply.code(401).send({
-      code: "admin_auth_missing",
-      error: "Identidade administrativa ausente."
-    });
-  }
-  if (!equalSecret(suppliedToken, config.demoAdminToken)) {
-    return reply.code(403).send({
-      code: "admin_auth_invalid",
-      error: "Identidade administrativa inválida."
-    });
-  }
-
   const confirmedTarget = String(request.body?.confirmTarget || "").trim();
   const logDecision = ({ decision, target, blockers }) => app.log.info({
     event: "demo_seed",
-    actor: "demo-admin",
+    actorId: request.auth.user.id,
     decision,
     target,
     blockers
@@ -1630,7 +2164,7 @@ app.post("/demo/seed", async (request, reply) => {
     const statusCode = Number(error.statusCode) || 500;
     app.log[statusCode === 500 ? "error" : "warn"]({
       event: "demo_seed",
-      actor: "demo-admin",
+      actorId: request.auth.user.id,
       decision: "refused",
       target: error.details?.target || null,
       blockers: error.details?.blockers || [],
@@ -1647,8 +2181,8 @@ app.post("/demo/seed", async (request, reply) => {
 await app.register(integrationRoutes, { db, sse, config });
 
 await db.init();
-await recoverPrintJobs(true);
-// ponytail: retry fixo atende a demo single-instance; adotar backoff/fila quando houver volume real.
+await ensureBootstrapAdmin(db, config.adminBootstrapPassword);
+await recoverPrintJobs();
 setInterval(() => recoverPrintJobs().catch((error) => app.log.error(error)), 15_000).unref();
 
 db.updateOrder = updateOrder;

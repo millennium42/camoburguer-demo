@@ -1,0 +1,62 @@
+{
+  "schema": "m1nd-mission-control-state-v1",
+  "mission_id": "msn_1785212122970_codexrootpromptsse",
+  "agent_id": "codex-root-prompts-security",
+  "repo": "C:\\Users\\milla\\Documents\\Projetos\\Git\\camoburguer-demo",
+  "task": "Produzir uma suíte de prompts Markdown, sem implementar correções, que cubra integralmente o veredito anexado e orquestre subagentes com revisão independente e gates reproduzíveis.",
+  "mode": "docs_drift",
+  "budget": "normal",
+  "risk": "medium",
+  "parent_mission_id": null,
+  "evidence_link": null,
+  "evidence_projection_gaps": [
+    "canonical_evidence_link_absent: Mission Control remains an independent reasoning trail; G3 correlation is NOT_PROVEN"
+  ],
+  "route": "docs_binding",
+  "phase": "closed",
+  "status": "closed",
+  "created_at_ms": 1785212122970,
+  "updated_at_ms": 1785213263321,
+  "next_step_id": 1,
+  "budget_envelope": {
+    "max_files_read": 10,
+    "max_tool_calls": 16,
+    "soft_deadline_ms": 240000
+  },
+  "graph_state_at_start": {
+    "edge_count": 0,
+    "finalized": true,
+    "graph_generation": 0,
+    "node_count": 0,
+    "runtime_root": ".",
+    "workspace_root": "C:\\Users\\milla\\Documents\\Projetos\\Git\\camoburguer-demo\\.",
+    "workspace_root_source": "graph_path_parent"
+  },
+  "context_guard_at_start": {
+    "binary": {
+      "name": "m1nd-mcp",
+      "version": "1.5.0"
+    },
+    "graph_generation": 0,
+    "non_claims": [
+      "mission context guard does not rebind the MCP host",
+      "mission context guard does not ingest or mutate graph contents",
+      "mission context guard does not prove the requested repo is the correct task target"
+    ],
+    "requested_repo": "C:\\Users\\milla\\Documents\\Projetos\\Git\\camoburguer-demo",
+    "runtime_root": ".",
+    "schema": "m1nd-mission-context-guard-v1",
+    "workspace_match": true,
+    "workspace_root": "C:\\Users\\milla\\Documents\\Projetos\\Git\\camoburguer-demo\\.",
+    "workspace_root_source": "graph_path_parent"
+  },
+  "events": [],
+  "claims": [],
+  "handoffs": [],
+  "non_claims": [
+    "mission control does not prove graph contents are correct",
+    "mission control does not refresh an already-open host MCP tool cache",
+    "mission control does not replace direct source reads, tests, compiler output, or runtime probes",
+    "mission control does not claim autonomous multi-agent orchestration"
+  ]
+}

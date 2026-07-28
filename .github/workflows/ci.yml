@@ -24,7 +24,7 @@ jobs:
       - run: npm audit --omit=dev
       - run: docker compose -p camoburguer-auto-seed-test up -d --build --wait --wait-timeout 120
         env:
-          DEMO_ADMIN_TOKEN: ci-demo-admin-token
+          ADMIN_BOOTSTRAP_PASSWORD: ci-demo-admin-password
           POSTGRES_DB: camoburguer_auto_seed_test
       - name: Validar identidade do PostgreSQL efêmero antes de DML
         shell: bash
@@ -45,7 +45,7 @@ jobs:
           test "$(POSTGRES_DB="$database" docker compose -p "$project" exec -T db psql -U camoburguer -d "$database" -Atc 'select current_database()')" = "$database"
           effective_url="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T api printenv DATABASE_URL)"
           test "$effective_url" = "postgres://camoburguer:camoburguer@db:5432/$database"
-          server_identity="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T -e PGPASSWORD=camoburguer db psql -h "$container_ip" -U camoburguer -d "$database" -Atc \"select host(inet_server_addr()) || ':' || inet_server_port() || '/' || current_database()\")"
+          server_identity="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T -e PGPASSWORD=camoburguer db psql -h "$container_ip" -U camoburguer -d "$database" -Atc "select host(inet_server_addr()) || ':' || inet_server_port() || '/' || current_database()")"
           test "$server_identity" = "$container_ip:5432/$database"
       - name: Testes reais do seed no PostgreSQL efêmero
         run: node --test tests/seed-demo-postgres.test.js
@@ -67,18 +67,22 @@ jobs:
           test "$effective_url" = "postgres://camoburguer:camoburguer@db:5432/$database"
           target="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T db sh -c 'printf "%s:5432/%s" "$(hostname -i | cut -d" " -f1)" "$POSTGRES_DB"')"
           [[ "$target" =~ ^[0-9.]+:5432/camoburguer_auto_seed_test$ ]]
-          POSTGRES_DB="$database" DEMO_ADMIN_TOKEN=ci-demo-admin-token \
+          POSTGRES_DB="$database" ADMIN_BOOTSTRAP_PASSWORD=ci-demo-admin-password \
             DEMO_SEED_ENABLED=true DEMO_SEED_TARGET="$target" \
             docker compose -p "$project" up -d --force-recreate api --wait --wait-timeout 120
-          curl --fail-with-body \
-            -H 'Authorization: Bearer ci-demo-admin-token' \
-            -H 'Content-Type: application/json' \
-            --data "{\"confirmTarget\":\"$target\"}" \
-            http://127.0.0.1:3001/demo/seed
+          DEMO_API_URL=http://127.0.0.1:3001 \
+            ADMIN_USERNAME=admin \
+            ADMIN_PASSWORD=ci-demo-admin-password \
+            npm run seed:demo -- --confirm-target="$target"
       - run: npm run smoke
         env:
           DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_auto_seed_test
           PRINT_BRIDGE_TOKEN: local-print-bridge-token
-          DEMO_ADMIN_TOKEN: ci-demo-admin-token
+          ADMIN_BOOTSTRAP_PASSWORD: ci-demo-admin-password
+      - name: Simulador HTTP autenticado e verificável
+        run: docker compose -p camoburguer-auto-seed-test --profile seed run --rm --build event-simulator
+        env:
+          ADMIN_BOOTSTRAP_PASSWORD: ci-demo-admin-password
+          POSTGRES_DB: camoburguer_auto_seed_test
       - if: always()
         run: POSTGRES_DB=camoburguer_auto_seed_test docker compose -p camoburguer-auto-seed-test down -v

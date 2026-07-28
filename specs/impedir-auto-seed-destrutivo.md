@@ -14,7 +14,7 @@ Os usuários protegidos são operadores, mantenedores e integrações que depend
 - boot e restart da API;
 - rota administrativa e execução explícita do seed de demo;
 - resolução e confirmação do alvo de banco;
-- preflight de todas as 13 tabelas de negócio do checkout;
+- preflight de todas as 14 tabelas de negócio do checkout, incluindo registros idempotentes;
 - proteção transacional contra corrida entre preflight e primeira mutação;
 - testes unitários, de contrato e PostgreSQL efêmero;
 - documentação de operação, migração e rollback;
@@ -59,7 +59,7 @@ Para o preflight:
 
 1. A API sobe somente quando `AUTO_SEED` está ausente ou é exatamente `false`.
 2. `AUTO_SEED=true` faz a inicialização falhar cedo com mensagem acionável, antes de chamar seed ou executar mutação destrutiva.
-3. O seed é iniciado por operação administrativa explícita; a rota exige `DEMO_ADMIN_TOKEN`.
+3. O seed é iniciado por operação administrativa explícita; a rota exige sessão `admin` e CSRF.
 4. O ambiente precisa declarar modo demo e habilitação explícita de seed.
 5. A configuração informa a identidade exata esperada do banco de demo sem credenciais.
 6. A requisição informa uma confirmação humana exata do alvo resolvido.
@@ -75,14 +75,14 @@ Para o preflight:
 - REQ-005: A operação administrativa deve resolver no PostgreSQL a identidade real do alvo e compará-la ao alvo esperado sem incluir usuário ou senha; divergência deve recusar a operação antes de qualquer mutação.
 - REQ-006: A operação administrativa deve exigir uma confirmação humana exata do alvo resolvido na própria requisição; confirmação ausente ou divergente deve recusar a operação antes de qualquer mutação.
 - REQ-007: A execução direta de `scripts/seed-demo.mjs` não pode contornar autenticação, ambiente, alvo, confirmação ou preflight; deve recusar acesso direto ao banco ou aplicar exatamente os mesmos gates.
-- REQ-008: O preflight deve cobrir todas as 13 tabelas de negócio descritas nesta especificação e retornar quais classes de estado impediram a operação, sem expor conteúdo sensível.
+- REQ-008: O preflight deve cobrir todas as 14 tabelas de negócio descritas nesta especificação e retornar quais classes de estado impediram a operação, sem expor conteúdo sensível.
 - REQ-009: Qualquer estado operacional definido nesta especificação deve fazer o seed recusar sem truncar, zerar, inserir, atualizar ou apagar qualquer dado.
 - REQ-010: Resolução do alvo, bloqueio, preflight e seed devem ocorrer em uma única transação; todas as tabelas protegidas devem ser bloqueadas em ordem fixa com nível que impeça inserts, updates, deletes ou seeds concorrentes entre o preflight e a primeira mutação.
 - REQ-011: Em baseline vazio permitido, uma única operação administrativa válida pode executar o conteúdo demonstrativo existente de forma atômica.
 - REQ-012: Falha em qualquer query após a primeira mutação deve causar rollback integral, preservando contagens e conteúdo anteriores.
 - REQ-013: Respostas HTTP devem distinguir autenticação ausente/inválida, ambiente não autorizado, confirmação/alvo inválidos, conflito de preflight e falha interna, sem devolver `500` para recusas esperadas.
 - REQ-014: Logs devem registrar decisão, ator administrativo autenticado, alvo sanitizado e resultado do preflight, sem registrar token, senha, `DATABASE_URL` completa ou conteúdo das tabelas.
-- REQ-015: O restart com pedidos existentes e zero turnos deve preservar contagens e conteúdo de todas as 13 tabelas, inclusive quando o processo recebe `AUTO_SEED=true`; nesse caso a inicialização pode falhar cedo, mas os dados devem permanecer idênticos.
+- REQ-015: O restart com pedidos existentes e zero turnos deve preservar contagens e conteúdo de todas as 14 tabelas, inclusive quando o processo recebe `AUTO_SEED=true`; nesse caso a inicialização pode falhar cedo, mas os dados devem permanecer idênticos.
 - REQ-016: O boot com banco baseline vazio e configuração pública segura deve concluir sem criar dados demonstrativos.
 
 ## Restrições
@@ -120,8 +120,8 @@ Para o preflight:
 ## Definição de concluído
 
 - DONE-001: Teste focado prova que `AUTO_SEED=true` falha cedo sem invocar seed e que `AUTO_SEED=false`/ausente sobe sem seed em banco baseline vazio.
-- DONE-002: Teste PostgreSQL efêmero cria pedido sentinela com zero `cash_shifts`, captura snapshot canônico das 13 tabelas, reinicia a API e prova igualdade integral após o restart.
-- DONE-003: Teste parametrizado cobre as 13 tabelas e prova recusa sem alteração para cada classe de estado operacional.
+- DONE-002: Teste PostgreSQL efêmero cria pedido sentinela com zero `cash_shifts`, captura snapshot canônico das 14 tabelas, reinicia a API e prova igualdade integral após o restart.
+- DONE-003: Teste parametrizado cobre as 14 tabelas e prova recusa sem alteração para cada classe de estado operacional.
 - DONE-004: Testes provam autenticação, modo demo, habilitação, alvo esperado e confirmação humana, incluindo todos os caminhos de recusa.
 - DONE-005: Testes concorrentes provam serialização entre preflight e mutação e que no máximo uma tentativa semeia.
 - DONE-006: Teste com falha injetada após a primeira mutação prova rollback integral.

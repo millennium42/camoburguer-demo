@@ -63,6 +63,17 @@ test("UI expõe somente as modalidades válidas e não identifica operador", asy
   assert.equal(escapeHtml('<b class="x">'), "&lt;b class=&quot;x&quot;&gt;");
 });
 
+test("UI classifica integração pelo mapping com fallback seguro de origem", async () => {
+  const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
+  assert.match(script, /function isIntegratedOrder\(order\)/);
+  assert.match(script, /order\?\.hasChannelMapping === true/);
+  assert.match(script, /\["ifood", "deliverymuch"\]\.includes\(order\?\.source\)/);
+  assert.match(
+    script,
+    /authOrders = state\.orders\.filter\(\(order\) => order\.status === "received" && isIntegratedOrder\(order\)\)/
+  );
+});
+
 test("UI agrupa o catálogo e sinaliza produto esgotado", async () => {
   const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
   assert.match(script, /data-catalog-tab/);
@@ -71,7 +82,7 @@ test("UI agrupa o catálogo e sinaliza produto esgotado", async () => {
   assert.match(script, /"Sem estoque"/);
 });
 
-test("gestão do cardápio mantém segredo em memória e monta o contrato completo", async () => {
+test("gestão do cardápio usa sessão RBAC e monta o contrato completo", async () => {
   const [html, script, styles] = await Promise.all([
     readFile(new URL("../apps/ops-web/index.html", import.meta.url), "utf8"),
     readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8"),
@@ -100,19 +111,21 @@ test("gestão do cardápio mantém segredo em memória e monta o contrato comple
   assert.match(html, /name="preparationMode"/);
   assert.match(html, /value="direct_handoff"/);
   assert.match(html, /id="catalog-archive-confirm"/);
-  assert.match(script, /catalogAdminToken: ""/);
-  assert.match(script, /authorization: `Bearer \$\{session\.token\}`/);
+  assert.match(html, /Acesso autorizado pela sessão do administrador/);
+  assert.doesNotMatch(html, /id="catalog-admin-auth"/);
+  assert.match(script, /state\.currentUser\?\.role !== "admin"/);
+  assert.match(script, /credentials: "include"/);
+  assert.match(script, /"x-csrf-token"/);
   assert.match(script, /\/catalog\?includeArchived=true/);
   assert.match(script, /method: "DELETE"/);
   assert.match(script, /body: JSON\.stringify\(\{ available: !item\.available \}\)/);
   assert.match(script, /headers: \{ "if-match": item\.updatedAt \}/);
-  assert.match(script, /if \(dialog\?\.open\) auth\?\.elements\.token\.focus\(\)/);
   assert.match(script, /currentOpener\?\.focus\(\)/);
   assert.match(script, /hasUnavailableCartItems\(\)/);
   assert.match(script, /catalogAdminSessionIsCurrent\(session\)/);
   assert.match(script, /error\.catalogAdminSessionInvalidated = true/);
   assert.match(script, /session\.generation === state\.catalogAdminGeneration/);
-  assert.match(script, /'#catalog-admin-auth \[type="submit"\]'/);
+  assert.doesNotMatch(script, /authorization: `Bearer \$\{session\.token\}`/);
   assert.doesNotMatch(script, /localStorage|sessionStorage|document\.cookie/);
   assert.match(styles, /#catalog-admin-dialog \{ width: min\(960px, calc\(100% - 16px\)\)/);
   assert.match(styles, /\.catalog-admin-layout, \.catalog-admin-form-grid \{ grid-template-columns: 1fr; \}/);
@@ -158,10 +171,9 @@ test("atualiza snapshots ativos do carrinho e bloqueia itens pausados ou arquiva
 });
 
 test("descarta respostas administrativas antigas e recupera categoria ativa removida", () => {
-  const oldSession = { generation: 1, token: "token-a" };
-  assert.equal(sameCatalogAdminSession(oldSession, { generation: 1, token: "token-a" }), true);
-  assert.equal(sameCatalogAdminSession(oldSession, { generation: 2, token: "token-a" }), false);
-  assert.equal(sameCatalogAdminSession(oldSession, { generation: 1, token: "token-b" }), false);
+  const oldSession = { generation: 1 };
+  assert.equal(sameCatalogAdminSession(oldSession, { generation: 1 }), true);
+  assert.equal(sameCatalogAdminSession(oldSession, { generation: 2 }), false);
   assert.equal(resolveActiveCatalogCategory("Bebidas", [{ category: "Lanches" }]), "Lanches");
   assert.equal(resolveActiveCatalogCategory("Bebidas", [{ category: "Bebidas" }, { category: "Lanches" }]), "Bebidas");
   assert.equal(resolveActiveCatalogCategory("Bebidas", []), null);
@@ -299,4 +311,11 @@ test("layout estreito contém formulário, adicionais e navegação no viewport"
   assert.match(styles, /\.tab-bar \{ display: inline-flex; gap: 8px;/);
   assert.match(styles, /\.tab-button \{\s*border: 0;/);
   assert.match(styles, /\.addon-grid \{ display: grid; grid-template-columns: repeat\(auto-fit, minmax\(150px, 1fr\)\); gap: 12px; \}/);
+});
+
+test("SSE deduplica eventId e refaz leitura ao conectar ou reconectar", async () => {
+  const script = await readFile(new URL("../apps/ops-web/main.js", import.meta.url), "utf8");
+  assert.match(script, /const seenEventIds = new Set\(\)/);
+  assert.match(script, /seenEventIds\.has\(eventId\)/);
+  assert.match(script, /orderEvents\.onopen = financeEvents\.onopen = \(\) => \{[\s\S]*refreshSafe\(\)/);
 });

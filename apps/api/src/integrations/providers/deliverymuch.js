@@ -2,13 +2,39 @@ import { randomUUID } from "crypto";
 import { requestForm, requestJson } from "../http-client.js";
 import { ingestExternalOrder } from "../order-ingestion.js";
 import {
-  getPendingCommands,
   getOrderWithMapping,
   insertChannelEvent,
-  updateChannelCommand,
+  updateChannelEvent,
   updateChannelMapping
 } from "../integration-repository.js";
 import { activateAcceptedOrder, applyIntegratedTransition } from "../order-actions.js";
+import { fingerprint } from "../../idempotency.js";
+
+const DELIVERYMUCH_STATUS = new Map([
+  ["pending", "received"],
+  ["new", "received"],
+  ["received", "received"],
+  ["accepted", "confirmed"],
+  ["confirmed", "confirmed"],
+  ["preparing", "in_preparation"],
+  ["in_preparation", "in_preparation"],
+  ["ready", "ready"],
+  ["cancelled", "cancelled"],
+  ["canceled", "cancelled"]
+]);
+
+export function normalizeDeliveryMuchStatus(status) {
+  return DELIVERYMUCH_STATUS.get(String(status || "").trim().toLowerCase()) || null;
+}
+
+export function deliveryMuchPayloadFingerprint(order) {
+  return fingerprint({
+    id: String(order?.id || ""),
+    total: order?.total ?? order?.amount ?? null,
+    deliveryAddress: order?.deliveryAddress || null,
+    items: order?.items || []
+  });
+}
 
 export function mapDeliveryMuchOrderItem(item) {
   const sku = String(
@@ -74,66 +100,32 @@ export default function createDeliveryMuchAdapter(config, db) {
     }[command.action];
     if (!endpoint) throw new Error(`Ação Delivery Much não suportada: ${command.action}`);
 
-    return authorizedRequest(`/orders/${encodeURIComponent(externalOrderId)}/${endpoint}`, { method: "PATCH" });
+    return authorizedRequest(`/orders/${encodeURIComponent(externalOrderId)}/${endpoint}`, {
+      method: "PATCH",
+      headers: { "x-idempotency-key": command.correlationId || command.id }
+    });
   }
 
-  async function processPendingCommands(executor) {
-    const commands = await getPendingCommands("deliverymuch", executor);
-    for (const command of commands) {
-      try {
-        await sendCommand(command);
-        if (command.action === "accept") {
-          await activateAcceptedOrder(command.orderId, db, executor);
-        } else if (command.action === "ready") {
-          await applyIntegratedTransition(command.orderId, "ready", db, executor);
-        } else if (command.action === "cancel") {
-          await applyIntegratedTransition(command.orderId, "cancelled", db, executor);
-        }
-        const order = await getOrderWithMapping(command.orderId, executor);
-        if (order?.mapping) {
-          await updateChannelMapping(order.mapping.id, {
-            externalStatus: command.action,
-            syncStatus: "synchronized",
-            syncError: null
-          }, executor);
-        }
-        await updateChannelCommand(command.id, {
-          status: "completed",
-          completedAt: new Date().toISOString(),
-          error: null
-        }, executor);
-      } catch (error) {
-        const attempts = command.attempts + 1;
-        await updateChannelCommand(command.id, {
-          attempts,
-          status: attempts >= 3 ? "failed" : "pending",
-          error: error.message,
-          nextAttemptAt: new Date(Date.now() + 60_000).toISOString()
-        }, executor);
-        if (attempts >= 3) {
-          const order = await getOrderWithMapping(command.orderId, executor);
-          if (order?.mapping) {
-            await updateChannelMapping(order.mapping.id, {
-              syncStatus: "failed",
-              syncError: error.message
-            }, executor);
-          }
-        }
-      }
+  async function fetchBatch() {
+    if (!config.deliveryMuch.enabled) return { orders: [] };
+    try {
+      const orders = await fetchOrders();
+      return { orders };
+    } catch (error) {
+      if (error.statusCode === 401) tokenCache = null;
+      throw error;
     }
   }
 
-  async function poll(executor) {
-    if (!config.deliveryMuch.enabled) return;
-
-    try {
-      await processPendingCommands(executor);
-      const orders = await fetchOrders();
+  async function persistBatch(batch, executor) {
       const receiveIds = [];
 
-      for (const externalOrder of orders) {
+      for (const externalOrder of batch.orders || []) {
         if (!externalOrder?.id) throw new Error("Pedido Delivery Much sem id");
-        const externalEventId = `${externalOrder.id}:${externalOrder.status || "unknown"}`;
+        const payloadFingerprint = deliveryMuchPayloadFingerprint(externalOrder);
+        const eventFingerprint = fingerprint(externalOrder);
+        const version = externalOrder.version || externalOrder.updatedAt || "hash";
+        const externalEventId = `${externalOrder.id}:${version}:${eventFingerprint}`;
         const savedEvent = await insertChannelEvent({
           id: randomUUID(),
           channel: "deliverymuch",
@@ -142,11 +134,38 @@ export default function createDeliveryMuchAdapter(config, db) {
           externalOrderId: externalOrder.id,
           eventType: `ORDER_${String(externalOrder.status || "observed").toUpperCase()}`,
           payload: externalOrder,
-          status: "processed"
+          status: "pending"
         }, executor);
 
-        receiveIds.push(externalOrder.id);
-        if (!savedEvent) continue;
+        if (!savedEvent) {
+          const existingEvent = await executor.query(
+            `SELECT status FROM channel_events
+             WHERE channel = 'deliverymuch' AND external_event_id = $1`,
+            [externalEventId]
+          );
+          if (existingEvent.rows[0]?.status === "processed") receiveIds.push(externalOrder.id);
+          continue;
+        }
+        const normalizedStatus = normalizeDeliveryMuchStatus(externalOrder.status);
+        if (!normalizedStatus) {
+          await updateChannelEvent(savedEvent.id, {
+            status: "blocked",
+            error: `Estado Delivery Much desconhecido: ${String(externalOrder.status || "ausente")}`,
+            processedAt: new Date().toISOString()
+          }, executor);
+          const existing = await executor.query(
+            `SELECT id FROM channel_mappings
+             WHERE channel = 'deliverymuch' AND merchant_id = $1 AND external_id = $2`,
+            [config.deliveryMuch.companyUuid, externalOrder.id]
+          );
+          if (existing.rows[0]) {
+            await updateChannelMapping(existing.rows[0].id, {
+              syncStatus: "reconciliation_required",
+              syncError: "Estado externo desconhecido"
+            }, executor);
+          }
+          continue;
+        }
 
         const ingestion = await ingestExternalOrder({
           source: "deliverymuch",
@@ -158,29 +177,111 @@ export default function createDeliveryMuchAdapter(config, db) {
           deliveryAddress: externalOrder.deliveryAddress?.formattedAddress || null,
           createdAt: externalOrder.createdAt,
           items: (externalOrder.items || []).map(mapDeliveryMuchOrderItem),
-          metadata: { deliveryMuchOrder: externalOrder }
-        }, executor, db);
-        if (ingestion.repeated) {
-          const order = await getOrderWithMapping(ingestion.orderId, executor);
-          if (order?.mapping) {
-            await updateChannelMapping(order.mapping.id, {
-              externalStatus: externalOrder.status,
-              syncStatus: "synchronized"
-            }, executor);
+          metadata: {
+            deliveryMuchOrder: externalOrder,
+            syncPayloadFingerprint: payloadFingerprint
           }
+        }, executor, db);
+        let order = await getOrderWithMapping(ingestion.orderId, executor);
+        if (ingestion.repeated && order?.mapping?.metadata?.syncPayloadFingerprint
+          && order.mapping.metadata.syncPayloadFingerprint !== payloadFingerprint) {
+          await updateChannelMapping(order.mapping.id, {
+            externalStatus: externalOrder.status,
+            syncStatus: "reconciliation_required",
+            syncError: "Payload comercial externo mudou após captura"
+          }, executor);
+          await updateChannelEvent(savedEvent.id, {
+            status: "blocked",
+            error: "Payload comercial divergente",
+            processedAt: new Date().toISOString()
+          }, executor);
+          continue;
         }
+        if (order?.mapping) {
+          await updateChannelMapping(order.mapping.id, {
+            externalStatus: externalOrder.status,
+            syncStatus: "synchronized",
+            syncError: null,
+            metadata: {
+              ...(order.mapping.metadata || {}),
+              syncPayloadFingerprint: payloadFingerprint
+            }
+          }, executor);
+        }
+        if (["confirmed", "in_preparation", "ready"].includes(normalizedStatus)) {
+          await activateAcceptedOrder(ingestion.orderId, db, executor);
+          order = await getOrderWithMapping(ingestion.orderId, executor);
+        }
+        if (normalizedStatus === "in_preparation" && order.status === "confirmed") {
+          await applyIntegratedTransition(order.id, "in_preparation", db, executor);
+        } else if (normalizedStatus === "ready") {
+          if (order.status === "confirmed") {
+            await applyIntegratedTransition(order.id, "in_preparation", db, executor);
+            order = await getOrderWithMapping(order.id, executor);
+          }
+          if (order.status === "in_preparation") {
+            await applyIntegratedTransition(order.id, "ready", db, executor);
+          }
+        } else if (normalizedStatus === "cancelled" && order.status !== "cancelled") {
+          await applyIntegratedTransition(order.id, "cancelled", db, executor);
+        }
+        await updateChannelEvent(savedEvent.id, {
+          status: "processed",
+          error: null,
+          processedAt: new Date().toISOString()
+        }, executor);
+        receiveIds.push(externalOrder.id);
       }
       return { receiveIds };
-    } catch (error) {
-      if (error.statusCode === 401) tokenCache = null;
-      throw error;
+  }
+
+  async function reconcileCommand(command) {
+    const order = await authorizedRequest(`/orders/${encodeURIComponent(command.payload.externalOrderId)}`);
+    const status = String(order?.status || "").toLowerCase();
+    const applied = command.action === "accept"
+      ? ["accepted", "confirmed", "preparing", "ready", "delivered", "cancelled"].includes(status)
+      : command.action === "cancel"
+      ? status === "cancelled"
+      : command.action === "ready"
+      ? ["ready", "delivered"].includes(status)
+      : false;
+    return applied
+      ? { state: "applied", externalStatus: status }
+      : { state: "unknown", reason: `Status Delivery Much inconclusivo: ${status || "ausente"}` };
+  }
+
+  async function finalizeCommand(command, executor, { reconciled }) {
+    if (command.action === "accept") {
+      await activateAcceptedOrder(command.orderId, db, executor);
+    } else if (command.action === "ready") {
+      await applyIntegratedTransition(command.orderId, "ready", db, executor);
+    } else if (command.action === "cancel") {
+      await applyIntegratedTransition(command.orderId, "cancelled", db, executor);
     }
+    const order = await getOrderWithMapping(command.orderId, executor);
+    if (order?.mapping) {
+      await updateChannelMapping(order.mapping.id, {
+        externalStatus: command.action,
+        syncStatus: "synchronized",
+        syncError: null
+      }, executor);
+    }
+    return {
+      status: "completed",
+      completedAt: new Date().toISOString(),
+      lastHttpStatus: 200,
+      ...(reconciled ? { reconciledAt: new Date().toISOString() } : {})
+    };
   }
 
   return {
     channel: "deliverymuch",
     pollIntervalMs: Math.max(config.deliveryMuch.pollIntervalMs, 15_000),
-    poll,
+    fetchBatch,
+    persistBatch,
+    sendCommand,
+    reconcileCommand,
+    finalizeCommand,
     afterCommit: async ({ receiveIds }) => {
       try {
         for (const externalOrderId of receiveIds) {

@@ -7,6 +7,12 @@ import {
 } from "./integration-repository.js";
 
 import { confirmOrder, requiresKitchenPreparation, transitionOrder } from "@camoburguer/domain";
+import {
+  claimIdempotency,
+  completeIdempotency,
+  fingerprint,
+  integrationActionFingerprintPayload
+} from "../idempotency.js";
 
 const ACTION_RULES = {
   accept: { status: "received", syncStatus: "accept_pending" },
@@ -48,15 +54,38 @@ export async function createOrderAction(orderId, action, payload, idempotencyKey
       throw error;
     }
 
-    const existing = await findChannelCommand({ channel: order.mapping.channel, idempotencyKey: key }, client);
     const commandPayload = { ...(payload || {}), externalOrderId: order.mapping.externalId };
-    if (existing) {
-      const sameOperation = existing.orderId === order.id
-        && existing.action === action
-        && JSON.stringify(existing.payload || {}) === JSON.stringify(commandPayload);
-      if (!sameOperation) {
-        const error = new Error("Idempotency-Key já usada por outra ação de integração");
+    const requestFingerprint = fingerprint(integrationActionFingerprintPayload({
+      orderId: order.id,
+      channel: order.mapping.channel,
+      action,
+      payload: commandPayload
+    }));
+    const claim = await claimIdempotency(client, {
+      key,
+      operation: `integration:${action}`,
+      resource: `order:${order.id}`,
+      requestFingerprint
+    });
+    if (claim.conflict) {
+      const error = new Error(
+        claim.conflict === "legacy_idempotency_unverifiable"
+          ? "legacy_idempotency_unverifiable"
+          : "Idempotency-Key já usada por outra ação de integração"
+      );
+      error.statusCode = 409;
+      error.code = claim.conflict;
+      throw error;
+    }
+    if (claim.repeated) {
+      const existing = await findChannelCommand({
+        channel: order.mapping.channel,
+        idempotencyKey: key
+      }, client);
+      if (!existing || existing.id !== claim.resultId) {
+        const error = new Error("Resultado idempotente de integração ausente");
         error.statusCode = 409;
+        error.code = "idempotency_result_missing";
         throw error;
       }
       return { command: existing, syncStatus: order.mapping.syncStatus, order, repeated: true };
@@ -79,21 +108,15 @@ export async function createOrderAction(orderId, action, payload, idempotencyKey
       status: "pending"
     }, client);
 
-    if (!command) {
-      const winner = await findChannelCommand({ channel: order.mapping.channel, idempotencyKey: key }, client);
-      const sameOperation = winner?.orderId === order.id
-        && winner.action === action
-        && JSON.stringify(winner.payload || {}) === JSON.stringify(commandPayload);
-      if (!sameOperation) {
-        const error = new Error("Idempotency-Key já usada por outra ação de integração");
-        error.statusCode = 409;
-        throw error;
-      }
-      return { command: winner, syncStatus: order.mapping.syncStatus, order, repeated: true };
-    }
+    if (!command) throw new Error("Falha ao persistir comando idempotente");
 
     const syncStatus = rule.syncStatus;
     await updateChannelMapping(order.mapping.id, { syncStatus }, client);
+    await completeIdempotency(client, key, {
+      resultType: "channel_command",
+      resultId: command.id,
+      responseStatus: 202
+    });
 
     return { command, syncStatus, order, repeated: false };
   });
@@ -151,7 +174,7 @@ export async function applyIntegratedTransition(orderId, nextStatus, db, executo
       error.statusCode = 409;
       throw error;
     }
-    if (nextStatus === "cancelled" && order.status === "confirmed") {
+    if (nextStatus === "cancelled" && ["confirmed", "in_preparation", "ready"].includes(order.status)) {
       await db.changeStock(saved, 1, "cancellation", client, saved.id);
     }
     return { saved, repeated: false };

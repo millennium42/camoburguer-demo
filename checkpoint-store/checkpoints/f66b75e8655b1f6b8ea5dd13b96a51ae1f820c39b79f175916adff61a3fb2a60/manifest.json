@@ -1,0 +1,227 @@
+{
+  "schema": "m1nd-checkpoint-manifest-v1",
+  "checkpoint_id": "f66b75e8655b1f6b8ea5dd13b96a51ae1f820c39b79f175916adff61a3fb2a60",
+  "brain_id": "project-brain-f5c967420cdb86e065d3d2b5f55eae469e02d79c73fa6dc9264ef87f6bff75f8",
+  "epoch": 1,
+  "generation": 0,
+  "revision": 0,
+  "schema_versions": {
+    "m1nd-document-artifact-inventory": "1",
+    "m1nd-graph-snapshot": "4",
+    "m1nd-ingest-roots": "1",
+    "m1nd-session-sidecar": "1",
+    "m1nd-session-working-set-v1": "1"
+  },
+  "file_inventory": [
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "antibodies",
+      "relative_path": "antibodies.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "b51a6e11a98ea39eb82a87e0132a5a0d866987091d6c9becf169ec59c9c457c8",
+      "byte_len": 38,
+      "blob_path": "files/b51a6e11a98ea39eb82a87e0132a5a0d866987091d6c9becf169ec59c9c457c8"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "auto_ingest_state",
+      "relative_path": "auto_ingest_state.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "e60cf470c0456419a1dbcbaeea3ea6ab1a67fcd43b3de1adb2dfb21cb524d46d",
+      "byte_len": 428,
+      "blob_path": "files/e60cf470c0456419a1dbcbaeea3ea6ab1a67fcd43b3de1adb2dfb21cb524d46d"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "boot_config",
+      "relative_path": "boot_config_v1.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "31da1781093784d36e5b694bb5b97cb098ab24c5d6b83b89e9649b4520679b54",
+      "byte_len": 70,
+      "blob_path": "files/31da1781093784d36e5b694bb5b97cb098ab24c5d6b83b89e9649b4520679b54"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "boot_kv_migration",
+      "relative_path": "boot_kv_migration_v1.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "fd11f62340d003d293e922f70adbd61d04710941f9927c36f01d96b58e212339",
+      "byte_len": 627,
+      "blob_path": "files/fd11f62340d003d293e922f70adbd61d04710941f9927c36f01d96b58e212339"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "boot_kv_migration_journal",
+      "relative_path": "boot_kv_migration_journal_v1.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "1a1017be8a0be0c9f100f890939dc83b64bad237f4913fe83794cdef25556174",
+      "byte_len": 1235,
+      "blob_path": "files/1a1017be8a0be0c9f100f890939dc83b64bad237f4913fe83794cdef25556174"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "boot_memory_state",
+      "relative_path": "boot_memory_state.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "d639d8e7433b4f1121a55353ae260cc47397641a5fb6ef3bc1ebe0fb3972fc61",
+      "byte_len": 19,
+      "blob_path": "files/d639d8e7433b4f1121a55353ae260cc47397641a5fb6ef3bc1ebe0fb3972fc61"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "calibration_state",
+      "relative_path": "calibration_state.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "533da89ed06712e5df33636bc8ba1b522b0bca4a829132dc11851f1579afac3c",
+      "byte_len": 32,
+      "blob_path": "files/533da89ed06712e5df33636bc8ba1b522b0bca4a829132dc11851f1579afac3c"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "daemon_alerts",
+      "relative_path": "daemon_alerts.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "byte_len": 2,
+      "blob_path": "files/4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "daemon_state",
+      "relative_path": "daemon_state.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "838d41805a918573c9251740d32eaa827ecf3d1f5ee27b83ea44c9375d7af6ee",
+      "byte_len": 1083,
+      "blob_path": "files/838d41805a918573c9251740d32eaa827ecf3d1f5ee27b83ea44c9375d7af6ee"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "document_artifact_inventory",
+      "relative_path": "document_artifact_inventory.json",
+      "schema_id": "m1nd-document-artifact-inventory",
+      "schema_version": "1",
+      "content_digest": "e7dec543f3297b48c1d463559f730c865e878b89384659480b3a36bae74ff4a1",
+      "byte_len": 68,
+      "blob_path": "files/e7dec543f3297b48c1d463559f730c865e878b89384659480b3a36bae74ff4a1"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "document_cache_index",
+      "relative_path": "document_cache_index.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "d639d8e7433b4f1121a55353ae260cc47397641a5fb6ef3bc1ebe0fb3972fc61",
+      "byte_len": 19,
+      "blob_path": "files/d639d8e7433b4f1121a55353ae260cc47397641a5fb6ef3bc1ebe0fb3972fc61"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "graph_snapshot",
+      "relative_path": "graph_snapshot.json",
+      "schema_id": "m1nd-graph-snapshot",
+      "schema_version": "4",
+      "content_digest": "83f0ea4b2785f4a8b55650a69d64c41f8a19b7cad7ce6609e1afe007a2f038b9",
+      "byte_len": 35,
+      "blob_path": "files/83f0ea4b2785f4a8b55650a69d64c41f8a19b7cad7ce6609e1afe007a2f038b9"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "ingest_roots",
+      "relative_path": "ingest_roots.json",
+      "schema_id": "m1nd-ingest-roots",
+      "schema_version": "1",
+      "content_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "byte_len": 2,
+      "blob_path": "files/4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "plasticity_state",
+      "relative_path": "plasticity_state.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "byte_len": 2,
+      "blob_path": "files/4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "session_working_set",
+      "relative_path": "checkpoint-working-set-v1.json",
+      "schema_id": "m1nd-session-working-set-v1",
+      "schema_version": "1",
+      "content_digest": "55a65d39d7657a0adc3ad40ad2591e1d9c14de5291beeb0fd32b87cbc7d9c68f",
+      "byte_len": 3174,
+      "blob_path": "files/55a65d39d7657a0adc3ad40ad2591e1d9c14de5291beeb0fd32b87cbc7d9c68f"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "temporal_state",
+      "relative_path": "temporal_state_v1.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "a81252768d8ad9d575da85e47d24aea15405230645b094b01bbcf4c362e8e60e",
+      "byte_len": 765,
+      "blob_path": "files/a81252768d8ad9d575da85e47d24aea15405230645b094b01bbcf4c362e8e60e"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "tremor_state",
+      "relative_path": "tremor_state.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "cf33af9ec5b8a7b8e652e800cb4ce846e63bc7c191eeba1b66f176eb3ea2b2ad",
+      "byte_len": 33,
+      "blob_path": "files/cf33af9ec5b8a7b8e652e800cb4ce846e63bc7c191eeba1b66f176eb3ea2b2ad"
+    },
+    {
+      "schema": "m1nd-checkpoint-file-v1",
+      "logical_name": "trust_state",
+      "relative_path": "trust_state.json",
+      "schema_id": "m1nd-session-sidecar",
+      "schema_version": "1",
+      "content_digest": "118d138d043a106af0f257273742b592eac4a2ffb7296b177337933e4efa1c21",
+      "byte_len": 35,
+      "blob_path": "files/118d138d043a106af0f257273742b592eac4a2ffb7296b177337933e4efa1c21"
+    }
+  ],
+  "graph_snapshot_digest": "83f0ea4b2785f4a8b55650a69d64c41f8a19b7cad7ce6609e1afe007a2f038b9",
+  "sidecar_digests": {
+    "antibodies": "b51a6e11a98ea39eb82a87e0132a5a0d866987091d6c9becf169ec59c9c457c8",
+    "auto_ingest_state": "e60cf470c0456419a1dbcbaeea3ea6ab1a67fcd43b3de1adb2dfb21cb524d46d",
+    "boot_config": "31da1781093784d36e5b694bb5b97cb098ab24c5d6b83b89e9649b4520679b54",
+    "boot_kv_migration": "fd11f62340d003d293e922f70adbd61d04710941f9927c36f01d96b58e212339",
+    "boot_kv_migration_journal": "1a1017be8a0be0c9f100f890939dc83b64bad237f4913fe83794cdef25556174",
+    "boot_memory_state": "d639d8e7433b4f1121a55353ae260cc47397641a5fb6ef3bc1ebe0fb3972fc61",
+    "calibration_state": "533da89ed06712e5df33636bc8ba1b522b0bca4a829132dc11851f1579afac3c",
+    "daemon_alerts": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "daemon_state": "838d41805a918573c9251740d32eaa827ecf3d1f5ee27b83ea44c9375d7af6ee",
+    "document_artifact_inventory": "e7dec543f3297b48c1d463559f730c865e878b89384659480b3a36bae74ff4a1",
+    "document_cache_index": "d639d8e7433b4f1121a55353ae260cc47397641a5fb6ef3bc1ebe0fb3972fc61",
+    "plasticity_state": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "session_working_set": "55a65d39d7657a0adc3ad40ad2591e1d9c14de5291beeb0fd32b87cbc7d9c68f",
+    "temporal_state": "a81252768d8ad9d575da85e47d24aea15405230645b094b01bbcf4c362e8e60e",
+    "tremor_state": "cf33af9ec5b8a7b8e652e800cb4ce846e63bc7c191eeba1b66f176eb3ea2b2ad",
+    "trust_state": "118d138d043a106af0f257273742b592eac4a2ffb7296b177337933e4efa1c21"
+  },
+  "ingest_roots_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "external_authority_refs": {
+    "system_block_store_version": 0,
+    "mission_heads_index_digest": "9ef798457ed8135d9a508bd3a258aaf30d818c529158c94c304b7df8ae1f3f9b",
+    "authority_wal_root_digest": "5ac1192ea13465e5e212c1ba0de2d100d7f3796572618a221e928b139297444f",
+    "intent_core_store_root_digest": "73d12d75a6b33c26af850461fd17273856ae8f210debe8d92880ec599242c8fe",
+    "sentinel_outbox_watermark_digest": "584d8e38e5d02083d575f91a042661feae2d132591be96f61780284e4e8c0a86",
+    "autonomy_epoch_record_digest": "66358d443c180176a535052dfee64c1c95ef0011d0f1055d782a451fc85cdab0"
+  },
+  "created_at_unix_ms": 1785108614189,
+  "previous_checkpoint_id": null
+}

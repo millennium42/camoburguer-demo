@@ -38,8 +38,8 @@ rtk npm test
 Stack completa e isolada:
 
 ```bash
-rtk proxy env DEMO_ADMIN_TOKEN=local-demo-admin-token docker compose -p camoburguer-dev up -d --build
-rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token DEMO_ADMIN_TOKEN=local-demo-admin-token npm run smoke
+rtk proxy env ADMIN_BOOTSTRAP_PASSWORD=local-demo-admin-password docker compose -p camoburguer-dev up -d --build
+rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token ADMIN_PASSWORD=local-demo-admin-password npm run smoke
 rtk proxy docker compose -p camoburguer-dev down
 ```
 
@@ -50,7 +50,7 @@ Use `down -v` somente em projeto de teste explicitamente nomeado e quando a excl
 `AUTO_SEED` deve ficar ausente ou exatamente `false`; boot e restart nunca semeiam. Para
 uma carga explícita, use somente um PostgreSQL de demo no baseline, configure
 `APP_ENV=demo`, `DEMO_SEED_ENABLED=true`, `DEMO_SEED_TARGET=endereco:porta/banco` e
-`DEMO_ADMIN_TOKEN`, então chame `POST /demo/seed` com bearer e
+`ADMIN_BOOTSTRAP_PASSWORD`, autentique `admin` por `POST /auth/login` e chame `POST /demo/seed` com o cookie de sessão, CSRF e
 `{"confirmTarget":"endereco:porta/banco"}`. O preflight bloqueia qualquer estado operacional,
 estoque não zero ou divergência do catálogo canônico. Migração: primeiro fixe
 `AUTO_SEED=false`, faça deploy/restart e só depois avalie um seed explícito. Rollback de
@@ -60,9 +60,25 @@ O commit de configuração segura `f3191d3` é um limite de rollback: não o rev
 
 ### Administração do cardápio
 
-A listagem padrão `GET /catalog` permanece pública. `GET /catalog?includeArchived=true`, `POST /catalog/items`, `PATCH /catalog/items/:sku` e `DELETE /catalog/items/:sku` exigem `Authorization: Bearer <DEMO_ADMIN_TOKEN>`; a exclusão arquiva o SKU. Cada mudança efetiva publica `catalog.changed` no stream SSE de pedidos, com `{ action, item }`: `action` é `created`, `updated`, `paused` ou `archived`, e `item` é o snapshot persistido após a operação.
+A API operacional é default-deny. `GET /catalog` exige sessão de operador/admin; `GET /catalog?includeArchived=true`, `POST /catalog/items`, `PATCH /catalog/items/:sku` e `DELETE /catalog/items/:sku` exigem papel `admin`; a exclusão arquiva o SKU. Cada mudança efetiva publica `catalog.changed` no stream SSE autenticado de pedidos.
 
 A interface envia o `updatedAt` lido por último no header `If-Match` de `PATCH` e `DELETE`. Se outra operação já alterou o item, a API responde `412` e exige recarga antes de sobrescrever ou arquivar.
+
+### Autenticação e rollback
+
+O bootstrap cria `admin` somente quando ainda não existe administrador. Configure
+`ADMIN_BOOTSTRAP_PASSWORD` pelo gerenciador de segredos; depois do primeiro login,
+troque a credencial pela rota autenticada e remova o segredo de bootstrap quando a
+plataforma permitir. Sessões expiram após 8 horas de inatividade ou 12 horas
+absolutas. Logout e troca de senha revogam sessões.
+
+Em HTTP local use explicitamente `APP_ENV=development` e
+`AUTH_COOKIE_SECURE=false`; essa combinação é recusada fora de development/test.
+Deploy HTTPS não define `AUTH_COOKIE_SECURE`, mantendo `Secure`.
+
+Rollback de código deve preservar as tabelas `users`, `auth_sessions` e
+`audit_events`, o segredo do administrador e o default-deny. Não é permitido
+restaurar a API/SSE anônima nem reativar `DEMO_ADMIN_TOKEN`.
 
 ## Orientação antes de editar
 
@@ -198,9 +214,9 @@ rtk npm audit --omit=dev
 ### Gate 2 — stack real
 
 ```bash
-rtk proxy env DEMO_ADMIN_TOKEN=local-demo-admin-token docker compose -p camoburguer-check up -d --build
+rtk proxy env ADMIN_BOOTSTRAP_PASSWORD=local-demo-admin-password docker compose -p camoburguer-check up -d --build
 rtk proxy docker compose -p camoburguer-check ps
-rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token DEMO_ADMIN_TOKEN=local-demo-admin-token npm run smoke
+rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token ADMIN_PASSWORD=local-demo-admin-password npm run smoke
 ```
 
 Verifique logs de API/bridge e só depois remova o projeto isolado:

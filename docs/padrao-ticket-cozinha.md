@@ -44,3 +44,24 @@ O domínio gera o texto canônico; a API persiste um `print_job` na mesma transa
 O frontend não imprime ticket de cozinha em paralelo. `window.print()` permanece apenas para relatório gerencial de turno, que não faz parte deste contrato.
 
 O bridge hospedado em nuvem é apenas demonstração de spool. Impressão térmica física exige um agente na rede local e validação separada de ESC/POS, USB/serial ou TCP.
+
+### Limite, dead-letter e recibo
+
+O payload HTTP exato é limitado a 64 KiB em UTF-8 e deve ser recusado antes da
+persistência se exceder esse limite; conteúdo nunca é truncado. A fila usa
+`pending`, `sending`, `retry_wait`, `printed` e `dead_letter`, com no máximo
+cinco tentativas, backoff e reprocessamento unitário autorizado.
+
+O mesmo `jobId` é preservado na reconciliação. O bridge consulta o recibo no
+spool e responde `already_printed` para uma repetição idêntica. Neste demo,
+`printed` comprova gravação no spool, não exatamente uma impressão física: o
+hardware não fornece recibo ou deduplicação verificável.
+
+### PII e retenção do spool
+
+O diretório de spool é privado ao processo, não é publicado como arquivo e
+exige autenticação para consulta ou alteração. Nomes de arquivo usam somente
+IDs validados. A retenção operacional recomendada é de no máximo 30 dias; a
+rotina LGPD sobrescreve imediatamente os artefatos relacionados por um marcador
+anonimizado. Backups continuam sujeitos à retenção declarada pelo provedor e
+não são regravados pela aplicação.

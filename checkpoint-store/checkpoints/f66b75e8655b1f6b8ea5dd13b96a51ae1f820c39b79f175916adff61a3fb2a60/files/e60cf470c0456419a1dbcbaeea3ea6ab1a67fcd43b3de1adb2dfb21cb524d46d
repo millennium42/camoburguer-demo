@@ -1,0 +1,25 @@
+{
+  "debounce_ms": 200,
+  "degraded_applied": 0,
+  "error_count": 0,
+  "events_seen": 0,
+  "formats": [
+    "universal",
+    "light",
+    "article",
+    "bibtex",
+    "crossref",
+    "rfc",
+    "patent"
+  ],
+  "ingests_applied": 0,
+  "last_error": null,
+  "last_tick_ms": null,
+  "manifest": {},
+  "namespace": null,
+  "owner_agent_id": null,
+  "recent_events": [],
+  "removals_applied": 0,
+  "roots": [],
+  "skipped_count": 0
+}

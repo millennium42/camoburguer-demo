@@ -1,0 +1,85 @@
+# Node Description Batch 1 of 12
+
+Graphify is running in assistant/skill mode (no API key). You are the host
+assistant (Claude Code / Codex / Gemini CLI). Read the prompt below and write
+your JSON answer to the answer file.
+
+## Prompt
+
+You are documenting nodes in a knowledge graph.
+For each entry below, write ONE concise factual plain-language sentence
+describing what it is or does. Use only the provided context.
+For a code symbol (kind=code-symbol — a function, class, or constant),
+describe what the function/symbol does based on its name, source location
+and neighbors — e.g. "Resolves the configured ontology profile from graphify.yaml.".
+For an entity node (any other kind — e.g. a person, place, event, object),
+describe what the entity is and its role, grounded in its type, its
+relations (neighbors) and the provided citations/evidence — e.g.
+"Lady Carfax, a wealthy heiress who disappears en route to Lausanne.".
+Ground entity descriptions in the citations/evidence when present; do not
+speculate beyond the context, so a node with no supporting context may be
+left out of the reply.
+LANGUAGE: each entry has a `lang=` marker giving the language of its source.
+Write that entry's description in EXACTLY that language. Do not translate to
+a single common language — match each node's source language individually.
+No marketing language.
+Respond ONLY with a JSON object mapping each node id (as a string) to its
+one-sentence description — no prose, no markdown fences.
+
+- "ops_web_main": "main.js" | kind=code-symbol | source=apps/ops-web/main.js:L1 | neighbors=[0009eb5 fix(release): alinhar cancelame…, 00c0976 Merge pull request #3 from feat…, 01b42c9 feat(ops-web): adicionar manute…, 075c321 Audita demo e endurece operacao, 199ab9b chore(ops-web): remover botao l…, 1da343b feat: Entrega 5 - UI Premium e …] | lang=en
+- "src_server": "server.js" | kind=code-symbol | source=apps/print-bridge/src/server.js:L1 | neighbors=[0009eb5 fix(release): alinhar cancelame…, 01b42c9 feat(ops-web): adicionar manute…, 075c321 Audita demo e endurece operacao, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#main": "main" | kind=Branch | source=git | neighbors=[0009eb5 fix(release): alinhar cancelame…, 00c0976 Merge pull request #3 from feat…, 01b42c9 feat(ops-web): adicionar manute…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 032525a docs: atualiza documentacao com…, 03f8302 docs(operations): definir catál…] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#codex/unificacao-lgpd-visual": "codex/unificacao-lgpd-visual" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 032525a docs: atualiza documentacao com…, 09e6cee Merge pull request #12 from cho…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#feature/security-lgpd": "feature/security-lgpd" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 032525a docs: atualiza documentacao com…, 09e6cee Merge pull request #12 from cho…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#feature/menu-tabs": "feature/menu-tabs" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 032525a docs: atualiza documentacao com…, 09e6cee Merge pull request #12 from cho…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#fix/auth-queue-layout": "fix/auth-queue-layout" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 032525a docs: atualiza documentacao com…, 09e6cee Merge pull request #12 from cho…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#chore/dark-brown-ui": "chore/dark-brown-ui" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 032525a docs: atualiza documentacao com…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#fix/print-shift-undefined": "fix/print-shift-undefined" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 032525a docs: atualiza documentacao com…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#chore/add-roadmap-fase2": "chore/add-roadmap-fase2" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 032525a docs: atualiza documentacao com…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#chore/docs-update": "chore/docs-update" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 032525a docs: atualiza documentacao com…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much] | lang=en
+- "tests_ops_web_test": "ops-web.test.js" | kind=code-symbol | source=tests/ops-web.test.js:L1 | neighbors=[0009eb5 fix(release): alinhar cancelame…, 01b42c9 feat(ops-web): adicionar manute…, 075c321 Audita demo e endurece operacao, 32ed129 Merge pull request #6 from fix/…, 3487db7 feat: refatoracao completa UI, …, 384a10f feat(ops-web): fluxo continuo d…] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#fix/print-and-olaclick": "fix/print-and-olaclick" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much, 1da343b feat: Entrega 5 - UI Premium e …] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#fix/ui-bugs": "fix/ui-bugs" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much, 1da343b feat: Entrega 5 - UI Premium e …] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@bdd41dd7a2290326e5570771159ec6b955721da8": "bdd41dd feat: entregar demo operacional completa do Camoburguer" | kind=Commit | source=git | neighbors=[3dd601b chore: inicializar repositório …, chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo] | lang=pt
+- "tests_smoke": "smoke.mjs" | kind=code-symbol | source=tests/smoke.mjs:L1 | neighbors=[0009eb5 fix(release): alinhar cancelame…, 01b42c9 feat(ops-web): adicionar manute…, 075c321 Audita demo e endurece operacao, 3487db7 feat: refatoracao completa UI, …, 38b122a feat: permitir pagamentos múlti…, 3d1125d feat: separar rodadas e tickets…] | lang=en
+- "domain_index": "index.js" | kind=code-symbol | source=packages/domain/index.js:L1 | neighbors=[075c321 Audita demo e endurece operacao, 3487db7 feat: refatoracao completa UI, …, 3d1125d feat: separar rodadas e tickets…, 558ac72 feat: adicionar comandas livres…, 5b00ef8 feat: adicionar adicionais conf…, 87b872c feat(domain): congelar classifi…] | lang=en
+- "providers_ifood": "ifood.js" | kind=code-symbol | source=apps/api/src/integrations/providers/ifood.js:L1 | neighbors=[075c321 Audita demo e endurece operacao, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 3487db7 feat: refatoracao completa UI, …, 4582cbb feat: Entrega 4 - iFood, e0a6d46 fix(integrations): classificar …] | lang=en
+- "tests_seed_demo_postgres_test": "seed-demo-postgres.test.js" | kind=code-symbol | source=tests/seed-demo-postgres.test.js:L1 | neighbors=[98ec659 fix(api): impedir seed destruti…, updateOwnedChannelCommand(), createOrderAction(), seed-demo.mjs, PROTECTED_TABLES, runSeedDemo()] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#fix/tests": "fix/tests" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much, 1da343b feat: Entrega 5 - UI Premium e …] | lang=en
+- "scripts_seed_demo": "seed-demo.mjs" | kind=code-symbol | source=scripts/seed-demo.mjs:L1 | neighbors=[075c321 Audita demo e endurece operacao, 176899c fix(docker): resolver domínio n…, 3487db7 feat: refatoracao completa UI, …, 384a10f feat(ops-web): fluxo continuo d…, 4e6bbe4 feat(render): adicionar inicial…, 544287b Merge pull request #2 from feat…] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#feat/print-cash-shifts": "feat/print-cash-shifts" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much, 1da343b feat: Entrega 5 - UI Premium e …] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@3487db76e10a92a4fc5558c0b1450d2eaf5223a5": "3487db7 feat: refatoracao completa UI, LGPD, unificacao da documentacao e testes" | kind=Commit | source=git | neighbors=[codex/unificacao-lgpd-visual, 58fc56b fix: corrige renderCatalog tabs…, catalog.js, index.js, index.js, http-client.js] | lang=pt
+- "commit:repo:github.com/millennium42/camoburguer-demo@9174d61469673c45242469844e31a6cd49645813": "9174d61 feat: implementar descontos percentuais por item e pedido" | kind=Commit | source=git | neighbors=[chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo, feat/demo-simulator] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#feat/client-side-print-demo": "feat/client-side-print-demo" | kind=Branch | source=git | neighbors=[00c0976 Merge pull request #3 from feat…, 02492d9 feat: Entrega 1 - Contrato e Pe…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much, 1da343b feat: Entrega 5 - UI Premium e …] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@17283604196841fbe62fc307fb5e4fd8127d2a83": "1728360 Merge pull request #1 from fix/integration-boot" | kind=Commit | source=git | neighbors=[0bd5e05 fix: resolve circular dependenc…, chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@38b122a1d6ded70c6ef6c303d2cc50fa41bb5cb2": "38b122a feat: permitir pagamentos múltiplos em comandas" | kind=Commit | source=git | neighbors=[chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo, feat/demo-simulator] | lang=pt
+- "commit:repo:github.com/millennium42/camoburguer-demo@3d1125df204140205c67d7dcb93bf6cf275a296c": "3d1125d feat: separar rodadas e tickets corretivos da comanda" | kind=Commit | source=git | neighbors=[chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo, feat/demo-simulator] | lang=pt
+- "commit:repo:github.com/millennium42/camoburguer-demo@558ac728dbb0387655395d81a33b88d077e362c7": "558ac72 feat: adicionar comandas livres e rodadas locais" | kind=Commit | source=git | neighbors=[chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo, feat/demo-simulator] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@5b00ef829270f4fccdeb2e30784b1e38bef1803b": "5b00ef8 feat: adicionar adicionais configuraveis aos lanches" | kind=Commit | source=git | neighbors=[chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo, feat/demo-simulator] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@cdeeabdbef5bbb670990287e5e06434c64ddd015": "cdeeabd feat: atualizar cardapio pelo snapshot OlaClick de 2026-07-16" | kind=Commit | source=git | neighbors=[4be9594 docs: instituir guia de desenvo…, chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo] | lang=nl
+- "commit:repo:github.com/millennium42/camoburguer-demo@ea00965047ed4cdf547d911cdd92f0c73e79f394": "ea00965 feat: adicionar estoque transacional por categoria" | kind=Commit | source=git | neighbors=[3d1125d feat: separar rodadas e tickets…, chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@075c3210a6d9ffab6852f01856827e49e12e7ddb": "075c321 Audita demo e endurece operacao" | kind=Commit | source=git | neighbors=[main, 03f8302 docs(operations): definir catál…, index.js, index.js, integration-repository.js, integration-routes.js] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@0bd5e0522af4f9a5ff9e91c88d349b7d33404350": "0bd5e05 fix: resolve circular dependency on integrations boot" | kind=Commit | source=git | neighbors=[chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo, feat/demo-simulator] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@e0362f4a3a03bb8a0f01d8778a165ed0dc7dcfa2": "e0362f4 feat: Entrega 2 - Ingestao Segura" | kind=Commit | source=git | neighbors=[02492d9 feat: Entrega 1 - Contrato e Pe…, chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#feat/ui-redesign": "feat/ui-redesign" | kind=Branch | source=git | neighbors=[02492d9 feat: Entrega 1 - Contrato e Pe…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much, 1da343b feat: Entrega 5 - UI Premium e …, 38b122a feat: permitir pagamentos múlti…] | lang=en
+- "integrations_integration_repository": "integration-repository.js" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L1 | neighbors=[075c321 Audita demo e endurece operacao, 3487db7 feat: refatoracao completa UI, …, e0362f4 feat: Entrega 2 - Ingestao Segu…, claimChannelCommand(), columnFor(), COMMAND_COLUMNS] | lang=en
+- "branch:repo:github.com/millennium42/camoburguer-demo#feat/demo-simulator": "feat/demo-simulator" | kind=Branch | source=git | neighbors=[02492d9 feat: Entrega 1 - Contrato e Pe…, 0bd5e05 fix: resolve circular dependenc…, 1728360 Merge pull request #1 from fix/…, 181d2eb feat: Entrega 3 - Delivery Much, 1da343b feat: Entrega 5 - UI Premium e …, 38b122a feat: permitir pagamentos múlti…] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@02492d9d6a41feeffd78db42c5f77f5c8026026a": "02492d9 feat: Entrega 1 - Contrato e Persistencia" | kind=Commit | source=git | neighbors=[chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo, feat/demo-simulator] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@181d2eb53c91c912c312964715fa3cc511904d32": "181d2eb feat: Entrega 3 - Delivery Much" | kind=Commit | source=git | neighbors=[chore/add-roadmap-fase2, chore/dark-brown-ui, chore/docs-update, codex/unificacao-lgpd-visual, feat/client-side-print-demo, feat/demo-simulator] | lang=en
+
+## Instructions
+
+Write a single JSON object mapping each node id to a one-sentence description
+to: C:\Users\milla\Documents\Projetos\Git\camoburguer-demo\.graphify\description-instructions\batch-000.json
+
+Keep each description factual and concise (one sentence). No markdown, no prose
+outside the JSON object. It is acceptable to omit a node if context is
+insufficient — but include every node you can ground confidently.
+
+Example answer format:
+```json
+{
+  "node_id_1": "Resolves the configured ontology profile from graphify.yaml.",
+  "node_id_2": "Colonel James Barclay, an antagonist in The Crooked Man."
+}
+```

@@ -127,7 +127,7 @@ test("alvo e confirmação divergentes recusam antes do lock e de mutações", a
   }
 });
 
-test("preflight cobre as 13 tabelas e recusa cada classe sem mutação", async () => {
+test("preflight cobre as 14 tabelas e recusa cada classe sem mutação", async () => {
   for (const blocker of PROTECTED_TABLES) {
     const db = fakeDb({ blocker });
     await assert.rejects(runSeedDemo(db, validOptions()), (error) => {
@@ -141,10 +141,10 @@ test("preflight cobre as 13 tabelas e recusa cada classe sem mutação", async (
       blocker
     );
   }
-  assert.equal(OPERATIONAL_TABLES.length, 11);
+  assert.equal(OPERATIONAL_TABLES.length, 12);
 });
 
-test("baseline permitido bloqueia as 13 tabelas em ordem antes da primeira mutação", async () => {
+test("baseline permitido bloqueia as 14 tabelas em ordem antes da primeira mutação", async () => {
   const db = fakeDb();
   await runSeedDemo(db, validOptions());
   const lockIndex = db.queries.findIndex((sql) => sql.startsWith("LOCK TABLE"));
@@ -179,18 +179,36 @@ test("falha injetada após a primeira mutação propaga para rollback da transa�
   assert.equal(rolledBack, true);
 });
 
-test("CLI direto é somente cliente HTTP e dois segredos arbitrários não atravessam auth", async () => {
+test("CLI direto é somente cliente HTTP e autentica sem enviar segredo ao seed", async () => {
   const source = await readFile(new URL("../scripts/seed-demo.mjs", import.meta.url), "utf8");
+  const workflow = await readFile(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   assert.doesNotMatch(source, /DATABASE_URL|createRequire|new pg\.|pg\.Pool|pg\.Client/);
   assert.match(
     source,
     /from "\.\.\/packages\/domain\/index\.js"/,
     "o módulo copiado para /app/scripts deve resolver o domínio sem depender do node_modules da API"
   );
+  assert.doesNotMatch(workflow, /-Atc \\"select host\(inet_server_addr\(\)\)/);
+  assert.match(workflow, /-Atc "select host\(inet_server_addr\(\)\).*current_database\(\)"\)"/);
 
-  let authorization;
+  let loginBody;
+  let seedHeaders;
   const server = http.createServer((request, response) => {
-    authorization = request.headers.authorization;
+    if (request.url === "/auth/login") {
+      let body = "";
+      request.on("data", (chunk) => { body += chunk; });
+      request.on("end", () => {
+        loginBody = JSON.parse(body);
+        response.setHeader("set-cookie", [
+          "camoburguer_session=sessao; Path=/; HttpOnly",
+          "camoburguer_csrf=csrf; Path=/"
+        ]);
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(JSON.stringify({ csrfToken: "csrf" }));
+      });
+      return;
+    }
+    seedHeaders = request.headers;
     response.writeHead(403, { "content-type": "application/json" });
     response.end(JSON.stringify({ code: "admin_auth_invalid", error: "Identidade inválida." }));
   });
@@ -204,8 +222,7 @@ test("CLI direto é somente cliente HTTP e dois segredos arbitrários não atrav
     env: {
       ...process.env,
       DEMO_API_URL: `http://127.0.0.1:${address.port}`,
-      DEMO_ADMIN_TOKEN: "arbitrario-um",
-      DEMO_ADMIN_TOKEN_CONFIRM: "arbitrario-dois",
+      ADMIN_PASSWORD: "arbitrario-um",
       DATABASE_URL: "postgres://nao-deve-ser-usada"
     },
     stdio: ["ignore", "pipe", "pipe"]
@@ -214,17 +231,34 @@ test("CLI direto é somente cliente HTTP e dois segredos arbitrários não atrav
   child.stderr.on("data", (chunk) => { stderr += chunk; });
   const exitCode = await new Promise((resolve) => child.once("exit", resolve));
   await new Promise((resolve) => server.close(resolve));
-  assert.equal(exitCode, 1);
-  assert.equal(authorization, "Bearer arbitrario-um");
+  assert.equal(exitCode, 1, stderr);
+  assert.deepEqual(loginBody, { username: "admin", password: "arbitrario-um" });
+  assert.equal(seedHeaders.authorization, undefined);
+  assert.equal(seedHeaders["x-csrf-token"], "csrf");
+  assert.match(seedHeaders.cookie, /camoburguer_session=sessao/);
   assert.match(stderr, /admin_auth_invalid/);
 
+  let call = 0;
   await assert.rejects(requestDemoSeed({
     apiBase: "http://127.0.0.1:1",
-    token: "qualquer",
+    password: "qualquer",
     confirmedTarget: TARGET,
-    fetchImpl: async () => new Response(
-      JSON.stringify({ code: "admin_auth_invalid", error: "Inválido" }),
-      { status: 403 }
-    )
+    fetchImpl: async () => {
+      call += 1;
+      if (call === 1) {
+        return new Response(JSON.stringify({ csrfToken: "csrf" }), {
+          status: 200,
+          headers: [
+            ["content-type", "application/json"],
+            ["set-cookie", "camoburguer_session=sessao; Path=/; HttpOnly"],
+            ["set-cookie", "camoburguer_csrf=csrf; Path=/"]
+          ]
+        });
+      }
+      return new Response(
+        JSON.stringify({ code: "admin_auth_invalid", error: "Inválido" }),
+        { status: 403 }
+      );
+    }
   }), (error) => error.statusCode === 403 && error.code === "admin_auth_invalid");
 });

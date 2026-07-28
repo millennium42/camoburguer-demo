@@ -5,11 +5,16 @@ import {
   createOrderAction
 } from "../apps/api/src/integrations/order-actions.js";
 import { ingestExternalOrder } from "../apps/api/src/integrations/order-ingestion.js";
+import { classifyCommandError } from "../apps/api/src/integrations/command-outbox.js";
 import {
   mapIFoodOrderItem,
   normalizeIFoodEventType
 } from "../apps/api/src/integrations/providers/ifood.js";
-import { mapDeliveryMuchOrderItem } from "../apps/api/src/integrations/providers/deliverymuch.js";
+import {
+  deliveryMuchPayloadFingerprint,
+  mapDeliveryMuchOrderItem,
+  normalizeDeliveryMuchStatus
+} from "../apps/api/src/integrations/providers/deliverymuch.js";
 
 const now = "2026-07-21T12:00:00.000Z";
 
@@ -183,6 +188,11 @@ test("ação integrada conserva a chave do cliente e o id externo", async () => 
   const client = {
     async query(sql, values) {
       if (sql.includes("row_to_json(cm.*)")) return { rows: [orderRow()] };
+      if (sql.startsWith("SELECT pg_advisory_xact_lock")) return { rows: [] };
+      if (sql.startsWith("SELECT * FROM idempotency_records")) return { rows: [] };
+      if (sql.includes("SELECT 'orders' AS source")) return { rows: [] };
+      if (sql.startsWith("INSERT INTO idempotency_records")) return { rows: [] };
+      if (sql.startsWith("UPDATE idempotency_records")) return { rows: [] };
       if (sql.startsWith("SELECT * FROM channel_commands")) return { rows: [] };
       if (sql.startsWith("INSERT INTO channel_commands")) {
         insertedValues = values;
@@ -194,11 +204,12 @@ test("ação integrada conserva a chave do cliente e o id externo", async () => 
           idempotency_key: values[4],
           payload: JSON.parse(values[5]),
           status: values[6],
+          correlation_id: values[7],
           attempts: 0,
-          next_attempt_at: values[7],
+          next_attempt_at: values[8],
           response_payload: null,
           error: null,
-          created_at: values[8],
+          created_at: values[9],
           completed_at: null
         }] };
       }
@@ -273,4 +284,44 @@ test("eventos de preparo preservam pedido externo somente de entrega direta como
   assert.equal(preparation.saved.status, "ready");
   assert.equal(ready.repeated, true);
   assert.equal(ready.saved.status, "ready");
+});
+
+test("Delivery Much normaliza somente estados conhecidos", () => {
+  assert.equal(normalizeDeliveryMuchStatus("pending"), "received");
+  assert.equal(normalizeDeliveryMuchStatus("CONFIRMED"), "confirmed");
+  assert.equal(normalizeDeliveryMuchStatus("preparing"), "in_preparation");
+  assert.equal(normalizeDeliveryMuchStatus("canceled"), "cancelled");
+  assert.equal(normalizeDeliveryMuchStatus("estado-novo"), null);
+});
+
+test("fingerprint Delivery Much ignora status mas detecta divergência comercial", () => {
+  const base = {
+    id: "dm-1",
+    status: "pending",
+    total: 25,
+    deliveryAddress: "Rua A",
+    items: [
+      { id: "line-2", name: "B", quantity: 1, price: 10 },
+      { id: "line-1", name: "A", quantity: 1, price: 15 }
+    ]
+  };
+  assert.equal(
+    deliveryMuchPayloadFingerprint(base),
+    deliveryMuchPayloadFingerprint({
+      ...base,
+      status: "ready",
+      items: [...base.items].reverse()
+    })
+  );
+  assert.notEqual(
+    deliveryMuchPayloadFingerprint(base),
+    deliveryMuchPayloadFingerprint({ ...base, total: 26 })
+  );
+});
+
+test("outbox trata qualquer resposta HTTP como ambígua antes de permitir reenvio", () => {
+  assert.equal(classifyCommandError({ statusCode: 401 }), "ambiguous");
+  assert.equal(classifyCommandError({ statusCode: 503 }), "ambiguous");
+  assert.equal(classifyCommandError({ statusCode: 400 }), "terminal");
+  assert.equal(classifyCommandError({ notSent: true }), "retryable_not_sent");
 });

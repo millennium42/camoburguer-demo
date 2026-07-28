@@ -13,7 +13,27 @@
 - `apps/api`: núcleo HTTP, domínio, persistência, SSE e automações
 - `apps/ops-web`: interface operacional leve
 - `apps/print-bridge`: bridge de impressão com spool em arquivo
-- `apps/event-simulator`: semeador opcional para demo
+- `apps/event-simulator`: cenário HTTP autenticado e restrito a ambiente local/efêmero
+
+## Outbox de integrações
+
+Comandos externos são persistidos antes do HTTP. Workers fazem claim com
+`FOR UPDATE SKIP LOCKED`, `lease_owner` e expiração; o HTTP ocorre fora da
+transação. A máquina usa `pending -> processing -> awaiting_event/completed`,
+com `ambiguous` para qualquer resultado possivelmente aplicado e
+`dead_letter` após três reconciliações inconclusivas. Só uma prova explícita
+`not_applied` permite novo envio; respostas HTTP, inclusive 401, exigem
+reconciliação antes de reenviar.
+
+Crash antes do HTTP expira o lease e pode reenviar; crash depois do HTTP entra
+em reconciliação pelo `correlation_id`, sem envio cego. A migração é aditiva e
+preserva comandos históricos. Rollback de código mantém as colunas e deixa os
+adapters desligados até que todos os estados não terminais sejam reconciliados.
+
+Delivery Much permanece desabilitado por padrão. Os estados e fingerprints
+atuais são comprovados apenas por fixtures locais; não constituem homologação
+do contrato privado, sandbox ou produção do parceiro. Estado desconhecido ou
+payload comercial divergente bloqueia ACK e exige reconciliação manual.
 
 ## Packages
 
@@ -108,9 +128,10 @@ flowchart LR
 ## Fronteira de segurança
 
 - CORS usa allowlist; isso controla navegador, não acesso à API.
-- Seed e anonimização exigem `DEMO_ADMIN_TOKEN` e ficam desabilitados sem segredo.
+- API e SSE usam sessão opaca em cookie `HttpOnly`, `Secure` e `SameSite=Strict`, com RBAC `admin`/`operator`/`kitchen` e CSRF vinculado à sessão.
+- Seed e anonimização exigem sessão `admin`; o primeiro administrador é criado uma única vez por `ADMIN_BOOTSTRAP_PASSWORD`.
 - API e print bridge usam `PRINT_BRIDGE_TOKEN`; o bridge valida bearer, IDs e tamanho do ticket.
-- As rotas operacionais e SSE ainda não têm identidade de operador. Esta é uma pendência P0 antes de qualquer integração real.
+- Rotas não classificadas falham fechadas e mutações autenticadas registram o identificador do ator em `audit_events`.
 
 ## Eventos internos
 

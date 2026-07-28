@@ -93,19 +93,66 @@ export function buildEntryFromTabPayment({ payment, tab }) {
   };
 }
 
-export function filterEntries(entries, filters = {}) {
+export const DEFAULT_BUSINESS_TIME_ZONE = "America/Sao_Paulo";
+
+function zonedParts(value, timeZone) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error(`Timestamp financeiro inválido: ${value}`);
+  return Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+}
+
+export function businessDate(value, timeZone = DEFAULT_BUSINESS_TIME_ZONE) {
+  const parts = zonedParts(value, timeZone);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function businessHour(value, timeZone = DEFAULT_BUSINESS_TIME_ZONE) {
+  return zonedParts(value, timeZone).hour;
+}
+
+function assertOperationalDate(value, label) {
+  if (value == null || value === "") return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const error = new Error(`${label} deve usar YYYY-MM-DD no calendário operacional`);
+    error.statusCode = 400;
+    throw error;
+  }
+  const [year, month, day] = value.split("-").map(Number);
+  const verified = new Date(Date.UTC(year, month - 1, day));
+  if (
+    verified.getUTCFullYear() !== year
+    || verified.getUTCMonth() !== month - 1
+    || verified.getUTCDate() !== day
+  ) {
+    const error = new Error(`${label} contém uma data inexistente`);
+    error.statusCode = 400;
+    throw error;
+  }
+}
+
+export function filterEntries(entries, filters = {}, { timeZone = DEFAULT_BUSINESS_TIME_ZONE } = {}) {
+  assertOperationalDate(filters.dateFrom, "dateFrom");
+  assertOperationalDate(filters.dateTo, "dateTo");
   return entries.filter((entry) => {
     if (filters.shiftId && entry.shiftId !== filters.shiftId) return false;
     if (filters.source && entry.source !== filters.source) return false;
     if (filters.paymentMethod && entry.paymentMethod !== filters.paymentMethod) return false;
     if (filters.type && entry.type !== filters.type) return false;
-    if (filters.dateFrom && entry.occurredAt.slice(0, 10) < filters.dateFrom) return false;
-    if (filters.dateTo && entry.occurredAt.slice(0, 10) > filters.dateTo) return false;
+    const operationalDate = businessDate(entry.occurredAt, timeZone);
+    if (filters.dateFrom && operationalDate < filters.dateFrom) return false;
+    if (filters.dateTo && operationalDate > filters.dateTo) return false;
     return true;
   });
 }
 
-export function summarizeFinance(entries) {
+export function summarizeFinance(entries, { timeZone = DEFAULT_BUSINESS_TIME_ZONE } = {}) {
   const sales = entries.filter((entry) => entry.type === "sale");
   const grossSales = sales.reduce((sum, entry) => sum + Number(entry.amount), 0);
   const cancellations = entries
@@ -123,23 +170,35 @@ export function summarizeFinance(entries) {
     entriesByType[entry.type] = toMoney((entriesByType[entry.type] || 0) + Number(entry.amount));
     if (entry.type === "sale") {
       salesBySource[entry.source] = toMoney((salesBySource[entry.source] || 0) + Number(entry.amount));
-      paymentsByMethod[entry.paymentMethod] = toMoney(
-        (paymentsByMethod[entry.paymentMethod] || 0) + Number(entry.amount)
-      );
-      const hourKey = new Date(entry.occurredAt).getHours().toString().padStart(2, "0");
+      const hourKey = businessHour(entry.occurredAt, timeZone);
       salesByHour[hourKey] = toMoney((salesByHour[hourKey] || 0) + Number(entry.amount));
+    }
+    if (["sale", "cancellation"].includes(entry.type)) {
+      const method = entry.paymentMethod || "unattributed";
+      paymentsByMethod[method] = toMoney(
+        (paymentsByMethod[method] || 0) + Number(entry.amount)
+      );
     }
   }
 
+  const netSales = toMoney(grossSales - cancellations);
+  const methodTotal = toMoney(Object.values(paymentsByMethod).reduce((sum, amount) => sum + Number(amount), 0));
   return {
     grossSales: toMoney(grossSales),
     cancellations: toMoney(cancellations),
-    netSales: toMoney(grossSales - cancellations),
+    netSales,
     totalOrders,
     ticketAverage,
     salesBySource,
     paymentsByMethod,
     salesByHour,
-    entriesByType
+    entriesByType,
+    businessTimeZone: timeZone,
+    reconciliation: {
+      methodTotal,
+      difference: toMoney(methodTotal - netSales),
+      balanced: methodTotal === netSales,
+      unattributed: paymentsByMethod.unattributed || 0
+    }
   };
 }

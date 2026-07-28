@@ -1,0 +1,27 @@
+{
+  "schema": "m1nd-temporal-runtime-state-v1",
+  "version": 1,
+  "primary": {
+    "schema": "m1nd-co-change-state-v1",
+    "version": 1,
+    "node_external_ids": [],
+    "rows": [],
+    "node_counts": [],
+    "total_entries": 0,
+    "budget": 500000,
+    "is_learned": false,
+    "state_digest": "d0f0d7f38b95d593648b71593af0ece7e13e29fa662800c1fa8198b4bfad8081"
+  },
+  "orchestrator": {
+    "schema": "m1nd-co-change-state-v1",
+    "version": 1,
+    "node_external_ids": [],
+    "rows": [],
+    "node_counts": [],
+    "total_entries": 0,
+    "budget": 500000,
+    "is_learned": false,
+    "state_digest": "d0f0d7f38b95d593648b71593af0ece7e13e29fa662800c1fa8198b4bfad8081"
+  },
+  "state_digest": "e66e74d9b5140cc53fccf5441714f1dfe551804fe889d766824a4f3db4d0dfff"
+}

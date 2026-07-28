@@ -1,5 +1,6 @@
 import createDeliveryMuchAdapter from "./providers/deliverymuch.js";
 import createIFoodAdapter from "./providers/ifood.js";
+import { processChannelCommands } from "./command-outbox.js";
 
 function assertConfigured(name, enabled, settings, fields) {
   if (!enabled) return;
@@ -34,13 +35,15 @@ export function startIntegrationPolling({ config, db, sse }) {
     const run = async () => {
       let pollResult;
       try {
+        await processChannelCommands({ db, adapter });
+        const batch = await adapter.fetchBatch();
         pollResult = await db.transaction(async (client) => {
           const { rows } = await client.query(
             "SELECT pg_try_advisory_xact_lock(hashtextextended($1, 0)) as locked",
             [`integration-poll:${adapter.channel}`]
           );
           if (!rows[0].locked) return null;
-          return adapter.poll(client);
+          return adapter.persistBatch(batch, client);
         });
         if (pollResult && adapter.afterCommit) await adapter.afterCommit(pollResult);
         if (pollResult && sse) {

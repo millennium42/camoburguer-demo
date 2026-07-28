@@ -1,27 +1,46 @@
 export function createSseHub() {
   const channels = new Map();
 
-  function subscribe(channel, reply) {
+  function remove(channel, subscription) {
+    channels.get(channel)?.delete(subscription);
+    if (channels.get(channel)?.size === 0) channels.delete(channel);
+  }
+
+  async function validateOrClose(channel, subscription) {
+    if (subscription.reply.raw.destroyed) {
+      remove(channel, subscription);
+      return false;
+    }
+    try {
+      if (await subscription.validate()) return true;
+    } catch {
+      // Falha fechada: indisponibilidade da sessao encerra o stream.
+    }
+    subscription.reply.raw.end();
+    remove(channel, subscription);
+    return false;
+  }
+
+  function subscribe(channel, reply, validate = async () => true) {
     if (!channels.has(channel)) channels.set(channel, new Set());
-    channels.get(channel).add(reply);
-    const heartbeat = setInterval(() => {
-      if (!reply.raw.destroyed) reply.raw.write(": keepalive\n\n");
+    const subscription = { reply, validate };
+    channels.get(channel).add(subscription);
+    const heartbeat = setInterval(async () => {
+      if (await validateOrClose(channel, subscription)) reply.raw.write(": keepalive\n\n");
     }, 25_000);
     heartbeat.unref();
     reply.raw.on("close", () => {
       clearInterval(heartbeat);
-      channels.get(channel)?.delete(reply);
-      if (channels.get(channel)?.size === 0) channels.delete(channel);
+      remove(channel, subscription);
     });
   }
 
-  function publish(channel, payload) {
-    const replies = channels.get(channel);
-    if (!replies) return;
+  async function publish(channel, payload) {
+    const subscriptions = channels.get(channel);
+    if (!subscriptions) return;
     const serialized = `data: ${JSON.stringify(payload)}\n\n`;
-    for (const reply of replies) {
-      if (reply.raw.destroyed) replies.delete(reply);
-      else reply.raw.write(serialized);
+    for (const subscription of [...subscriptions]) {
+      if (await validateOrClose(channel, subscription)) subscription.reply.raw.write(serialized);
     }
   }
 

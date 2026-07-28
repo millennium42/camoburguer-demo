@@ -7,6 +7,15 @@
     <link rel="stylesheet" href="./styles.css?v=22" />
   </head>
   <body>
+    <dialog id="login-dialog" aria-labelledby="login-title">
+      <form id="login-form" method="dialog" class="card" style="min-width: min(26rem, 90vw);">
+        <h2 id="login-title">Entrar no painel</h2>
+        <p id="login-error" role="alert" hidden></p>
+        <label>Usuário <input name="username" autocomplete="username" required value="admin" /></label>
+        <label>Senha <input name="password" type="password" autocomplete="current-password" required /></label>
+        <button type="submit" class="primary">Entrar</button>
+      </form>
+    </dialog>
     <div class="app-shell">
       <header class="hero glass">
         <div class="brand-container">
@@ -20,6 +29,7 @@
           <button type="button" id="btn-quick-catalog-admin" class="secondary">Cardápio</button>
           <button type="button" id="btn-quick-stock" class="secondary">+ Estoque</button>
           <button type="button" id="btn-quick-cash" class="secondary">+ Caixa</button>
+          <button type="button" id="btn-logout" class="secondary" hidden>Sair</button>
           <div class="status-card" role="status" aria-live="polite">
             <span class="status-dot"></span>
             <span id="api-status">Conectando API...</span>
@@ -422,19 +432,12 @@
         <div class="section-heading">
           <div>
             <h2 id="catalog-admin-title">Administração do cardápio</h2>
-            <p class="lede">A chave fica somente na memória desta tela.</p>
+            <p class="lede">Acesso autorizado pela sessão do administrador.</p>
           </div>
           <button type="button" id="close-catalog-admin" class="icon-button" aria-label="Fechar">×</button>
         </div>
 
-        <form id="catalog-admin-auth" class="inline">
-          <label>Chave administrativa
-            <input name="token" type="password" autocomplete="off" required />
-          </label>
-          <button type="submit" class="primary">Acessar gestão</button>
-        </form>
-
-        <div id="catalog-admin-content" class="catalog-admin-layout" hidden>
+        <div id="catalog-admin-content" class="catalog-admin-layout">
           <section class="stack">
             <div class="section-heading">
               <h3>Itens</h3>

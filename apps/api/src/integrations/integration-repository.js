@@ -20,7 +20,16 @@ const COMMAND_COLUMNS = {
   nextAttemptAt: "next_attempt_at",
   responsePayload: "response_payload",
   error: "error",
-  completedAt: "completed_at"
+  completedAt: "completed_at",
+  correlationId: "correlation_id",
+  leaseOwner: "lease_owner",
+  leaseExpiresAt: "lease_expires_at",
+  lastAttemptAt: "last_attempt_at",
+  sentAt: "sent_at",
+  reconciledAt: "reconciled_at",
+  lastHttpStatus: "last_http_status",
+  eventDeadlineAt: "event_deadline_at",
+  deadLetteredAt: "dead_lettered_at"
 };
 
 function columnFor(columns, key) {
@@ -136,8 +145,10 @@ export async function updateChannelEvent(id, updates, executor) {
 export async function insertChannelCommand(command, executor) {
   const { rows } = await executor.query(
     `INSERT INTO channel_commands (
-      id, order_id, channel, action, idempotency_key, payload, status, next_attempt_at, created_at
-    ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9) ON CONFLICT (channel, idempotency_key) DO NOTHING RETURNING *`,
+      id, order_id, channel, action, idempotency_key, payload, status,
+      correlation_id, next_attempt_at, created_at
+    ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10)
+    ON CONFLICT (channel, idempotency_key) DO NOTHING RETURNING *`,
     [
       command.id,
       command.orderId,
@@ -146,6 +157,7 @@ export async function insertChannelCommand(command, executor) {
       command.idempotencyKey,
       JSON.stringify(command.payload || {}),
       command.status || 'pending',
+      command.correlationId || command.id,
       command.nextAttemptAt || new Date().toISOString(),
       command.createdAt || new Date().toISOString()
     ]
@@ -184,12 +196,72 @@ export async function updateChannelCommand(id, updates, executor) {
   return rows[0] ? mapChannelCommand(rows[0]) : null;
 }
 
-export async function getPendingCommands(channel, executor) {
+export async function claimChannelCommand({
+  channel,
+  workerId,
+  leaseMs = 60_000
+}, executor) {
   const { rows } = await executor.query(
-    "SELECT * FROM channel_commands WHERE channel = $1 AND status IN ('pending', 'processing') AND next_attempt_at <= NOW() ORDER BY created_at ASC",
-    [channel]
+    `WITH candidate AS (
+       SELECT id, status AS previous_status
+       FROM channel_commands
+       WHERE channel = $1
+         AND (
+           (status = 'pending' AND next_attempt_at <= NOW())
+           OR (status = 'processing' AND lease_expires_at <= NOW())
+           OR (status = 'ambiguous' AND next_attempt_at <= NOW())
+           OR (status = 'awaiting_event' AND event_deadline_at <= NOW())
+         )
+       ORDER BY created_at, id
+       FOR UPDATE SKIP LOCKED
+       LIMIT 1
+     )
+     UPDATE channel_commands command
+     SET status = CASE WHEN candidate.previous_status = 'pending' THEN 'processing' ELSE 'ambiguous' END,
+         attempts = command.attempts + 1,
+         lease_owner = $2,
+         lease_expires_at = NOW() + ($3::bigint * INTERVAL '1 millisecond'),
+         last_attempt_at = NOW(),
+         correlation_id = COALESCE(command.correlation_id, command.id),
+         error = NULL
+     FROM candidate
+     WHERE command.id = candidate.id
+     RETURNING command.*, candidate.previous_status`,
+    [channel, workerId, leaseMs]
   );
-  return rows.map(mapChannelCommand);
+  if (!rows[0]) return null;
+  return {
+    command: mapChannelCommand(rows[0]),
+    mode: rows[0].previous_status === "pending" ? "send" : "reconcile"
+  };
+}
+
+export async function updateOwnedChannelCommand(id, workerId, updates, executor) {
+  if (!Object.keys(updates).length) throw new Error("Atualização de comando vazia");
+  const setClauses = [];
+  const values = [];
+  let index = 1;
+  for (const [key, value] of Object.entries(updates)) {
+    const column = columnFor(COMMAND_COLUMNS, key);
+    setClauses.push(`${column} = $${index}`);
+    values.push(key === "responsePayload" ? JSON.stringify(value) : value);
+    index += 1;
+  }
+  setClauses.push(`lease_owner = NULL`, `lease_expires_at = NULL`);
+  values.push(id, workerId);
+  const { rows } = await executor.query(
+    `UPDATE channel_commands
+     SET ${setClauses.join(", ")}
+     WHERE id = $${index} AND lease_owner = $${index + 1}
+     RETURNING *`,
+    values
+  );
+  if (!rows[0]) {
+    const error = new Error("Worker perdeu ownership do comando");
+    error.code = "COMMAND_LEASE_LOST";
+    throw error;
+  }
+  return mapChannelCommand(rows[0]);
 }
 
 export async function getOrderWithMapping(orderId, executor) {

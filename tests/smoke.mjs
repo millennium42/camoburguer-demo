@@ -2,22 +2,27 @@ import assert from "node:assert/strict";
 import pg from "pg";
 
 const apiBase = process.env.API_BASE_URL || "http://127.0.0.1:3001";
-const webBase = process.env.WEB_BASE_URL || "http://127.0.0.1:8081";
+const webBase = process.env.WEB_BASE_URL || `${apiBase}/app/`;
 const printBase = process.env.PRINT_BRIDGE_URL || "http://127.0.0.1:3100";
 const printBridgeToken = process.env.PRINT_BRIDGE_TOKEN || "";
-const demoAdminToken = process.env.DEMO_ADMIN_TOKEN || "";
+const adminPassword = process.env.ADMIN_PASSWORD || process.env.ADMIN_BOOTSTRAP_PASSWORD || "";
+let authHeaders = {};
 const runId = Date.now().toString(36);
 const smokeBurgerSku = `smoke-burger-${runId}`;
 const smokeBatataSku = `smoke-batata-${runId}`;
 
-if (!demoAdminToken) {
-  throw new Error("DEMO_ADMIN_TOKEN é obrigatório para preparar as fixtures do smoke");
+if (!adminPassword) {
+  throw new Error("ADMIN_PASSWORD ou ADMIN_BOOTSTRAP_PASSWORD é obrigatório para o smoke autenticado");
 }
 
-async function request(base, path, { method = "GET", body, headers = {}, expected = [200] } = {}) {
+async function request(base, path, { method = "GET", body, headers = {}, expected = [200], authenticated = true } = {}) {
   const response = await fetch(`${base}${path}`, {
     method,
-    headers: body ? { "content-type": "application/json", ...headers } : headers,
+    headers: {
+      ...(base === apiBase && authenticated ? authHeaders : {}),
+      ...(body ? { "content-type": "application/json" } : {}),
+      ...headers
+    },
     body: body ? JSON.stringify(body) : undefined
   });
   const text = await response.text();
@@ -30,7 +35,7 @@ const api = (path, options) => request(apiBase, path, options);
 
 async function observeOrderEvents() {
   const controller = new AbortController();
-  const response = await fetch(`${apiBase}/events/orders`, { signal: controller.signal });
+  const response = await fetch(`${apiBase}/events/orders`, { headers: authHeaders, signal: controller.signal });
   assert.equal(response.status, 200);
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -68,6 +73,18 @@ assert.equal(web.status, 200);
 assert.match(await web.text(), /Pedidos, cozinha e financeiro/);
 assert.equal((await api("/health")).ok, true);
 assert.equal((await api("/health")).database, "reachable");
+const loginResponse = await fetch(`${apiBase}/auth/login`, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ username: "admin", password: adminPassword })
+});
+assert.equal(loginResponse.status, 200);
+const login = await loginResponse.json();
+const cookies = (loginResponse.headers.getSetCookie?.() || [loginResponse.headers.get("set-cookie") || ""])
+  .map((value) => value.split(";")[0])
+  .filter(Boolean)
+  .join("; ");
+authHeaders = { cookie: cookies, "x-csrf-token": login.csrfToken };
 const catalog = await api("/catalog");
 assert.equal(catalog.capturedAt, "2026-07-16");
 assert.ok(catalog.items.length >= 51);
@@ -75,11 +92,12 @@ assert.ok(catalog.items.filter((item) => item.available).length >= 50);
 assert.equal(catalog.addOns.length, 17);
 
 {
-  const adminHeaders = { authorization: `Bearer ${demoAdminToken}` };
+  const adminHeaders = {};
   await api("/catalog/items", {
     method: "POST",
     body: { sku: `unauthorized-${runId}`, name: "Bloqueado", category: "Teste", price: 1 },
-    expected: [401]
+    expected: [401],
+    authenticated: false
   });
   const fixtures = [
     [smokeBurgerSku, "Burger smoke", 10],
@@ -171,12 +189,9 @@ assert.equal(catalog.addOns.length, 17);
   assert.equal(raceResults.some((item) => item?.archivedAt != null), true);
 }
 
-const seededOrders = (await api("/orders")).items;
-const seededDrink = seededOrders
-  .find((order) => order.customerName === "Pessoa Demo 01")
-  ?.items.find((item) => item.sku === "refrigerante-lata");
-assert.equal(seededDrink?.preparationMode, "direct_handoff");
-assert.equal(seededDrink?.stockCategory, null);
+const catalogDrink = catalog.items.find((item) => item.sku === "refrigerante-lata");
+assert.equal(catalogDrink?.preparationMode, "direct_handoff");
+assert.equal(catalogDrink?.stockCategory, null);
 
 const initialInventory = await api("/inventory");
 const initialXis = initialInventory.balances.find((item) => item.category === "xis").quantity;
@@ -190,7 +205,11 @@ await database.query(
    VALUES ($1, 'counter', 'confirmed', 'Pedido legado', 'pickup', '', 24, 0, $2::jsonb, '{}'::jsonb)`,
   [legacyOrderId, JSON.stringify([{ id: `legacy-line-${runId}`, sku: "x-simples", name: "X-SIMPLES", quantity: 1, price: 24, addons: [] }])]
 );
-await api(`/orders/${legacyOrderId}/status`, { method: "PATCH", body: { status: "cancelled" } });
+await api(`/orders/${legacyOrderId}/status`, {
+  method: "PATCH",
+  headers: { "Idempotency-Key": `smoke-cancel-${legacyOrderId}` },
+  body: { status: "cancelled" }
+});
 assert.equal((await api("/inventory")).balances.find((item) => item.category === "xis").quantity, initialXis);
 const stockKey = `smoke-stock-${runId}`;
 const stocked = await api("/inventory/xis/adjustments", {
@@ -414,7 +433,7 @@ const raceTargets = await Promise.all(["A", "B"].map((suffix) => api("/tabs", {
 const assignmentRace = await Promise.all(raceTargets.map(async (candidate, index) => {
   const response = await fetch(`${apiBase}/orders/${raceOrder.id}/tab-assignment`, {
     method: "POST",
-    headers: { "content-type": "application/json", "Idempotency-Key": `assignment-race-${index}-${runId}` },
+    headers: { ...authHeaders, "content-type": "application/json", "Idempotency-Key": `assignment-race-${index}-${runId}` },
     body: JSON.stringify({ tabId: candidate.id })
   });
   return response.status;
@@ -450,7 +469,8 @@ await api(`/orders/${tabRound.id}/status`, { method: "PATCH", body: { status: "c
 assert.equal((await api(`/tabs/${tab.id}/rounds`, {
   method: "POST",
   headers: { "Idempotency-Key": tabRoundKey },
-  body: { items: [{ sku: "x-simples", name: "X-SIMPLES", quantity: 1, price: 24 }] }
+  body: { items: [{ sku: "x-simples", name: "X-SIMPLES", quantity: 1, price: 24 }] },
+  expected: [201]
 })).id, tabRound.id);
 const tabView = await api(`/tabs/${tab.id}`);
 assert.equal(tabView.rounds.length, 1);
@@ -468,7 +488,8 @@ assert.equal(cancellation.total, -24);
 assert.equal((await api(`/tabs/${tab.id}/rounds/${tabRound.id}/cancellations`, {
   method: "POST",
   headers: { "Idempotency-Key": cancellationKey },
-  body: { items: [{ itemId: tabRound.items[0].id, quantity: 1 }], reason: "Smoke corretivo" }
+  body: { items: [{ itemId: tabRound.items[0].id, quantity: 1 }], reason: "Smoke corretivo" },
+  expected: [201]
 })).id, cancellation.id);
 const cancelledTab = await api(`/tabs/${tab.id}`);
 assert.equal(cancelledTab.total, 0);
@@ -547,7 +568,7 @@ const concurrentTabs = await Promise.all([
 const concurrentRounds = await Promise.all(concurrentTabs.map(async (candidate, index) => {
   const response = await fetch(`${apiBase}/tabs/${candidate.id}/rounds`, {
     method: "POST",
-    headers: { "content-type": "application/json", "Idempotency-Key": `smoke-concurrent-${index}-${runId}` },
+    headers: { ...authHeaders, "content-type": "application/json", "Idempotency-Key": `smoke-concurrent-${index}-${runId}` },
     body: JSON.stringify({ items: [{ sku: "dog-tradicional", name: "DOG TRADICIONAL", quantity: 1, price: 21 }] })
   });
   return { status: response.status, body: await response.json() };
@@ -582,7 +603,7 @@ const racingKey = `smoke-racing-stock-${runId}`;
 const racingAdjustments = await Promise.all(["dog", "hamburguer"].map(async (category) => {
   const response = await fetch(`${apiBase}/inventory/${category}/adjustments`, {
     method: "POST",
-    headers: { "content-type": "application/json", "Idempotency-Key": racingKey },
+    headers: { ...authHeaders, "content-type": "application/json", "Idempotency-Key": racingKey },
     body: JSON.stringify({ delta: 1, reason: `Corrida ${category}` })
   });
   return { category, status: response.status };
@@ -774,7 +795,7 @@ await api(`/tabs/${paymentRaceTab.id}/rounds`, {
 const paymentRace = await Promise.all(["pix", "debit_card"].map(async (paymentMethod, index) => {
   const response = await fetch(`${apiBase}/tabs/${paymentRaceTab.id}/payments`, {
     method: "POST",
-    headers: { "content-type": "application/json", "Idempotency-Key": `smoke-payment-race-${index}-${runId}` },
+    headers: { ...authHeaders, "content-type": "application/json", "Idempotency-Key": `smoke-payment-race-${index}-${runId}` },
     body: JSON.stringify({ paymentMethod, amountCents: 1000 })
   });
   return response.status;
@@ -812,15 +833,17 @@ await api(`/tabs/${reversalTab.id}/payments`, {
 await api(`/tabs/${reversalTab.id}/close`, { method: "POST", body: {} });
 await api(`/cash-shifts/${shift.id}/adjustments`, {
   method: "POST",
+  headers: { "Idempotency-Key": `smoke-cash-reinforcement-${runId}` },
   body: { kind: "reinforcement", amount: 20, reason: "Troco" }
 });
 await api(`/cash-shifts/${shift.id}/adjustments`, {
   method: "POST",
+  headers: { "Idempotency-Key": `smoke-cash-withdrawal-${runId}` },
   body: { kind: "withdrawal", amount: 5, reason: "Pagamento" }
 });
 
 async function createOrder(source, fulfillmentMode, paymentMethod, extra = {}) {
-  const key = `smoke-${runId}-${source}`;
+  const key = `smoke-${runId}-${source}-${fulfillmentMode}`;
   const payload = {
     source,
     fulfillmentMode,
@@ -839,7 +862,8 @@ async function createOrder(source, fulfillmentMode, paymentMethod, extra = {}) {
   const repeated = await api("/orders", {
     method: "POST",
     headers: { "Idempotency-Key": key },
-    body: payload
+    body: payload,
+    expected: [201]
   });
   assert.equal(repeated.id, created.id);
   assert.equal(created.status, "confirmed");
@@ -854,13 +878,19 @@ const orders = {
       { sku: smokeBatataSku, name: "Batata smoke", quantity: 1, price: 5 }]
   }),
   whatsapp: await createOrder("whatsapp", "pickup", "pix"),
-  ifood: await createOrder("ifood", "delivery", "app_paid", { deliveryAddress: "Rua Smoke, 123" }),
+  delivery: await createOrder("whatsapp", "delivery", "pix", { deliveryAddress: "Rua Smoke, 123" }),
   olaclick: await createOrder("olaclick", "local", "credit_card")
 };
 assert.equal(orders.counter.total, 18.4);
 assert.equal(orders.counter.discountPercent, 20);
 assert.equal(orders.counter.items[0].discountPercent, 10);
 
+await api("/orders", {
+  method: "POST",
+  headers: { "Idempotency-Key": `smoke-${runId}-ifood-generico` },
+  body: { source: "ifood", fulfillmentMode: "delivery", deliveryAddress: "Rua", items: [{ sku: smokeBurgerSku, quantity: 1 }] },
+  expected: [400]
+});
 await api("/orders", {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-${runId}-delivery-sem-endereco` },
@@ -883,8 +913,12 @@ for (const status of ["in_preparation", "ready", "completed"]) {
   await api(`/orders/${orders.counter.id}/status`, { method: "PATCH", body: { status } });
 }
 await api(`/orders/${orders.counter.id}/status`, { method: "PATCH", body: { status: "completed" } });
-await api(`/orders/${orders.whatsapp.id}/status`, { method: "PATCH", body: { status: "cancelled" } });
-const reprint = await api(`/orders/${orders.ifood.id}/reprint`, { method: "POST", body: {} });
+await api(`/orders/${orders.whatsapp.id}/status`, {
+  method: "PATCH",
+  headers: { "Idempotency-Key": `smoke-cancel-${orders.whatsapp.id}` },
+  body: { status: "cancelled" }
+});
+const reprint = await api(`/orders/${orders.delivery.id}/reprint`, { method: "POST", body: {} });
 assert.equal(reprint.ok, true);
 
 const entries = (await api("/finance/entries")).items;
@@ -914,6 +948,7 @@ assert.equal(closed.differenceAmount, 0);
 await api(`/cash-shifts/${shift.id}/close`, { method: "POST", body: { declaredAmount: 128.4 }, expected: [409] });
 await api(`/cash-shifts/${shift.id}/adjustments`, {
   method: "POST",
+  headers: { "Idempotency-Key": `smoke-cash-closed-${runId}` },
   body: { kind: "withdrawal", amount: 1, reason: "Inválido" },
   expected: [409]
 });
@@ -921,7 +956,7 @@ await api(`/cash-shifts/${shift.id}/adjustments`, {
 const bridgeJob = `smoke-${runId}-bridge`;
 const bridgePayload = {
   jobId: bridgeJob,
-  orderId: orders.ifood.id,
+  orderId: orders.delivery.id,
   printerName: "cozinha-principal",
   reason: "smoke",
   content: "Pedido smoke\nHorário: 12:34\n2x Burger"

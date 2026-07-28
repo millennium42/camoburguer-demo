@@ -18,6 +18,16 @@ function positiveNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+export function validateTimeZone(value) {
+  const normalized = String(value || "America/Sao_Paulo").trim();
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: normalized }).format(new Date(0));
+  } catch {
+    throw new Error(`BUSINESS_TIME_ZONE inválido: ${normalized}`);
+  }
+  return normalized;
+}
+
 export function assertSafeAutoSeed(value) {
   if (value != null && value !== "false") {
     throw new Error(
@@ -27,20 +37,28 @@ export function assertSafeAutoSeed(value) {
   }
 }
 
+const appEnvironment = String(process.env.APP_ENV || "").trim();
+const authCookieSecure = process.env.AUTH_COOKIE_SECURE !== "false";
+if (!authCookieSecure && !["development", "test"].includes(appEnvironment)) {
+  throw new Error("AUTH_COOKIE_SECURE=false so e permitido em development/test local");
+}
+
 export const config = {
   port: positiveNumber(process.env.PORT, 3001),
   databaseUrl: process.env.DATABASE_URL || "postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer",
   printBridgeUrl: httpUrl(process.env.PRINT_BRIDGE_URL, "127.0.0.1:3100"),
   printBridgeToken: String(process.env.PRINT_BRIDGE_TOKEN || "").trim(),
   defaultPrinter: process.env.DEFAULT_PRINTER || "cozinha-principal",
-  demoAdminToken: String(process.env.DEMO_ADMIN_TOKEN || "").trim(),
-  appEnvironment: String(process.env.APP_ENV || "").trim(),
+  adminBootstrapPassword: String(process.env.ADMIN_BOOTSTRAP_PASSWORD || ""),
+  appEnvironment,
+  authCookieSecure,
+  businessTimeZone: validateTimeZone(process.env.BUSINESS_TIME_ZONE),
   demoSeedEnabled: process.env.DEMO_SEED_ENABLED === "true",
   demoSeedTarget: String(process.env.DEMO_SEED_TARGET || "").trim(),
   corsOrigins: csv(process.env.CORS_ORIGINS, [
-    "http://localhost:8081",
-    "http://127.0.0.1:8081",
-    "https://camoburguer-ops-web.onrender.com"
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "https://camoburguer-api.onrender.com"
   ]),
   deliveryMuch: {
     enabled: process.env.DELIVERYMUCH_ENABLED === "true",

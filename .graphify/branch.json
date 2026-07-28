@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "branchName": "main",
+  "worktreePath": "C:\\Users\\milla\\Documents\\Projetos\\Git\\camoburguer-demo",
+  "upstream": "origin/main",
+  "mergeBase": "176899cac86ac3301abbf1226eda92b96327b1a9",
+  "firstSeenHead": "01b42c9fd1b79039b1d4b3f6fa0b5ff06440d6c0",
+  "lastSeenHead": "176899cac86ac3301abbf1226eda92b96327b1a9",
+  "lastAnalyzedHead": "176899cac86ac3301abbf1226eda92b96327b1a9",
+  "stale": false,
+  "staleReason": null,
+  "staleSince": null,
+  "lifecycleEvent": null,
+  "createdAt": "2026-07-22T03:28:47.946Z",
+  "updatedAt": "2026-07-28T08:45:15.024Z"
+}

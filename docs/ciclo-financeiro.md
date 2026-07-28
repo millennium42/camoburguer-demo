@@ -44,3 +44,33 @@ O filtro por forma de pagamento e tipo de lançamento é único para a tela: a m
 Turnos de caixa com o estado closed habilitam opções de impressão (Client-side, via window.print()):
 - **Resumo**: Fita consolidada (vendas, entradas, saídas, esperado vs. apurado).
 - **Detalhado**: Resumo financeiro acrescido de uma fita analítica listando cronologicamente todas as movimentações.
+## Timezone operacional e reconciliação
+
+Os instantes são persistidos como `TIMESTAMPTZ`/UTC. Relatórios, filtros civis
+e tickets convertem uma única vez para `BUSINESS_TIME_ZONE`, cujo padrão
+validado é `America/Sao_Paulo`; o timezone do processo e do navegador não
+participa da regra financeira.
+
+`paymentsByMethod` é líquido: vendas somam e cancelamentos/estornos subtraem no
+método original. Legado sem método entra em `unattributed`, nunca em dinheiro
+por suposição. A soma por método é publicada com uma reconciliação contra
+`netSales`. A mudança é apenas de interpretação do relatório; não reescreve
+timestamps históricos e pode ser revertida sem migração de dados.
+
+## Legado sem turno
+
+Cancelamento usa o `shift_id` do lançamento de venda original, inclusive quando
+o turno já está fechado. Registros históricos com venda concluída e
+`finance_entries.shift_id IS NULL` não são associados silenciosamente a um
+turno atual; o estorno permanece sem turno para preservar a verdade histórica.
+O diagnóstico recomendado é:
+
+```sql
+SELECT order_id, occurred_at
+FROM finance_entries
+WHERE type = 'sale' AND shift_id IS NULL;
+```
+
+Não há backfill automático. Rollback de aplicação não remove ou reatribui
+lançamentos; qualquer correção histórica exige plano aprovado e trilha de
+auditoria separada.

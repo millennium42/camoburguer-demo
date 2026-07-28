@@ -68,6 +68,17 @@ tests/                    unitário, contrato, UI e smoke
 docs/                     operação, arquitetura, auditoria e runbooks
 ```
 
+O simulador opera somente por HTTP contra host local/efêmero, consulta catálogo
+e caixa atuais e exige `DEMO_ADMIN_PASSWORD` por ambiente. Exemplo local:
+
+```powershell
+$env:DEMO_ADMIN_PASSWORD="<senha do bootstrap>"
+npm run start:sim
+```
+
+Ele nunca executa seed ou SQL direto; qualquer etapa falha encerra dependentes,
+gera resumo por etapa e retorna exit code diferente de zero.
+
 ## Início rápido no Ubuntu/WSL
 
 Pré-requisitos: Node.js 22+, npm, WSL 2/Ubuntu e Docker Desktop com integração WSL.
@@ -80,7 +91,7 @@ rtk proxy docker compose -p camoburguer-dev up -d --build
 
 URLs:
 
-- painel: `http://localhost:8081`;
+- painel e API, na mesma origem: `http://localhost:3001/app/`;
 - API: `http://localhost:3001/health`;
 - bridge: `http://localhost:3100/health`.
 
@@ -153,9 +164,9 @@ Variáveis principais:
 | `DATABASE_URL` | PostgreSQL local | conexão da API |
 | `PRINT_BRIDGE_URL` | `http://127.0.0.1:3100` | destino do spool |
 | `PRINT_BRIDGE_TOKEN` | vazio em dev | bearer API ↔ bridge; obrigatório no bridge em produção |
-| `CORS_ORIGINS` | localhost + demo Render | allowlist separada por vírgula |
+| `CORS_ORIGINS` | origem da API/painel | allowlist separada por vírgula; o painel publicado usa a mesma origem |
 | `AUTO_SEED` | `false` | deve permanecer `false`; qualquer outro valor faz o boot falhar fechado |
-| `DEMO_ADMIN_TOKEN` | vazio | seed/anonimização ficam desabilitados |
+| `ADMIN_BOOTSTRAP_PASSWORD` | vazio | cria somente o primeiro administrador; nunca vai ao frontend |
 | `APP_ENV` | `development` | deve ser exatamente `demo` para permitir seed |
 | `DEMO_SEED_ENABLED` | `false` | habilitação explícita e temporária do seed |
 | `DEMO_SEED_TARGET` | vazio | alvo resolvido exato, sem credenciais, no formato `endereco:porta/banco` |
@@ -166,7 +177,7 @@ O seed nunca roda no boot. Em um banco de demo inequivocamente descartável e no
 permitido, configure os quatro gates acima e envie `POST /demo/seed` autenticado com JSON
 `{"confirmTarget":"endereco:porta/banco"}`. A API resolve o alvo no PostgreSQL, bloqueia e
 verifica as 13 tabelas antes da primeira mutação. O CLI é apenas um cliente HTTP:
-`DEMO_API_URL=http://127.0.0.1:3001 DEMO_ADMIN_TOKEN=... npm run seed:demo -- --confirm-target=endereco:porta/banco`.
+`DEMO_API_URL=http://127.0.0.1:3001 ADMIN_PASSWORD=... npm run seed:demo -- --confirm-target=endereco:porta/banco`.
 Ele não abre PostgreSQL; o token do chamador e todos os demais gates são verificados pela API.
 
 ## Desenvolvimento com IA
@@ -200,8 +211,8 @@ Papéis opcionais e gates estão em [SUBAGENTES.md](SUBAGENTES.md).
 
 ## Deploy público observado
 
-- painel: [camoburguer-ops-web.onrender.com](https://camoburguer-ops-web.onrender.com/)
-- API esperada: `https://camoburguer-api.onrender.com`
+- painel esperado: `https://camoburguer-api.onrender.com/app/`
+- API esperada, na mesma origem: `https://camoburguer-api.onrender.com`
 - bridge esperado: `https://camoburguer-bridge.onrender.com`
 
 Não há alteração automática desse ambiente a partir do working tree local.

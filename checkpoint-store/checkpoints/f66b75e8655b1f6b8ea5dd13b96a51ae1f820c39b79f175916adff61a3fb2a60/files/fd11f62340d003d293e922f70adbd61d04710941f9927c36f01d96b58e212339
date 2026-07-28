@@ -1,0 +1,16 @@
+{
+  "schema": "m1nd-boot-kv-migration-v1",
+  "version": 1,
+  "status": "committed",
+  "source_path": "boot_memory_state.json",
+  "source_existed": true,
+  "source_digest": "d639d8e7433b4f1121a55353ae260cc47397641a5fb6ef3bc1ebe0fb3972fc61",
+  "source_count": 0,
+  "config_count": 0,
+  "light_count": 0,
+  "conservation_digest": "1f8e7d3f5013c0a569a9a9be54d948046c29bc16c6d74b59d4391614e80b663d",
+  "config_digest": "31da1781093784d36e5b694bb5b97cb098ab24c5d6b83b89e9649b4520679b54",
+  "light_digests": {},
+  "committed_at_ms": 1785108614037,
+  "state_digest": "f7a1d8e59198ade6f22a852be673084c779345e3a99b9112e084392997a8b435"
+}

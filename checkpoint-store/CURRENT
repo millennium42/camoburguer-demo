@@ -1,0 +1,8 @@
+{
+  "schema": "m1nd-checkpoint-current-v1",
+  "pointer_revision": 1,
+  "current_checkpoint_id": "f66b75e8655b1f6b8ea5dd13b96a51ae1f820c39b79f175916adff61a3fb2a60",
+  "fallback_checkpoint_id": null,
+  "previous_pointer_digest": null,
+  "pointer_digest": "bf1c20a30c6209da402206b6be731790302fc71ebc2e61104bf70c226d56483f"
+}
