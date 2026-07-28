@@ -18,14 +18,25 @@ function positiveNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+export function assertSafeAutoSeed(value) {
+  if (value != null && value !== "false") {
+    throw new Error(
+      `AUTO_SEED=${value} é proibido: a API não executa seed durante o boot. ` +
+      "Use AUTO_SEED=false e a operação administrativa explícita documentada."
+    );
+  }
+}
+
 export const config = {
   port: positiveNumber(process.env.PORT, 3001),
   databaseUrl: process.env.DATABASE_URL || "postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer",
   printBridgeUrl: httpUrl(process.env.PRINT_BRIDGE_URL, "127.0.0.1:3100"),
   printBridgeToken: String(process.env.PRINT_BRIDGE_TOKEN || "").trim(),
   defaultPrinter: process.env.DEFAULT_PRINTER || "cozinha-principal",
-  autoSeed: process.env.AUTO_SEED === "true",
   demoAdminToken: String(process.env.DEMO_ADMIN_TOKEN || "").trim(),
+  appEnvironment: String(process.env.APP_ENV || "").trim(),
+  demoSeedEnabled: process.env.DEMO_SEED_ENABLED === "true",
+  demoSeedTarget: String(process.env.DEMO_SEED_TARGET || "").trim(),
   corsOrigins: csv(process.env.CORS_ORIGINS, [
     "http://localhost:8081",
     "http://127.0.0.1:8081",

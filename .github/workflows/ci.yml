@@ -22,13 +22,63 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm audit --omit=dev
-      - run: docker compose -p camoburguer-ci up -d --build --wait --wait-timeout 120
+      - run: docker compose -p camoburguer-auto-seed-test up -d --build --wait --wait-timeout 120
         env:
           DEMO_ADMIN_TOKEN: ci-demo-admin-token
-      - run: docker compose -p camoburguer-ci exec -T api node /app/scripts/seed-demo.mjs
+          POSTGRES_DB: camoburguer_auto_seed_test
+      - name: Validar identidade do PostgreSQL efêmero antes de DML
+        shell: bash
+        run: |
+          project=camoburguer-auto-seed-test
+          database=camoburguer_auto_seed_test
+          published_url="postgres://camoburguer:camoburguer@127.0.0.1:5432/$database"
+          [[ "$project" == *test* ]]
+          [[ "$database" == *_test ]]
+          [[ "$published_url" =~ ^postgres://camoburguer:camoburguer@127\.0\.0\.1:5432/camoburguer_auto_seed_test$ ]]
+          container_id="$(POSTGRES_DB="$database" docker compose -p "$project" ps -q db)"
+          test -n "$container_id"
+          test "$(docker inspect -f '{{.Config.Image}}' "$container_id")" = postgres:16.14-alpine
+          test "$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$container_id")" = "$project"
+          [[ "$(docker inspect -f '{{.Name}}' "$container_id")" == *auto-seed-test* ]]
+          container_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container_id")"
+          [[ "$container_ip" =~ ^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)[0-9.]+$ ]]
+          test "$(POSTGRES_DB="$database" docker compose -p "$project" exec -T db psql -U camoburguer -d "$database" -Atc 'select current_database()')" = "$database"
+          effective_url="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T api printenv DATABASE_URL)"
+          test "$effective_url" = "postgres://camoburguer:camoburguer@db:5432/$database"
+          server_identity="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T -e PGPASSWORD=camoburguer db psql -h "$container_ip" -U camoburguer -d "$database" -Atc \"select host(inet_server_addr()) || ':' || inet_server_port() || '/' || current_database()\")"
+          test "$server_identity" = "$container_ip:5432/$database"
+      - name: Testes reais do seed no PostgreSQL efêmero
+        run: node --test tests/seed-demo-postgres.test.js
+        env:
+          TEST_DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_auto_seed_test
+          TEST_POSTGRES_PROFILE: ci-compose
+      - name: Seed explícito no PostgreSQL efêmero do CI
+        shell: bash
+        run: |
+          project=camoburguer-auto-seed-test
+          database=camoburguer_auto_seed_test
+          container_id="$(POSTGRES_DB="$database" docker compose -p "$project" ps -q db)"
+          test -n "$container_id"
+          test "$(docker inspect -f '{{.Config.Image}}' "$container_id")" = postgres:16.14-alpine
+          test "$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$container_id")" = "$project"
+          [[ "$(docker inspect -f '{{.Name}}' "$container_id")" == *auto-seed-test* ]]
+          test "$(POSTGRES_DB="$database" docker compose -p "$project" exec -T db psql -U camoburguer -d "$database" -Atc 'select current_database()')" = "$database"
+          effective_url="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T api printenv DATABASE_URL)"
+          test "$effective_url" = "postgres://camoburguer:camoburguer@db:5432/$database"
+          target="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T db sh -c 'printf "%s:5432/%s" "$(hostname -i | cut -d" " -f1)" "$POSTGRES_DB"')"
+          [[ "$target" =~ ^[0-9.]+:5432/camoburguer_auto_seed_test$ ]]
+          POSTGRES_DB="$database" DEMO_ADMIN_TOKEN=ci-demo-admin-token \
+            DEMO_SEED_ENABLED=true DEMO_SEED_TARGET="$target" \
+            docker compose -p "$project" up -d --force-recreate api --wait --wait-timeout 120
+          curl --fail-with-body \
+            -H 'Authorization: Bearer ci-demo-admin-token' \
+            -H 'Content-Type: application/json' \
+            --data "{\"confirmTarget\":\"$target\"}" \
+            http://127.0.0.1:3001/demo/seed
       - run: npm run smoke
         env:
+          DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_auto_seed_test
           PRINT_BRIDGE_TOKEN: local-print-bridge-token
           DEMO_ADMIN_TOKEN: ci-demo-admin-token
       - if: always()
-        run: docker compose -p camoburguer-ci down -v
+        run: POSTGRES_DB=camoburguer_auto_seed_test docker compose -p camoburguer-auto-seed-test down -v

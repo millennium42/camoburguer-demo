@@ -26,7 +26,7 @@ import {
   filterEntries,
   summarizeFinance
 } from "@camoburguer/finance-core";
-import { config } from "./config.js";
+import { assertSafeAutoSeed, config } from "./config.js";
 import { createDb, mapFinanceEntry, mapOrder, mapShift, mapTab, mapTabPayment } from "./db.js";
 import { createSseHub } from "./sse.js";
 import integrationRoutes from "./integrations/integration-routes.js";
@@ -45,6 +45,8 @@ import {
   sameTabAssignment,
   tabAssignmentEligibility
 } from "./order-tab-assignment.js";
+
+assertSafeAutoSeed(process.env.AUTO_SEED);
 
 const app = Fastify({ logger: true });
 const db = createDb(config.databaseUrl);
@@ -1576,30 +1578,75 @@ app.get("/events/finance", async (request, reply) => {
 });
 
 app.post("/demo/seed", async (request, reply) => {
-  if (!requireDemoAdmin(request, reply)) return reply;
+  if (!config.demoAdminToken) {
+    return reply.code(503).send({
+      code: "admin_auth_unconfigured",
+      error: "Operação administrativa desabilitada."
+    });
+  }
+  const bearer = String(request.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  const suppliedToken = bearer || request.headers["x-admin-token"];
+  if (!suppliedToken) {
+    return reply.code(401).send({
+      code: "admin_auth_missing",
+      error: "Identidade administrativa ausente."
+    });
+  }
+  if (!equalSecret(suppliedToken, config.demoAdminToken)) {
+    return reply.code(403).send({
+      code: "admin_auth_invalid",
+      error: "Identidade administrativa inválida."
+    });
+  }
+
+  const confirmedTarget = String(request.body?.confirmTarget || "").trim();
+  const logDecision = ({ decision, target, blockers }) => app.log.info({
+    event: "demo_seed",
+    actor: "demo-admin",
+    decision,
+    target,
+    blockers
+  });
   try {
-    await runSeedDemo(db);
-    return { ok: true, message: "Banco de dados preenchido com dados de demonstração." };
+    await runSeedDemo(db, {
+      authenticated: true,
+      environment: config.appEnvironment,
+      enabled: config.demoSeedEnabled,
+      expectedTarget: config.demoSeedTarget,
+      confirmedTarget,
+      onDecision: logDecision
+    });
+    logDecision({
+      decision: "seeded",
+      target: config.demoSeedTarget,
+      blockers: []
+    });
+    return {
+      ok: true,
+      target: config.demoSeedTarget,
+      message: "Banco de dados preenchido com dados de demonstração."
+    };
   } catch (error) {
-    return reply.code(500).send({ error: error.message });
+    const statusCode = Number(error.statusCode) || 500;
+    app.log[statusCode === 500 ? "error" : "warn"]({
+      event: "demo_seed",
+      actor: "demo-admin",
+      decision: "refused",
+      target: error.details?.target || null,
+      blockers: error.details?.blockers || [],
+      code: error.code || "internal_error"
+    });
+    return reply.code(statusCode).send({
+      code: statusCode === 500 ? "internal_error" : error.code,
+      error: statusCode === 500 ? "Falha interna ao executar seed." : error.message,
+      ...(error.details?.blockers ? { blockers: error.details.blockers } : {})
+    });
   }
 });
 
 await app.register(integrationRoutes, { db, sse, config });
 
 await db.init();
-
-if (config.autoSeed) {
-  try {
-    const { rows } = await db.query("SELECT COUNT(*) FROM cash_shifts");
-    if (Number(rows[0]?.count || 0) === 0) {
-      app.log.info("Banco de dados vazio detectado. Executando seed de demonstração automaticamente...");
-      await runSeedDemo(db);
-    }
-  } catch (error) {
-    app.log.error(error, "Auto-seed de demonstração ignorado.");
-  }
-}
 await recoverPrintJobs(true);
 // ponytail: retry fixo atende a demo single-instance; adotar backoff/fila quando houver volume real.
 setInterval(() => recoverPrintJobs().catch((error) => app.log.error(error)), 15_000).unref();

@@ -41,6 +41,12 @@ services:
         generateValue: true
       - key: AUTO_SEED
         value: "false"
+      - key: APP_ENV
+        value: demo
+      - key: DEMO_SEED_ENABLED
+        value: "false"
+      - key: DEMO_SEED_TARGET
+        value: ""
 
   # 3. Print Bridge Service (Fastify)
   - type: web
