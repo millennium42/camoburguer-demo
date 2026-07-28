@@ -101,6 +101,8 @@ export function orderFingerprintPayload(body = {}, overrides = {}) {
     priority: String(value.priority || "normal"),
     channelLabel: String(value.channelLabel || value.source || "counter"),
     tabId,
+    roundNumber: value.roundNumber == null ? null : Number(value.roundNumber),
+    roundKind: String(value.roundKind || "production"),
     reversesOrderId: value.reversesOrderId || null,
     items: (value.items || []).map(canonicalItem),
     metadata: value.metadata || {}

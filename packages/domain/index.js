@@ -291,3 +291,63 @@ export function closeCashShift(shift, declaredAmount) {
     closedAt: new Date().toISOString()
   };
 }
+
+export const RESERVED_STANDALONE_ORDER_FIELDS = new Set([
+  "tabId",
+  "roundNumber",
+  "roundKind",
+  "reversesOrderId"
+]);
+
+export const ALLOWED_STANDALONE_ORDER_FIELDS = new Set([
+  "items",
+  "source",
+  "customerName",
+  "fulfillmentMode",
+  "deliveryAddress",
+  "promisedAt",
+  "paymentMethod",
+  "discountPercent",
+  "notes",
+  "priority",
+  "channelLabel",
+  "metadata",
+  "idempotencyKey",
+  "id",
+  "createdAt"
+]);
+
+export function normalizeStandaloneOrderDto(body = {}) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    const error = new Error("Payload do pedido avulso deve ser um objeto");
+    error.statusCode = 400;
+    error.code = "INVALID_ORDER_DTO";
+    throw error;
+  }
+  for (const key of Object.keys(body)) {
+    if (RESERVED_STANDALONE_ORDER_FIELDS.has(key)) {
+      const error = new Error("Campos estruturais como tabId, roundNumber, roundKind e reversesOrderId não são permitidos na criação avulsa");
+      error.statusCode = 400;
+      error.code = "STRUCTURAL_FIELDS_FORBIDDEN";
+      throw error;
+    }
+    if (!ALLOWED_STANDALONE_ORDER_FIELDS.has(key)) {
+      const error = new Error(`Campo não permitido no DTO de pedido avulso: ${key}`);
+      error.statusCode = 400;
+      error.code = "UNKNOWN_FIELD";
+      throw error;
+    }
+  }
+  const dto = {};
+  for (const key of Object.keys(body)) {
+    dto[key] = body[key];
+  }
+  return {
+    ...dto,
+    tabId: null,
+    roundNumber: null,
+    roundKind: "production",
+    reversesOrderId: null
+  };
+}
+
