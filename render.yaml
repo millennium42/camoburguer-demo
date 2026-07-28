@@ -40,7 +40,7 @@ services:
       - key: DEMO_ADMIN_TOKEN
         generateValue: true
       - key: AUTO_SEED
-        value: "true"
+        value: "false"
 
   # 3. Print Bridge Service (Fastify)
   - type: web
