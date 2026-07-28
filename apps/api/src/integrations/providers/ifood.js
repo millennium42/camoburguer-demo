@@ -389,12 +389,13 @@ export default function createIFoodAdapter(config, db) {
       : command.action === "ready"
       ? ["READY_TO_PICKUP", "CONCLUDED"].includes(status)
       : false;
+    const localEffect = status === "CANCELLED" ? "cancel" : command.action;
     return applied
-      ? { state: "applied", externalStatus: status }
+      ? { state: "applied", externalStatus: status, localEffect }
       : { state: "unknown", reason: `Status iFood inconclusivo: ${status || "ausente"}` };
   }
 
-  async function finalizeCommand(command, executor, { reconciled }) {
+  async function finalizeCommand(command, executor, { reconciled, localEffect }) {
     if (!reconciled) {
       return {
         status: "awaiting_event",
@@ -403,14 +404,15 @@ export default function createIFoodAdapter(config, db) {
         eventDeadlineAt: new Date(Date.now() + 2 * 60_000).toISOString()
       };
     }
-    if (command.action === "accept") {
+    const action = localEffect || command.action;
+    if (action === "accept") {
       await activateAcceptedOrder(command.orderId, db, executor);
     } else {
       const nextStatus = {
         cancel: "cancelled",
         startPreparation: "in_preparation",
         ready: "ready"
-      }[command.action];
+      }[action];
       if (nextStatus) await applyIntegratedTransition(command.orderId, nextStatus, db, executor);
     }
     const local = await getOrderWithMapping(command.orderId, executor);
