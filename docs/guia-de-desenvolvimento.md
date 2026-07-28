@@ -39,12 +39,24 @@ Stack completa e isolada:
 
 ```bash
 rtk proxy env DEMO_ADMIN_TOKEN=local-demo-admin-token docker compose -p camoburguer-dev up -d --build
-rtk proxy docker compose -p camoburguer-dev exec -T api node /app/scripts/seed-demo.mjs
 rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token DEMO_ADMIN_TOKEN=local-demo-admin-token npm run smoke
 rtk proxy docker compose -p camoburguer-dev down
 ```
 
 Use `down -v` somente em projeto de teste explicitamente nomeado e quando a exclusão do volume fizer parte da intenção. Nunca apague o volume padrão para “tentar de novo”.
+
+### Seed de demonstração
+
+`AUTO_SEED` deve ficar ausente ou exatamente `false`; boot e restart nunca semeiam. Para
+uma carga explícita, use somente um PostgreSQL de demo no baseline, configure
+`APP_ENV=demo`, `DEMO_SEED_ENABLED=true`, `DEMO_SEED_TARGET=endereco:porta/banco` e
+`DEMO_ADMIN_TOKEN`, então chame `POST /demo/seed` com bearer e
+`{"confirmTarget":"endereco:porta/banco"}`. O preflight bloqueia qualquer estado operacional,
+estoque não zero ou divergência do catálogo canônico. Migração: primeiro fixe
+`AUTO_SEED=false`, faça deploy/restart e só depois avalie um seed explícito. Rollback de
+código/configuração mantém `AUTO_SEED=false` e nunca executa seed.
+O commit de configuração segura `f3191d3` é um limite de rollback: não o reverta.
+`scripts/seed-demo.mjs` é somente cliente HTTP da API e nunca recebe `DATABASE_URL`.
 
 ### Administração do cardápio
 
@@ -188,7 +200,6 @@ rtk npm audit --omit=dev
 ```bash
 rtk proxy env DEMO_ADMIN_TOKEN=local-demo-admin-token docker compose -p camoburguer-check up -d --build
 rtk proxy docker compose -p camoburguer-check ps
-rtk proxy docker compose -p camoburguer-check exec -T api node /app/scripts/seed-demo.mjs
 rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token DEMO_ADMIN_TOKEN=local-demo-admin-token npm run smoke
 ```
 

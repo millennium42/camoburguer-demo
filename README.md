@@ -76,7 +76,6 @@ Pré-requisitos: Node.js 22+, npm, WSL 2/Ubuntu e Docker Desktop com integraçã
 cd /mnt/c/Users/milla/Documents/Projetos/Git/camoburguer-demo
 rtk npm ci
 rtk proxy docker compose -p camoburguer-dev up -d --build
-rtk proxy docker compose -p camoburguer-dev exec -T api node /app/scripts/seed-demo.mjs
 ```
 
 URLs:
@@ -155,10 +154,20 @@ Variáveis principais:
 | `PRINT_BRIDGE_URL` | `http://127.0.0.1:3100` | destino do spool |
 | `PRINT_BRIDGE_TOKEN` | vazio em dev | bearer API ↔ bridge; obrigatório no bridge em produção |
 | `CORS_ORIGINS` | localhost + demo Render | allowlist separada por vírgula |
-| `AUTO_SEED` | `false` | seed somente em banco vazio quando explicitamente ativo |
+| `AUTO_SEED` | `false` | deve permanecer `false`; qualquer outro valor faz o boot falhar fechado |
 | `DEMO_ADMIN_TOKEN` | vazio | seed/anonimização ficam desabilitados |
+| `APP_ENV` | `development` | deve ser exatamente `demo` para permitir seed |
+| `DEMO_SEED_ENABLED` | `false` | habilitação explícita e temporária do seed |
+| `DEMO_SEED_TARGET` | vazio | alvo resolvido exato, sem credenciais, no formato `endereco:porta/banco` |
 
 O Blueprint do Render gera/referencia segredos para bridge/admin e adiciona headers do site. Isso não substitui autenticação do operador.
+
+O seed nunca roda no boot. Em um banco de demo inequivocamente descartável e no baseline
+permitido, configure os quatro gates acima e envie `POST /demo/seed` autenticado com JSON
+`{"confirmTarget":"endereco:porta/banco"}`. A API resolve o alvo no PostgreSQL, bloqueia e
+verifica as 13 tabelas antes da primeira mutação. O CLI é apenas um cliente HTTP:
+`DEMO_API_URL=http://127.0.0.1:3001 DEMO_ADMIN_TOKEN=... npm run seed:demo -- --confirm-target=endereco:porta/banco`.
+Ele não abre PostgreSQL; o token do chamador e todos os demais gates são verificados pela API.
 
 ## Desenvolvimento com IA
 

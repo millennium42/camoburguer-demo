@@ -53,7 +53,10 @@ Não presuma que editar `render.yaml` altera serviços existentes imediatamente.
 | `PRINT_BRIDGE_TOKEN` | `fromService.envVarKey` | mesmo segredo gerado no bridge |
 | `CORS_ORIGINS` | URL exata do ops web | lista separada por vírgula |
 | `DEMO_ADMIN_TOKEN` | `generateValue: true` | não expor no frontend |
-| `AUTO_SEED` | `true` na demo | só roda quando não existe turno |
+| `AUTO_SEED` | `false` | valor obrigatório; outro valor impede o boot |
+| `APP_ENV` | `demo` | gate de ambiente, insuficiente isoladamente |
+| `DEMO_SEED_ENABLED` | `false` | habilitar apenas durante operação explícita aprovada |
+| `DEMO_SEED_TARGET` | vazio | identidade exata resolvida, sem usuário ou senha |
 
 ## Variáveis da bridge
 
@@ -67,15 +70,22 @@ O filesystem de um web service pode ser efêmero. O arquivo de spool demonstra i
 
 ## Seed
 
-Com `AUTO_SEED=true`, um banco sem turnos recebe dados sintéticos uma vez. O seed:
+Não existe seed no boot. `AUTO_SEED` deve permanecer `false`, inclusive em rollback.
+Para migrar um deploy antigo, altere primeiro essa variável, faça redeploy e confirme que
+o health sobe sem criar dados demonstrativos.
 
-- executa em transação;
-- trunca tabelas operacionais da demo;
-- zera estoque;
-- registra abertura de R$ 150,00;
-- usa nomes e endereços explicitamente demonstrativos.
+`POST /demo/seed` exige bearer ou `x-admin-token`, `APP_ENV=demo`,
+`DEMO_SEED_ENABLED=true`, `DEMO_SEED_TARGET` sem credenciais e o mesmo alvo em
+`confirmTarget` no corpo. A operação resolve o alvo no PostgreSQL e, em uma única
+transação, bloqueia em ordem fixa e verifica as 13 tabelas. Qualquer estado operacional,
+estoque não zero ou catálogo divergente retorna recusa sem mutação. O alvo resolvido pode
+ser obtido nos logs sanitizados de uma recusa controlada; nunca copie `DATABASE_URL`.
 
-`POST /demo/seed` fica desabilitado sem `DEMO_ADMIN_TOKEN` e exige bearer ou `x-admin-token`. Não use essa rota em ambiente com dados que devam ser preservados.
+Depois de uma carga aprovada, volte `DEMO_SEED_ENABLED=false` e faça redeploy. Não use
+essa operação em produção ou staging compartilhado.
+
+O commit `f3191d3`, que fixa `AUTO_SEED=false` no Render, não faz parte de nenhum
+rollback permitido. Rollback de aplicação deve preservá-lo.
 
 ## Integrações externas
 
@@ -121,7 +131,7 @@ No navegador:
 ## Rollback
 
 1. selecionar o deploy anterior no Render;
-2. não executar seed durante rollback;
+2. manter `AUTO_SEED=false` e `DEMO_SEED_ENABLED=false`;
 3. verificar compatibilidade do schema antes de voltar código;
 4. preservar logs e snapshot/backup do banco;
 5. executar health e fluxo somente leitura;

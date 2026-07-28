@@ -345,25 +345,45 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 
 **Rollback:** Reverter para listagem plana do catálogo sem abas; funcionalidade de pedido permanece intacta.
 
-## PR 17 — Correção de Render.yaml e Auto-Seed
+## PR 17 — Correção de Render.yaml e Auto-Seed (histórico substituído)
 
 | Pergunta | Resposta |
 | --- | --- |
-| What | Correção da chave do PostgreSQL no `render.yaml` (de `services` para `databases` na raiz), adição de auto-seed no boot da API e health check na rota `/`. |
-| Why | O Blueprint não provisionava o banco corretamente; o banco no Render ficava vazio sem dados de demonstração; o Render requer health check na rota raiz. |
+| What | Registro histórico da correção do Blueprint e de uma antiga tentativa de seed no boot, posteriormente removida. |
+| Why | O Blueprint não provisionava o banco corretamente e o Render requer health check na rota raiz. |
 | Where | `render.yaml`, `apps/api/src/server.js`. |
-| When | No deploy via Render Blueprint e no boot da API. |
-| Who | Render provisiona DB via Blueprint; API detecta banco vazio e executa seed automaticamente. |
-| How | Chave `databases` movida para raiz do YAML; flag `AUTO_SEED=true` ativa seed no boot; `GET /` retorna `{ status: "ok" }`. |
+| When | No deploy via Render Blueprint. |
+| Who | Render provisiona DB via Blueprint; seed exige hoje operação administrativa explícita. |
+| How | Registro histórico: a implementação então usava seed no boot; esse comportamento foi removido pelo hardening abaixo. |
 | How much | Correções mínimas em 2 arquivos; sem nova dependência. |
 
-**Critérios de aceite:** Blueprint provisiona banco PostgreSQL corretamente; API sobe com seed automático; health check na raiz retorna 200.
+**Critérios de aceite históricos:** Blueprint provisiona banco PostgreSQL e health check na raiz retorna 200. Seed automático não é mais aceito.
 
-**Evidências:** Logs do Render confirmam `Banco de dados vazio detectado. Executando seed de demonstração automaticamente...`; `GET /` retorna 200.
+**Evidências históricas:** `GET /` retornava 200; evidência de auto-seed foi invalidada pelo hardening.
 
-**Riscos:** Seed duplicado em restart. Mitigação: Seed só executa se `SELECT COUNT(*) FROM orders = 0`.
+**Risco encerrado:** inferir vazio por uma única tabela era destrutivo; o comportamento foi removido.
 
-**Rollback:** Remover flag `AUTO_SEED`; seed manual via `scripts/seed-demo.mjs` com `DATABASE_URL`.
+**Rollback histórico (não reutilizar):** a execução automática e o CLI direto foram
+substituídos pela proteção descrita abaixo. Nenhum rollback pode reativar `AUTO_SEED`.
+
+## Hardening — seed de demo explícito
+
+| Pergunta | Resposta |
+| --- | --- |
+| What | Remover seed do boot e proteger a carga demo por autenticação, ambiente, habilitação, alvo e confirmação. |
+| Why | Preservar as 13 tabelas em boot, restart, falha e concorrência. |
+| Where | Configuração da API/deploy, `/demo/seed`, CLI, testes, CI e runbooks. |
+| When | Somente por operação administrativa explícita em banco demo baseline. |
+| Who | Mantenedor autenticado configura e confirma o alvo sanitizado. |
+| How | Uma transação resolve o alvo, bloqueia as tabelas em ordem fixa, executa preflight e só então semeia. |
+| How much | Mudança backend localizada, sem dependência de runtime ou schema novo. |
+
+**Migração:** fixar `AUTO_SEED=false`, redeployar, validar boot sem seed e manter
+`DEMO_SEED_ENABLED=false` fora da janela administrativa.
+
+**Rollback:** reverter código somente com `AUTO_SEED=false` e
+`DEMO_SEED_ENABLED=false`; nunca restaurar auto-seed ou CLI com acesso direto ao banco.
+O commit de configuração `f3191d3` deve permanecer aplicado em qualquer rollback.
 
 ## PR 18 — Correção de apiBase para Deploy Render
 
@@ -384,4 +404,3 @@ Cada PR adicionará aqui sua tabela 5W2H concluída, critérios de aceite, evid�
 **Riscos:** Hostnames de Render customizados não seguem o padrão `ops-web`/`api`. Mitigação: Funciona com o naming padrão do Blueprint; domínios customizados precisariam de variável de ambiente.
 
 **Rollback:** Reverter para URL hardcoded; configurar `API_BASE_URL` como variável de ambiente se necessário.
-
