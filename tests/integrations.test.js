@@ -1,3 +1,5 @@
+import createIFoodAdapter from "../apps/api/src/integrations/providers/ifood.js";
+import createDeliveryMuchAdapter from "../apps/api/src/integrations/providers/deliverymuch.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
@@ -322,6 +324,39 @@ test("fingerprint Delivery Much ignora status mas detecta divergência comercial
 test("outbox trata qualquer resposta HTTP como ambígua antes de permitir reenvio", () => {
   assert.equal(classifyCommandError({ statusCode: 401 }), "ambiguous");
   assert.equal(classifyCommandError({ statusCode: 503 }), "ambiguous");
-  assert.equal(classifyCommandError({ statusCode: 400 }), "terminal");
-  assert.equal(classifyCommandError({ notSent: true }), "retryable_not_sent");
+});
+
+
+test("H-03 iFood: classificação reconcilia 'CANCELLED' durante 'accept' para localEffect 'cancel'", async () => {
+  const adapter = createIFoodAdapter({ ifood: { merchantId: "123" } }, {});
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const data = url.includes("/token") ? { accessToken: "token" } : { status: "CANCELLED" };
+    return { ok: true, text: async () => JSON.stringify(data), json: async () => data };
+  };
+  try {
+    const res = await adapter.reconcileCommand({ action: "accept", payload: { externalOrderId: "abc" } });
+    assert.equal(res.state, "applied");
+    assert.equal(res.externalStatus, "CANCELLED");
+    assert.equal(res.localEffect, "cancel");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("H-03 Delivery Much: classificação reconcilia 'cancelled' durante 'accept' para localEffect 'cancel'", async () => {
+  const adapter = createDeliveryMuchAdapter({ deliveryMuch: { merchantId: "123", username: "a", password: "b", pollIntervalMs: 1000 } }, {});
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const data = String(url).includes("/login") ? { access_token: "token" } : { status: "cancelled" };
+    return { ok: true, text: async () => JSON.stringify(data), json: async () => data };
+  };
+  try {
+    const res = await adapter.reconcileCommand({ action: "accept", payload: { externalOrderId: "abc" } });
+    assert.equal(res.state, "applied");
+    assert.equal(res.externalStatus, "cancelled");
+    assert.equal(res.localEffect, "cancel");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

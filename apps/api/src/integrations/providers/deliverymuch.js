@@ -245,23 +245,25 @@ export default function createDeliveryMuchAdapter(config, db) {
       : command.action === "ready"
       ? ["ready", "delivered"].includes(status)
       : false;
+    const localEffect = status === "cancelled" ? "cancel" : command.action;
     return applied
-      ? { state: "applied", externalStatus: status }
+      ? { state: "applied", externalStatus: status, localEffect }
       : { state: "unknown", reason: `Status Delivery Much inconclusivo: ${status || "ausente"}` };
   }
 
-  async function finalizeCommand(command, executor, { reconciled }) {
-    if (command.action === "accept") {
+  async function finalizeCommand(command, executor, { reconciled, localEffect }) {
+    const action = localEffect || command.action;
+    if (action === "accept") {
       await activateAcceptedOrder(command.orderId, db, executor);
-    } else if (command.action === "ready") {
+    } else if (action === "ready") {
       await applyIntegratedTransition(command.orderId, "ready", db, executor);
-    } else if (command.action === "cancel") {
+    } else if (action === "cancel") {
       await applyIntegratedTransition(command.orderId, "cancelled", db, executor);
     }
     const order = await getOrderWithMapping(command.orderId, executor);
     if (order?.mapping) {
       await updateChannelMapping(order.mapping.id, {
-        externalStatus: command.action,
+        externalStatus: action,
         syncStatus: "synchronized",
         syncError: null
       }, executor);

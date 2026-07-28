@@ -56,7 +56,8 @@ async function reconcileCommand({ db, adapter, command, workerId }) {
   return db.transaction(async (client) => {
     const completion = await adapter.finalizeCommand(command, client, {
       reconciled: true,
-      externalStatus: result.externalStatus || null
+      externalStatus: result.externalStatus || null,
+      localEffect: result.localEffect || command.action
     });
     return updateOwnedChannelCommand(command.id, workerId, {
       ...completion,
