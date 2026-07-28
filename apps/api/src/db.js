@@ -39,6 +39,12 @@ CREATE TABLE IF NOT EXISTS audit_events (
   occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS idempotency_key TEXT NULL;
+ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS correlation_id TEXT NULL;
+ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS state_before JSONB NULL;
+ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS state_after JSONB NULL;
+ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS result TEXT NULL;
+
 CREATE TABLE IF NOT EXISTS privacy_requests (
   id TEXT PRIMARY KEY,
   idempotency_key TEXT NOT NULL UNIQUE,

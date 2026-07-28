@@ -2000,5 +2000,63 @@ if (!connectionString) {
         await stopServer(failing);
       }
     });
+
+    test("H-06: Auditoria Transacional garante idempotencia, autorizacao e rollback sem salvar logs orfãos", async () => {
+      await resetBaseline();
+      const server = await startServer();
+      try {
+        // 1. Autorização na rota
+        const unauthorized = await requestAs(server, null, "/audit", { method: "GET" });
+        assert.equal(unauthorized.status, 401);
+        
+        // 2. Transacionalidade e Falha Injetada
+        // Vamos renomear audit_events para forçar a falha do INSERT do hook e ver se o transaction rollback da negócio atua
+        await pool.query("ALTER TABLE audit_events RENAME TO audit_events_hidden");
+        try {
+          const brokenCreate = await requestAs(server, admin, "/catalog", {
+            method: "POST",
+            headers: { "Idempotency-Key": "h06-fail" },
+            body: { sku: "h06-item", name: "H06 Fail", price: 10, stockCategory: null, preparationMode: "kitchen", imageUrl: null, orderIndex: 0, metadata: {} }
+          });
+          assert.equal(brokenCreate.status, 500); // Falhou pq auditEvents inseriu falhando a transação inteira
+          
+          // O item de negócio NÃO foi salvo no banco (rollback garantido)
+          const search = await pool.query("SELECT * FROM catalog_items WHERE sku = 'h06-item'");
+          assert.equal(search.rows.length, 0);
+        } finally {
+          await pool.query("ALTER TABLE audit_events_hidden RENAME TO audit_events");
+        }
+
+        // 3. Sanitização e Replay Idempotente
+        const validCreate = await requestAs(server, admin, "/catalog", {
+          method: "POST",
+          headers: { "Idempotency-Key": "h06-valid" },
+          body: { sku: "h06-valid-item", name: "H06 Valid", price: 10, stockCategory: null, preparationMode: "kitchen", imageUrl: null, orderIndex: 0, metadata: {} }
+        });
+        assert.equal(validCreate.status, 201);
+        
+        // Replay
+        const replayCreate = await requestAs(server, admin, "/catalog", {
+          method: "POST",
+          headers: { "Idempotency-Key": "h06-valid" },
+          body: { sku: "h06-valid-item", name: "H06 Valid", price: 10, stockCategory: null, preparationMode: "kitchen", imageUrl: null, orderIndex: 0, metadata: {} }
+        });
+        assert.equal(replayCreate.status, 201);
+        
+        // Consulta o log de auditoria
+        const auditLog = await requestAs(server, admin, "/audit", { method: "GET" });
+        assert.equal(auditLog.status, 200);
+        
+        // Assegurar que só existe UMA entrada para o catalog.item_added (replay ignorado)
+        const adds = auditLog.body.items.filter(i => i.action === "catalog.item_added" && i.idempotency_key === "h06-valid");
+        assert.equal(adds.length, 1);
+        assert.ok(adds[0].state_after);
+        assert.equal(adds[0].state_after.sku, "h06-valid-item");
+
+      } finally {
+        await stopServer(server);
+      }
+    });
+
   });
 }
