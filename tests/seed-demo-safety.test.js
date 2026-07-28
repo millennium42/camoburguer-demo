@@ -182,6 +182,11 @@ test("falha injetada após a primeira mutação propaga para rollback da transa�
 test("CLI direto é somente cliente HTTP e dois segredos arbitrários não atravessam auth", async () => {
   const source = await readFile(new URL("../scripts/seed-demo.mjs", import.meta.url), "utf8");
   assert.doesNotMatch(source, /DATABASE_URL|createRequire|new pg\.|pg\.Pool|pg\.Client/);
+  assert.match(
+    source,
+    /from "\.\.\/packages\/domain\/index\.js"/,
+    "o módulo copiado para /app/scripts deve resolver o domínio sem depender do node_modules da API"
+  );
 
   let authorization;
   const server = http.createServer((request, response) => {

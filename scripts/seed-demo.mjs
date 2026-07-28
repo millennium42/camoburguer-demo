@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { CATALOG, CATALOG_CAPTURED_AT } from "@camoburguer/domain";
+import { CATALOG, CATALOG_CAPTURED_AT } from "../packages/domain/index.js";
 
 export const PROTECTED_TABLES = Object.freeze([
   "service_tabs",
