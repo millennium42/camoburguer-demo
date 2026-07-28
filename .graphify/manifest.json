@@ -44,8 +44,8 @@
     "hash": "d67277f2d0c0d0ac1e99d1e3266b25af"
   },
   "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/apps/api/src/server.js": {
-    "mtime": 1785227119683.905,
-    "hash": "a87e53e36b814fcd7cf4b147a69ae6fb"
+    "mtime": 1785267515925.7651,
+    "hash": "9b45d031eb0518d72b974f051fb66460"
   },
   "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/apps/api/src/sse.js": {
     "mtime": 1785221443624.181,
@@ -72,8 +72,8 @@
     "hash": "338fe04218fd8a529de2afeee038dc08"
   },
   "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/packages/domain/index.js": {
-    "mtime": 1785225612760.5515,
-    "hash": "12ab7eab322cec66705c07ed762c336c"
+    "mtime": 1785267443454.475,
+    "hash": "08f08ff8af928c5f986ba5287bb5906d"
   },
   "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/packages/finance-core/index.js": {
     "mtime": 1785226070118.907,
@@ -398,5 +398,233 @@
   "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/tests/seed-demo-safety.test.js": {
     "mtime": 1785223077703.9492,
     "hash": "5c5d826fce25d06ab7966c4ab84ff7e7"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/apps/api/src/auth.js": {
+    "mtime": 1785266663763.437,
+    "hash": "31ee2a285ec9137e6c5e30256f4f617e"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/apps/api/src/idempotency.js": {
+    "mtime": 1785267470668.6372,
+    "hash": "56658d5e2948d89716128e88a9a89228"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/apps/api/src/integrations/command-outbox.js": {
+    "mtime": 1785227058309.5574,
+    "hash": "2e0f482cc28ce367e1060e1e985b9945"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/apps/api/src/print-queue.js": {
+    "mtime": 1785225433101.7131,
+    "hash": "2b75521093854387c18a324913dcd813"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/scripts/demo-simulator-client.mjs": {
+    "mtime": 1785226652658.3464,
+    "hash": "8086d7a3f00fed030a18920ec55b24f2"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/tests/auth.test.js": {
+    "mtime": 1785266663767.4363,
+    "hash": "486fff7372b2314805b56bc4901a6aeb"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/tests/idempotency.test.js": {
+    "mtime": 1785222894361.4077,
+    "hash": "1b876690c2cdb3cce85f80d65932b149"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/tests/print-queue.test.js": {
+    "mtime": 1785225643527.9727,
+    "hash": "3af70a11b980c1825f555f2a1c7b6ceb"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/tests/simulator.test.js": {
+    "mtime": 1785226996477.4116,
+    "hash": "ccc2f457252a40f3c78f330062510606"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/tests/sse-auth.test.js": {
+    "mtime": 1785221644332.5635,
+    "hash": "4517953a07f7ae9c26b7fad2cca4c013"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/GRAPH_REPORT.md": {
+    "mtime": 1785266558515.372,
+    "hash": "e52eb3ce891932bd7e58ef7f16a082e4"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-000.md": {
+    "mtime": 1785266558520.3767,
+    "hash": "eaac8250ef432ca4068d26c9fc01705d"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-001.md": {
+    "mtime": 1785266558522.3767,
+    "hash": "ee9f2e7df9b6cd343087d187535aa015"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-002.md": {
+    "mtime": 1785266558524.5757,
+    "hash": "a1561b9745450474200fe27a27a41b82"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-003.md": {
+    "mtime": 1785266558526.574,
+    "hash": "bcf9c14fb0ee06c20aa0c684121ceaff"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-004.md": {
+    "mtime": 1785266558527.5745,
+    "hash": "3ec2f4cd009c6f85d2266d4d72832a98"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-005.md": {
+    "mtime": 1785266558529.576,
+    "hash": "d2586f9a993f23df3c47235208911351"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-006.md": {
+    "mtime": 1785266558530.5789,
+    "hash": "0d89a5a04b317f1a0ec9d41dbe1b7ac2"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-007.md": {
+    "mtime": 1785266558532.578,
+    "hash": "c3ab13763dd2598c905cbd8364f9858a"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-008.md": {
+    "mtime": 1785266558533.8838,
+    "hash": "2ab79e8ee3752302029277f5de9271cf"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-009.md": {
+    "mtime": 1785266558534.8604,
+    "hash": "963226587546025e1c3700fbb671fbce"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-010.md": {
+    "mtime": 1785266558536.8843,
+    "hash": "8ac7c971e26d2841b823ebc601743074"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/description-instructions/batch-011.md": {
+    "mtime": 1785266558538.4426,
+    "hash": "dac11e80d1ff18b3b08b94240f724ed0"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/.graphify/label-instructions/communities.md": {
+    "mtime": 1785266558550.7122,
+    "hash": "aad907f97b2f0670002558f5a57b2617"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/01-impedir-auto-seed-destrutivo.md": {
+    "mtime": 1785213221513.1562,
+    "hash": "9313146aee5f5df114d0ada9c960c2e6"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/02-autenticacao-rbac-api-sse.md": {
+    "mtime": 1785213221515.1567,
+    "hash": "9891a06ad1cdbd5558afe092dcfde80a"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/03-bloquear-desconto-pos-financeiro.md": {
+    "mtime": 1785213221517.1523,
+    "hash": "0915fd844c888e41ab3c59e6101bfeca"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/04-exigir-turno-na-conclusao.md": {
+    "mtime": 1785213221518.1553,
+    "hash": "b5a2bb725de57df39f05b8cecbc0c641"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/05-corrigir-cancelamento-manual.md": {
+    "mtime": 1785213221520.1523,
+    "hash": "e16c24b203eab14e8e0944d6b509388c"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/06-fingerprint-idempotencia-divergente.md": {
+    "mtime": 1785213221522.1528,
+    "hash": "edf180a156c538f384aadc08918abba9"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/07-idempotencia-rodadas-ajustes-caixa.md": {
+    "mtime": 1785213221524.1553,
+    "hash": "292e9ab35d88f5249b5c87168e63b030"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/08-isolar-fluxos-manual-integrado.md": {
+    "mtime": 1785213221526.1553,
+    "hash": "e7f9a045b802d31491d4a55288f1c45c"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/09-tratar-adapter-integracao-desligado.md": {
+    "mtime": 1785213221527.5044,
+    "hash": "a02b452776e70dab278b058f1fc52a33"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/10-outbox-efeitos-http.md": {
+    "mtime": 1785213221527.5044,
+    "hash": "cddb38fc7133689e980ed5c5dcdd2dbb"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/11-watchdog-correlacao-ifood.md": {
+    "mtime": 1785213221531.057,
+    "hash": "f43fefcdb3e4871a9f3eca513f4fc139"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/12-sincronizacao-delivery-much.md": {
+    "mtime": 1785213221533.0525,
+    "hash": "558242d600e31f50442c03abb99f6f79"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/13-anonimizacao-lgpd-completa.md": {
+    "mtime": 1785213221535.051,
+    "hash": "998649c074670a2977f3282966bc63e8"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/14-simulador-eventos-confiavel.md": {
+    "mtime": 1785213226348.8315,
+    "hash": "8f5ce232fdd06757a1ef2534ab3c713b"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/15-sse-fechamento-comanda.md": {
+    "mtime": 1785213221538.0508,
+    "hash": "12c35128c1d68a208b24da7b91e276a8"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/16-fila-impressao-dead-letter.md": {
+    "mtime": 1785213221540.0508,
+    "hash": "0a8413e31d8ccc208af889b9dda667eb"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/docs/prompts-remediacao-seguranca/17-timezone-relatorios-financeiros.md": {
+    "mtime": 1785213221542.0527,
+    "hash": "0787d484ce4414d4af2f8440b2afe90d"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/anonimizacao-lgpd-completa.md": {
+    "mtime": 1785224462267.7036,
+    "hash": "61a1375c8d6560a3998dcf239de1b82e"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/autenticacao-rbac-api-sse.md": {
+    "mtime": 1785220563806.1697,
+    "hash": "8e6049513359befac114c448d486d6c0"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/bloquear-desconto-pos-financeiro.md": {
+    "mtime": 1785223930769.2524,
+    "hash": "fec3252e2a5db33b83f606a5ab8a1447"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/corrigir-cancelamento-manual.md": {
+    "mtime": 1785223930769.2524,
+    "hash": "4345733f78e9be419471759f78d40322"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/exigir-turno-na-conclusao.md": {
+    "mtime": 1785223930769.2524,
+    "hash": "9273ebf046afbd4ddd5ced2f17823ea1"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/fila-impressao-dead-letter.md": {
+    "mtime": 1785225108581.963,
+    "hash": "2f894dcacd4aed434e6ef4aa04931491"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/fingerprint-idempotencia-divergente.md": {
+    "mtime": 1785224167152.3318,
+    "hash": "026978ddb0b495fdbafaaa4eda7368d4"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/idempotencia-rodadas-ajustes-caixa.md": {
+    "mtime": 1785223930769.2524,
+    "hash": "86f98b81c41c761891355c8223d6c1f0"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/isolar-fluxos-manual-integrado.md": {
+    "mtime": 1785223268629.6836,
+    "hash": "41116cdc7f5632c2926070ff9fa0955e"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/outbox-efeitos-http.md": {
+    "mtime": 1785223385291.8887,
+    "hash": "3ff1494e682221c6f5c463929b6ea3ed"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/simulador-eventos-confiavel.md": {
+    "mtime": 1785225108581.963,
+    "hash": "ce54596165d4dbd063cdbfef22058647"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/sincronizacao-delivery-much.md": {
+    "mtime": 1785224330707.5244,
+    "hash": "8766c152aed1b19eae1075301502eb2b"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/sse-fechamento-comanda.md": {
+    "mtime": 1785225108581.963,
+    "hash": "f81a60e9dbc95078b92750637e0230de"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/timezone-relatorios-financeiros.md": {
+    "mtime": 1785225612760.5515,
+    "hash": "b3b0d4137da590382294cd43c1fe1f5f"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/tratar-adapter-integracao-desligado.md": {
+    "mtime": 1785223930769.2524,
+    "hash": "aea36f0bdf8a0158860de0aea20763a7"
+  },
+  "C:/Users/milla/Documents/Projetos/Git/camoburguer-demo/specs/watchdog-correlacao-ifood.md": {
+    "mtime": 1785224246496.019,
+    "hash": "cf2f2d5b5930cc1e296c2351505398dc"
   }
 }

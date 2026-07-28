@@ -1,4 +1,4 @@
-# Node Description Batch 5 of 12
+# Node Description Batch 5 of 14
 
 Graphify is running in assistant/skill mode (no API key). You are the host
 assistant (Claude Code / Codex / Gemini CLI). Read the prompt below and write
@@ -19,53 +19,51 @@ relations (neighbors) and the provided citations/evidence — e.g.
 Ground entity descriptions in the citations/evidence when present; do not
 speculate beyond the context, so a node with no supporting context may be
 left out of the reply.
-LANGUAGE: each entry has a `lang=` marker giving the language of its source.
-Write that entry's description in EXACTLY that language. Do not translate to
-a single common language — match each node's source language individually.
+Write every description in Portuguese (pt). Do not switch languages.
 No marketing language.
 Respond ONLY with a JSON object mapping each node id (as a string) to its
 one-sentence description — no prose, no markdown fences.
 
-- "ops_web_main_renderfinancesummary": "renderFinanceSummary()" | kind=code-symbol | source=apps/ops-web/main.js:L743 | neighbors=[main.js, refreshAll(), escapeHtml(), money()] | lang=en
-- "ops_web_main_synccashchange": "syncCashChange()" | kind=code-symbol | source=apps/ops-web/main.js:L1109 | neighbors=[main.js, renderOrderItems(), calculateOrderPreviewTotal(), money()] | lang=en
-- "providers_ifood_fetchifoodcancellationreasons": "fetchIFoodCancellationReasons()" | kind=code-symbol | source=apps/api/src/integrations/providers/ifood.js:L38 | neighbors=[integration-routes.js, ifood.js, clearIFoodToken(), getIFoodToken()] | lang=en
-- "scripts_check_syntax": "check-syntax.mjs" | kind=code-symbol | source=scripts/check-syntax.mjs:L1 | neighbors=[075c321 Audita demo e endurece operacao, collect(), files, roots] | lang=en
-- "src_order_tab_assignment_normalizetabassignmentpayload": "normalizeTabAssignmentPayload()" | kind=code-symbol | source=apps/api/src/order-tab-assignment.js:L7 | neighbors=[order-tab-assignment.js, clean(), server.js, order-tab-assignment.test.js] | lang=en
-- "src_server_reconcileprintjob": "reconcilePrintJob()" | kind=code-symbol | source=apps/api/src/server.js:L851 | neighbors=[server.js, dispatchPrintJob(), bridgeHeaders(), readBridgeJson()] | lang=en
-- "src_sse": "sse.js" | kind=code-symbol | source=apps/api/src/sse.js:L1 | neighbors=[075c321 Audita demo e endurece operacao, 3487db7 feat: refatoracao completa UI, …, bdd41dd feat: entregar demo operacional…, createSseHub()] | lang=en
-- "src_validation": "validation.js" | kind=code-symbol | source=apps/print-bridge/src/validation.js:L1 | neighbors=[075c321 Audita demo e endurece operacao, equalSecret(), safeId(), validPrintContent()] | lang=en
-- "tests_print_bridge_test": "print-bridge.test.js" | kind=code-symbol | source=tests/print-bridge.test.js:L1 | neighbors=[075c321 Audita demo e endurece operacao, equalSecret(), safeId(), validPrintContent()] | lang=en
-- "tests_smoke_api": "api()" | kind=code-symbol | source=tests/smoke.mjs:L34 | neighbors=[smoke.mjs, request(), createOrder(), expectBlockedAssignment()] | lang=en
-- "commit:repo:github.com/millennium42/camoburguer-demo@03f8302df65d38210d0d82c255ed0ccb20fce5c0": "03f8302 docs(operations): definir catálogo, entrega direta e vínculo tardio" | kind=Commit | source=git | neighbors=[main, 87b872c feat(domain): congelar classifi…, 075c321 Audita demo e endurece operacao] | lang=en
-- "commit:repo:github.com/millennium42/camoburguer-demo@152ed2f4068ad65e35a8dd2cd5a66d4c080de3d1": "152ed2f docs(seed): documentar operação explícita e rollback" | kind=Commit | source=git | neighbors=[main, 176899c fix(docker): resolver domínio n…, 98ec659 fix(api): impedir seed destruti…] | lang=pt
-- "commit:repo:github.com/millennium42/camoburguer-demo@1bb0752734a1717f23176d1b61d933ed7ac3146c": "1bb0752 docs: atualizar documentacao completa, README, 5W2H (PRs 13-18), guia d…" | kind=Commit | source=git | neighbors=[main, ccc816f chore(graphify): atualizar graf…, 3fb67d4 fix: point ops-web apiBase to c…] | lang=en
-- "commit:repo:github.com/millennium42/camoburguer-demo@1bd28c844f1a7636e83333ed0ad3bf8a49519b89": "1bd28c8 fix(ops-web): ajustar layout responsivo e largura das linhas do carrinh…" | kind=Commit | source=git | neighbors=[main, 38cc0d0 feat(ops-web): adicionar calcul…, a6bb648 feat(ops-web): adicionar calcul…] | lang=pt
-- "commit:repo:github.com/millennium42/camoburguer-demo@52769546694d0f2fe9ded35f5bf56b3b10c11a23": "5276954 docs: unificar documentacao central e criar blueprint de deploy no Rend…" | kind=Commit | source=git | neighbors=[344d87e fix(ops-web): correcao de rende…, main, f5d44ad fix(render): corrigir chave do …] | lang=nl
-- "commit:repo:github.com/millennium42/camoburguer-demo@9dbb57a2b9adb6909498c8bbf8e30324a9779bb3": "9dbb57a test(release): consolidar regressões e mapa do projeto" | kind=Commit | source=git | neighbors=[main, 0009eb5 fix(release): alinhar cancelame…, f3fc468 feat(ops-web): atribuir pedido …] | lang=pt
-- "commit:repo:github.com/millennium42/camoburguer-demo@a045facc63ed90cdaacd573442b597ef7bf073bb": "a045fac docs(spec): impedir auto-seed destrutivo" | kind=Commit | source=git | neighbors=[main, f3191d3 fix(render): desativar auto-see…, eef1d5a fix(integrations): tornar event…] | lang=pt
-- "commit:repo:github.com/millennium42/camoburguer-demo@ccc816fa058054a98296168dea607f3add4d8d3d": "ccc816f chore(graphify): atualizar grafo de conhecimento e script WSL após atua…" | kind=Commit | source=git | neighbors=[1bb0752 docs: atualizar documentacao co…, main, 6e6b2d9 feat(ops-web): redesenhar inter…] | lang=en
-- "commit:repo:github.com/millennium42/camoburguer-demo@f3191d3dd8b9bbc5237ad853f0142e6d6d79b7df": "f3191d3 fix(render): desativar auto-seed no deploy" | kind=Commit | source=git | neighbors=[a045fac docs(spec): impedir auto-seed d…, main, 98ec659 fix(api): impedir seed destruti…] | lang=en
-- "commit:repo:github.com/millennium42/camoburguer-demo@f5d44ad417fb5c70e6d0a9d751e0bf88bad70085": "f5d44ad fix(render): corrigir chave do postgres no render.yaml de services para…" | kind=Commit | source=git | neighbors=[5276954 docs: unificar documentacao cen…, main, 4e6bbe4 feat(render): adicionar inicial…] | lang=pt
-- "domain_index_buildkitchenticket": "buildKitchenTicket()" | kind=code-symbol | source=packages/domain/index.js:L226 | neighbors=[index.js, requiresKitchenPreparation(), domain.test.js] | lang=en
-- "domain_index_calculateordertotal": "calculateOrderTotal()" | kind=code-symbol | source=packages/domain/index.js:L43 | neighbors=[index.js, normalizeDiscountPercent(), createOrder()] | lang=en
-- "domain_index_createcancellationorder": "createCancellationOrder()" | kind=code-symbol | source=packages/domain/index.js:L190 | neighbors=[index.js, createOrder(), domain.test.js] | lang=en
-- "domain_index_createcashshift": "createCashShift()" | kind=code-symbol | source=packages/domain/index.js:L262 | neighbors=[index.js, domain.test.js, finance.test.js] | lang=en
-- "domain_index_normalizediscountpercent": "normalizeDiscountPercent()" | kind=code-symbol | source=packages/domain/index.js:L35 | neighbors=[index.js, calculateOrderTotal(), createOrder()] | lang=en
-- "domain_index_transitionorder": "transitionOrder()" | kind=code-symbol | source=packages/domain/index.js:L199 | neighbors=[index.js, confirmOrder(), domain.test.js] | lang=en
-- "finance_core_index_businessdate": "businessDate()" | kind=code-symbol | source=packages/finance-core/index.js:L111 | neighbors=[index.js, zonedParts(), finance.test.js] | lang=en
-- "finance_core_index_filterentries": "filterEntries()" | kind=code-symbol | source=packages/finance-core/index.js:L140 | neighbors=[index.js, assertOperationalDate(), finance.test.js] | lang=en
-- "finance_core_index_summarizefinance": "summarizeFinance()" | kind=code-symbol | source=packages/finance-core/index.js:L155 | neighbors=[index.js, businessHour(), finance.test.js] | lang=en
-- "finance_core_index_zonedparts": "zonedParts()" | kind=code-symbol | source=packages/finance-core/index.js:L98 | neighbors=[index.js, businessDate(), businessHour()] | lang=en
-- "integrations_integration_repository_getpendingcommands": "getPendingCommands()" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L187 | neighbors=[integration-repository.js, deliverymuch.js, ifood.js] | lang=en
-- "integrations_integration_repository_insertchannelevent": "insertChannelEvent()" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L104 | neighbors=[integration-repository.js, deliverymuch.js, ifood.js] | lang=en
-- "integrations_integration_repository_updatechannelevent": "updateChannelEvent()" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L126 | neighbors=[integration-repository.js, columnFor(), deliverymuch.js] | lang=en
-- "integrations_integration_repository_updateownedchannelcommand": "updateOwnedChannelCommand()" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L239 | neighbors=[integration-repository.js, columnFor(), seed-demo-postgres.test.js] | lang=en
-- "integrations_order_actions_activateacceptedorder": "activateAcceptedOrder()" | kind=code-symbol | source=apps/api/src/integrations/order-actions.js:L125 | neighbors=[order-actions.js, deliverymuch.js, ifood.js] | lang=en
-- "integrations_polling_runner_startintegrationpolling": "startIntegrationPolling()" | kind=code-symbol | source=apps/api/src/integrations/polling-runner.js:L11 | neighbors=[polling-runner.js, assertConfigured(), server.js] | lang=en
-- "ops_web_main_addoraccumulateitem": "addOrAccumulateItem()" | kind=code-symbol | source=apps/ops-web/main.js:L151 | neighbors=[main.js, validDiscountPercent(), ops-web.test.js] | lang=en
-- "ops_web_main_escapehtml": "escapeHtml()" | kind=code-symbol | source=apps/ops-web/main.js:L94 | neighbors=[main.js, renderFinanceSummary(), ops-web.test.js] | lang=en
-- "ops_web_main_formatwhen": "formatWhen()" | kind=code-symbol | source=apps/ops-web/main.js:L302 | neighbors=[main.js, printShiftReport(), renderShifts()] | lang=en
-- "ops_web_main_nextorderattempt": "nextOrderAttempt()" | kind=code-symbol | source=apps/ops-web/main.js:L204 | neighbors=[main.js, integrationAttempt(), ops-web.test.js] | lang=en
+- "commit:repo:github.com/millennium42/camoburguer-demo@f3191d3dd8b9bbc5237ad853f0142e6d6d79b7df": "f3191d3 fix(render): desativar auto-seed no deploy" | kind=Commit | source=git | neighbors=[a045fac docs(spec): impedir auto-seed d…, fix/c01-rbac-cozinha, fix/h01-orders-dto-estrutural, main, 98ec659 fix(api): impedir seed destruti…]
+- "commit:repo:github.com/millennium42/camoburguer-demo@f5d44ad417fb5c70e6d0a9d751e0bf88bad70085": "f5d44ad fix(render): corrigir chave do postgres no render.yaml de services para…" | kind=Commit | source=git | neighbors=[5276954 docs: unificar documentacao cen…, fix/c01-rbac-cozinha, fix/h01-orders-dto-estrutural, main, 4e6bbe4 feat(render): adicionar inicial…]
+- "integrations_command_outbox_processchannelcommands": "processChannelCommands()" | kind=code-symbol | source=apps/api/src/integrations/command-outbox.js:L102 | neighbors=[command-outbox.js, reconcileCommand(), sendCommand(), polling-runner.js, seed-demo-postgres.test.js]
+- "integrations_integration_repository_columnfor": "columnFor()" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L35 | neighbors=[integration-repository.js, updateChannelCommand(), updateChannelEvent(), updateChannelMapping(), updateOwnedChannelCommand()]
+- "integrations_integration_repository_getorderwithmapping": "getOrderWithMapping()" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L267 | neighbors=[integration-repository.js, integration-routes.js, order-actions.js, deliverymuch.js, ifood.js]
+- "integrations_integration_repository_updatechannelmapping": "updateChannelMapping()" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L69 | neighbors=[integration-repository.js, columnFor(), order-actions.js, deliverymuch.js, ifood.js]
+- "ops_web_main_api": "api()" | kind=code-symbol | source=apps/ops-web/main.js:L841 | neighbors=[main.js, showLoginDialog(), catalogAdminApi(), chooseCancellationReason(), refreshAll()]
+- "ops_web_main_catalogadminapi": "catalogAdminApi()" | kind=code-symbol | source=apps/ops-web/main.js:L942 | neighbors=[main.js, api(), catalogAdminSessionIsCurrent(), lockCatalogAdmin(), refreshCatalogAdminList()]
+- "ops_web_main_opentabassignment": "openTabAssignment()" | kind=code-symbol | source=apps/ops-web/main.js:L585 | neighbors=[main.js, money(), notify(), refreshSafe(), syncTabAssignmentFields()]
+- "ops_web_main_renderactivetab": "renderActiveTab()" | kind=code-symbol | source=apps/ops-web/main.js:L495 | neighbors=[main.js, calculateOrderPreviewTotal(), money(), renderOrderItems(), renderTabs()]
+- "ops_web_main_rendershifts": "renderShifts()" | kind=code-symbol | source=apps/ops-web/main.js:L803 | neighbors=[main.js, refreshAll(), activeShift(), formatWhen(), money()]
+- "scripts_demo_simulator_client_runsimulation": "runSimulation()" | kind=code-symbol | source=scripts/demo-simulator-client.mjs:L99 | neighbors=[demo-simulator-client.mjs, createSimulationClient(), simulate-order.mjs, seed.js, simulator.test.js]
+- "scripts_seed_demo_demoseedrefusal": "DemoSeedRefusal" | kind=code-symbol | source=scripts/seed-demo.mjs:L25 | neighbors=[seed-demo.mjs, .constructor(), runSeedDemo(), sanitizeTarget(), seed-demo-safety.test.js]
+- "src_auth_hashtoken": "hashToken()" | kind=code-symbol | source=apps/api/src/auth.js:L20 | neighbors=[auth.js, authenticate(), login(), revokeSession(), validateCsrf()]
+- "src_auth_validatecsrf": "validateCsrf()" | kind=code-symbol | source=apps/api/src/auth.js:L150 | neighbors=[auth.js, hashToken(), safeEqual(), server.js, auth.test.js]
+- "src_auth_verifypassword": "verifyPassword()" | kind=code-symbol | source=apps/api/src/auth.js:L36 | neighbors=[auth.js, login(), safeEqual(), scrypt, auth.test.js]
+- "src_catalog_repository_mapcatalogitem": "mapCatalogItem()" | kind=code-symbol | source=apps/api/src/catalog-repository.js:L3 | neighbors=[catalog-repository.js, archiveCatalogItem(), getCatalogItem(), insertCatalogItem(), updateCatalogItem()]
+- "src_sse": "sse.js" | kind=code-symbol | source=apps/api/src/sse.js:L1 | neighbors=[075c321 Audita demo e endurece operacao, 3487db7 feat: refatoracao completa UI, …, bdd41dd feat: entregar demo operacional…, e0f5e6f New Commit, createSseHub()]
+- "tests_order_tab_assignment_test": "order-tab-assignment.test.js" | kind=code-symbol | source=tests/order-tab-assignment.test.js:L1 | neighbors=[79c5964 feat(orders): vincular pedido e…, normalizeTabAssignmentPayload(), sameTabAssignment(), tabAssignmentEligibility(), eligibleOrder]
+- "commit:repo:github.com/millennium42/camoburguer-demo@58fc56b9e1e0430a3e62d0957c36da25bdebfe80": "58fc56b fix: corrige renderCatalog tabs e event delegation no click handler" | kind=Commit | source=git | neighbors=[3487db7 feat: refatoracao completa UI, …, codex/unificacao-lgpd-visual, main.js, ops-web.test.js]
+- "domain_index_confirmorder": "confirmOrder()" | kind=code-symbol | source=packages/domain/index.js:L216 | neighbors=[index.js, requiresKitchenPreparation(), transitionOrder(), domain.test.js]
+- "domain_index_requireskitchenpreparation": "requiresKitchenPreparation()" | kind=code-symbol | source=packages/domain/index.js:L212 | neighbors=[index.js, buildKitchenTicket(), confirmOrder(), domain.test.js]
+- "finance_core_index_businesshour": "businessHour()" | kind=code-symbol | source=packages/finance-core/index.js:L116 | neighbors=[index.js, zonedParts(), summarizeFinance(), finance.test.js]
+- "integrations_command_outbox_sendcommand": "sendCommand()" | kind=code-symbol | source=apps/api/src/integrations/command-outbox.js:L70 | neighbors=[command-outbox.js, processChannelCommands(), classifyCommandError(), finishUnknown()]
+- "integrations_http_client": "http-client.js" | kind=code-symbol | source=apps/api/src/integrations/http-client.js:L1 | neighbors=[3487db7 feat: refatoracao completa UI, …, e0362f4 feat: Entrega 2 - Ingestao Segu…, requestForm(), requestJson()]
+- "integrations_http_client_requestform": "requestForm()" | kind=code-symbol | source=apps/api/src/integrations/http-client.js:L33 | neighbors=[http-client.js, requestJson(), deliverymuch.js, ifood.js]
+- "integrations_http_client_requestjson": "requestJson()" | kind=code-symbol | source=apps/api/src/integrations/http-client.js:L1 | neighbors=[http-client.js, requestForm(), deliverymuch.js, ifood.js]
+- "integrations_integration_repository_updatechannelcommand": "updateChannelCommand()" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L176 | neighbors=[integration-repository.js, columnFor(), deliverymuch.js, ifood.js]
+- "integrations_integration_repository_updateownedchannelcommand": "updateOwnedChannelCommand()" | kind=code-symbol | source=apps/api/src/integrations/integration-repository.js:L239 | neighbors=[command-outbox.js, integration-repository.js, columnFor(), seed-demo-postgres.test.js]
+- "integrations_order_actions_applyintegratedtransition": "applyIntegratedTransition()" | kind=code-symbol | source=apps/api/src/integrations/order-actions.js:L157 | neighbors=[order-actions.js, deliverymuch.js, ifood.js, integrations.test.js]
+- "integrations_order_actions_createorderaction": "createOrderAction()" | kind=code-symbol | source=apps/api/src/integrations/order-actions.js:L29 | neighbors=[integration-routes.js, order-actions.js, integrations.test.js, seed-demo-postgres.test.js]
+- "integrations_order_ingestion_ingestexternalorder": "ingestExternalOrder()" | kind=code-symbol | source=apps/api/src/integrations/order-ingestion.js:L7 | neighbors=[order-ingestion.js, deliverymuch.js, ifood.js, integrations.test.js]
+- "ops_web_main_catalogadminsessioniscurrent": "catalogAdminSessionIsCurrent()" | kind=code-symbol | source=apps/ops-web/main.js:L936 | neighbors=[main.js, catalogAdminApi(), sameCatalogAdminSession(), refreshCatalogAdminList()]
+- "ops_web_main_refreshcatalogadminlist": "refreshCatalogAdminList()" | kind=code-symbol | source=apps/ops-web/main.js:L997 | neighbors=[main.js, catalogAdminApi(), catalogAdminSessionIsCurrent(), renderCatalogAdminList()]
+- "ops_web_main_renderfinancesummary": "renderFinanceSummary()" | kind=code-symbol | source=apps/ops-web/main.js:L743 | neighbors=[main.js, refreshAll(), escapeHtml(), money()]
+- "ops_web_main_synccashchange": "syncCashChange()" | kind=code-symbol | source=apps/ops-web/main.js:L1109 | neighbors=[main.js, renderOrderItems(), calculateOrderPreviewTotal(), money()]
+- "providers_ifood_fetchifoodcancellationreasons": "fetchIFoodCancellationReasons()" | kind=code-symbol | source=apps/api/src/integrations/providers/ifood.js:L38 | neighbors=[integration-routes.js, ifood.js, clearIFoodToken(), getIFoodToken()]
+- "scripts_check_syntax": "check-syntax.mjs" | kind=code-symbol | source=scripts/check-syntax.mjs:L1 | neighbors=[075c321 Audita demo e endurece operacao, collect(), files, roots]
+- "src_auth_authenticate": "authenticate()" | kind=code-symbol | source=apps/api/src/auth.js:L121 | neighbors=[auth.js, hashToken(), server.js, auth.test.js]
+- "src_auth_hashpassword": "hashPassword()" | kind=code-symbol | source=apps/api/src/auth.js:L30 | neighbors=[auth.js, scrypt, auth.test.js, seed-demo-postgres.test.js]
 
 ## Instructions
 
