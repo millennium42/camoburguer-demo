@@ -54,6 +54,7 @@ export function permissionForRequest(method, path) {
   if (path.startsWith("/cash-shifts")) return "cash";
   if (path.startsWith("/finance")) return "finance";
   if (path.startsWith("/tabs")) return "tabs";
+  if (method === "PATCH" && /^\/orders\/[^/]+\/status$/.test(path)) return "orders:prepare";
   if (path.startsWith("/orders")) return method === "GET" ? "orders:read" : "orders";
   if (path.startsWith("/print")) return "print:read";
   return null;
@@ -62,8 +63,15 @@ export function permissionForRequest(method, path) {
 export function hasPermission(role, permission) {
   const granted = ROLE_PERMISSIONS[role] || [];
   return granted.includes("*") || granted.includes(permission)
-    || (permission.startsWith("orders:") && granted.includes("orders"))
-    || (permission === "orders" && granted.includes("orders:prepare"));
+    || (permission.startsWith("orders:") && granted.includes("orders"));
+}
+
+export function canRoleTransitionOrderStatus(role, previousStatus, nextStatus) {
+  if (role !== "kitchen") return true;
+  if (previousStatus === "confirmed" && nextStatus === "in_preparation") return true;
+  if (previousStatus === "in_preparation" && nextStatus === "ready") return true;
+  if (previousStatus === nextStatus && (nextStatus === "in_preparation" || nextStatus === "ready")) return true;
+  return false;
 }
 
 export async function ensureBootstrapAdmin(db, bootstrapPassword) {

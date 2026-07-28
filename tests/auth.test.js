@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   authenticate,
+  canRoleTransitionOrderStatus,
   hasPermission,
   hashPassword,
   login,
@@ -18,17 +19,23 @@ test("senha scrypt e verificavel sem aceitar senha diferente", async () => {
   assert.equal(await verifyPassword("outra-senha", hash), false);
 });
 
-test("matriz RBAC limita cozinha e operador", () => {
+test("matriz RBAC limita cozinha e operador e veda permissao generica orders a cozinha", () => {
   assert.equal(hasPermission("admin", "admin"), true);
   assert.equal(hasPermission("operator", "cash"), true);
+  assert.equal(hasPermission("operator", "orders"), true);
   assert.equal(hasPermission("operator", "admin"), false);
   assert.equal(hasPermission("kitchen", "orders:read"), true);
   assert.equal(hasPermission("kitchen", "orders:prepare"), true);
+  assert.equal(hasPermission("kitchen", "orders"), false);
   assert.equal(hasPermission("kitchen", "finance"), false);
 });
 
-test("classificacao centralizada deixa rota desconhecida sem permissao", () => {
+test("classificacao centralizada designa PATCH status para orders:prepare e deixa rota desconhecida sem permissao", () => {
   assert.equal(permissionForRequest("GET", "/orders"), "orders:read");
+  assert.equal(permissionForRequest("PATCH", "/orders/123/status"), "orders:prepare");
+  assert.equal(permissionForRequest("PATCH", "/orders/123/discount"), "orders");
+  assert.equal(permissionForRequest("POST", "/orders"), "orders");
+  assert.equal(permissionForRequest("POST", "/orders/123/tab-assignment"), "orders");
   assert.equal(permissionForRequest("GET", "/events/orders"), "sse:orders");
   assert.equal(permissionForRequest("POST", "/integrations/ifood/accept"), "admin");
   assert.equal(permissionForRequest("GET", "/kitchen/queue"), "orders:read");
@@ -138,4 +145,16 @@ test("falha de persistencia ao revogar fecha a sessao no processo", async () => 
   };
   await assert.rejects(revokeSession(db, token), /db write failed/);
   assert.equal(await authenticate(db, token), null);
+});
+
+test("transicoes de status para cozinha são restritas a preparo e pronto", () => {
+  assert.equal(canRoleTransitionOrderStatus("kitchen", "confirmed", "in_preparation"), true);
+  assert.equal(canRoleTransitionOrderStatus("kitchen", "in_preparation", "ready"), true);
+  assert.equal(canRoleTransitionOrderStatus("kitchen", "in_preparation", "in_preparation"), true);
+  assert.equal(canRoleTransitionOrderStatus("kitchen", "ready", "ready"), true);
+  assert.equal(canRoleTransitionOrderStatus("kitchen", "confirmed", "ready"), false);
+  assert.equal(canRoleTransitionOrderStatus("kitchen", "confirmed", "cancelled"), false);
+  assert.equal(canRoleTransitionOrderStatus("kitchen", "in_preparation", "completed"), false);
+  assert.equal(canRoleTransitionOrderStatus("operator", "confirmed", "completed"), true);
+  assert.equal(canRoleTransitionOrderStatus("admin", "confirmed", "cancelled"), true);
 });

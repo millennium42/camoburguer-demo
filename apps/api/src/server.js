@@ -33,6 +33,7 @@ import { createDb, mapFinanceEntry, mapOrder, mapShift, mapTab, mapTabPayment } 
 import { createSseHub } from "./sse.js";
 import {
   authenticate,
+  canRoleTransitionOrderStatus,
   changePassword,
   ensureBootstrapAdmin,
   hasPermission,
@@ -177,12 +178,6 @@ app.addHook("preHandler", async (request, reply) => {
   if (!permission) return reply.code(401).send({ error: "Rota nao classificada" });
   if (!hasPermission(session.user.role, permission)) {
     return reply.code(403).send({ error: "Permissao insuficiente" });
-  }
-  if (session.user.role === "kitchen" && path.startsWith("/orders") && isMutation(request.method)) {
-    const status = request.body?.status;
-    if (request.method !== "PATCH" || !["in_preparation", "ready"].includes(status)) {
-      return reply.code(403).send({ error: "Permissao insuficiente" });
-    }
   }
 });
 
@@ -1540,6 +1535,9 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
   const result = await db.transaction(async (client) => {
     const order = await getOrder(request.params.orderId, client, true);
     if (!order) return { notFound: true };
+    if (!canRoleTransitionOrderStatus(request.auth?.user?.role, order.status, nextStatus)) {
+      return { roleTransitionForbidden: true };
+    }
     if (order.hasChannelMapping || ["ifood", "deliverymuch"].includes(order.source)) {
       return { integratedFlowRequired: true };
     }
@@ -1624,6 +1622,9 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
   });
 
   if (result.notFound) return reply.code(404).send({ message: "Pedido não encontrado" });
+  if (result.roleTransitionForbidden) {
+    return reply.code(403).send({ error: "Permissao insuficiente" });
+  }
   if (result.integratedFlowRequired) return reply.code(409).send({
     code: "INTEGRATED_FLOW_REQUIRED",
     message: "Pedido integrado deve ser alterado pelo comando do canal"
