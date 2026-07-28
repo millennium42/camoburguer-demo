@@ -18,7 +18,8 @@ import {
   createCancellationOrder,
   createOrder,
   confirmOrder,
-  transitionOrder
+  transitionOrder,
+  normalizeStandaloneOrderDto
 } from "@camoburguer/domain";
 import {
   buildEntriesFromOrder,
@@ -1467,7 +1468,16 @@ app.post("/orders", async (request, reply) => {
       message: "Pedidos iFood e Delivery Much devem entrar pelo adapter do canal"
     });
   }
-  const requestFingerprint = fingerprint(orderFingerprintPayload(request.body || {}));
+  let dto;
+  try {
+    dto = normalizeStandaloneOrderDto(request.body || {});
+  } catch (error) {
+    return reply.code(error.statusCode || 400).send({
+      code: error.code || "INVALID_ORDER_DTO",
+      message: error.message
+    });
+  }
+  const requestFingerprint = fingerprint(orderFingerprintPayload(dto));
   const result = await db.transaction(async (client) => {
     const claim = await claimIdempotency(client, {
       key: idempotencyKey,
@@ -1482,9 +1492,9 @@ app.post("/orders", async (request, reply) => {
         ? { saved, repeated: true, responseStatus: claim.responseStatus }
         : { idempotencyConflict: "idempotency_result_missing" };
     }
-    const catalog = await lockCatalogItems(request.body?.items, client);
+    const catalog = await lockCatalogItems(dto.items, client);
     const order = confirmOrder(createOrder(
-      { ...(request.body || {}), idempotencyKey },
+      { ...dto, idempotencyKey },
       { catalog }
     ));
     const saved = await insertOrder(order, client);
