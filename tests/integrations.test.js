@@ -101,7 +101,7 @@ test("ingestão externa cria um pedido completo e mapeamento estável", async ()
 
   assert.equal(result.repeated, false);
   assert.equal(insertedOrder.idempotencyKey, "ifood:merchant-1:external-1");
-  assert.equal(insertedOrder.paymentMethod, "app_paid");
+  assert.equal(insertedOrder.paymentMethod, "payment_reconciliation_required");
   assert.equal(insertedOrder.roundKind, "production");
   assert.equal(insertedOrder.total, 25);
   assert.equal(insertedOrder.metadata.externalOrderId, "external-1");
@@ -359,4 +359,105 @@ test("H-03 Delivery Much: classificação reconcilia 'cancelled' durante 'accept
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+
+// --- H-04: TESTES DE MEIOS DE PAGAMENTO EXTERNOS ---
+
+import { summarizeFinance, buildEntriesFromOrder } from "../packages/finance-core/index.js";
+
+test("H-04 Ingestion: aceita e salva externalPayments com paymentMethod mixed na metadata de orders", async () => {
+  let insertedOrder;
+  const executor = {
+    async query(sql, params) {
+      if (sql.includes("SELECT 1 FROM channel_mappings")) return { rows: [] };
+      if (sql.includes("INSERT INTO channel_mappings")) {
+        const now = new Date().toISOString();
+        return { rows: [{ id: "mock-1", created_at: now, updated_at: now }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const db = {
+    async insertOrder(order) {
+      insertedOrder = order;
+      return order;
+    }
+  };
+  
+  await ingestExternalOrder({
+    source: "ifood",
+    externalMerchantId: "merchant-mixed",
+    externalOrderId: "external-mixed",
+    externalStatus: "PLACED",
+    customerName: "Cliente Misto",
+    fulfillmentMode: "pickup",
+    items: [{ id: "line-2", name: "Item", quantity: 1, price: 50 }],
+    paymentMethod: "mixed",
+    externalPayments: [
+      { method: "cash", type: "offline", amount: 20 },
+      { method: "credit_card", type: "offline", amount: 30 }
+    ]
+  }, executor, db);
+  
+  assert.equal(insertedOrder.paymentMethod, "mixed");
+  assert.equal(insertedOrder.metadata.externalPayments.length, 2);
+  assert.equal(insertedOrder.metadata.externalPayments[0].method, "cash");
+});
+
+test("H-04 Finance Core: buildEntriesFromOrder embute externalPayments e summarizeFinance não duplica pagamentos online no Caixa", () => {
+  const order = {
+    id: "ord-1",
+    total: 50,
+    source: "ifood",
+    paymentMethod: "mixed",
+    metadata: {
+      externalPayments: [
+        { method: "cash", type: "offline", amount: 20 },
+        { method: "app_paid", type: "online", amount: 30 }
+      ]
+    }
+  };
+  
+  const entries = buildEntriesFromOrder({ order, previousStatus: "received", nextStatus: "completed", shiftId: "shift-1" });
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].type, "sale");
+  assert.equal(entries[0].amount, 50);
+  assert.equal(entries[0].paymentMethod, "mixed");
+  assert.deepEqual(entries[0].metadata.externalPayments, order.metadata.externalPayments);
+  
+  const summary = summarizeFinance(entries);
+  assert.equal(summary.grossSales, 50);
+  assert.equal(summary.paymentsByMethod["cash"], 20);
+  assert.equal(summary.paymentsByMethod["app_paid"], 30);
+  // Reconciliacao deve bater
+  assert.equal(summary.reconciliation.balanced, true);
+  assert.equal(summary.reconciliation.difference, 0);
+  assert.equal(summary.reconciliation.methodTotal, 50);
+});
+
+test("H-04 Finance Core: cancelamento com externalPayments reduz corretamente do summary", () => {
+  const order = {
+    id: "ord-2",
+    total: 50,
+    source: "ifood",
+    paymentMethod: "mixed",
+    metadata: {
+      externalPayments: [
+        { method: "cash", type: "offline", amount: 20 },
+        { method: "app_paid", type: "online", amount: 30 }
+      ]
+    }
+  };
+  
+  const sales = buildEntriesFromOrder({ order, previousStatus: "received", nextStatus: "completed", shiftId: "shift-1" });
+  const cancellations = buildEntriesFromOrder({ order, previousStatus: "completed", nextStatus: "cancelled", shiftId: "shift-1" });
+  
+  const summary = summarizeFinance([...sales, ...cancellations]);
+  assert.equal(summary.grossSales, 50);
+  assert.equal(summary.cancellations, 50);
+  assert.equal(summary.netSales, 0);
+  assert.equal(summary.paymentsByMethod["cash"] || 0, 0);
+  assert.equal(summary.paymentsByMethod["app_paid"] || 0, 0);
+  assert.equal(summary.reconciliation.balanced, true);
 });
