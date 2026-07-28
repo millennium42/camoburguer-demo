@@ -657,7 +657,7 @@ const noShiftTab = await api("/tabs", { method: "POST", body: { label: `Sem-turn
 const noShiftRound = await api(`/tabs/${noShiftTab.id}/rounds`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-no-shift-round-${runId}` },
-  body: { items: [{ sku: `smoke-no-shift-${runId}`, name: "Consumo sem turno", quantity: 1, price: 5 }] },
+  body: { items: [{ sku: `smoke-no-shift-${runId}`, name: "Consumo sem turno", quantity: 1, price: 5, preparationMode: "direct_handoff" }] },
   expected: [201]
 });
 await api(`/tabs/${noShiftTab.id}/payments`, {
@@ -680,7 +680,7 @@ const crossShiftTab = await api("/tabs", { method: "POST", body: { label: `Entre
 await api(`/tabs/${crossShiftTab.id}/rounds`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-cross-shift-round-${runId}` },
-  body: { items: [{ sku: `smoke-cross-shift-${runId}`, name: "Consumo entre turnos", quantity: 1, price: 5 }] },
+  body: { items: [{ sku: `smoke-cross-shift-${runId}`, name: "Consumo entre turnos", quantity: 1, price: 5, preparationMode: "direct_handoff" }] },
   expected: [201]
 });
 const historicalPayment = await api(`/tabs/${crossShiftTab.id}/payments`, {
@@ -723,7 +723,7 @@ const mixedTab = await api("/tabs", { method: "POST", body: { kind: "table", lab
 await api(`/tabs/${mixedTab.id}/rounds`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-payment-round-${runId}` },
-  body: { items: [{ sku: `smoke-meal-${runId}`, name: "Consumo local", quantity: 1, price: 100 }] },
+  body: { items: [{ sku: `smoke-meal-${runId}`, name: "Consumo local", quantity: 1, price: 100, preparationMode: "direct_handoff" }] },
   expected: [201]
 });
 const pixKey = `smoke-payment-pix-${runId}`;
@@ -767,7 +767,7 @@ const partialTab = await api("/tabs", { method: "POST", body: { label: `Parcial-
 await api(`/tabs/${partialTab.id}/rounds`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-partial-round-${runId}` },
-  body: { items: [{ sku: `smoke-partial-${runId}`, name: "Consumo parcial", quantity: 1, price: 100 }] },
+  body: { items: [{ sku: `smoke-partial-${runId}`, name: "Consumo parcial", quantity: 1, price: 100, preparationMode: "direct_handoff" }] },
   expected: [201]
 });
 await api(`/tabs/${partialTab.id}/payments`, {
@@ -789,7 +789,7 @@ const paymentRaceTab = await api("/tabs", { method: "POST", body: { label: `Corr
 await api(`/tabs/${paymentRaceTab.id}/rounds`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-payment-race-round-${runId}` },
-  body: { items: [{ sku: `smoke-payment-race-${runId}`, name: "Consumo concorrente", quantity: 1, price: 10 }] },
+  body: { items: [{ sku: `smoke-payment-race-${runId}`, name: "Consumo concorrente", quantity: 1, price: 10, preparationMode: "direct_handoff" }] },
   expected: [201]
 });
 const paymentRace = await Promise.all(["pix", "debit_card"].map(async (paymentMethod, index) => {
@@ -808,7 +808,7 @@ const reversalTab = await api("/tabs", { method: "POST", body: { label: `Estorno
 await api(`/tabs/${reversalTab.id}/rounds`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-reversal-round-${runId}` },
-  body: { items: [{ sku: `smoke-reversal-${runId}`, name: "Consumo para estorno", quantity: 1, price: 20 }] },
+  body: { items: [{ sku: `smoke-reversal-${runId}`, name: "Consumo para estorno", quantity: 1, price: 20, preparationMode: "direct_handoff" }] },
   expected: [201]
 });
 const cashPayment = await api(`/tabs/${reversalTab.id}/payments`, {
