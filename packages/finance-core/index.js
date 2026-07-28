@@ -16,7 +16,7 @@ export function buildEntriesFromOrder({ order, previousStatus, nextStatus, shift
         source: order.source,
         label: `Venda do pedido ${order.id.slice(0, 8)}`,
         occurredAt: now,
-        metadata: { customerName: order.customerName }
+        metadata: { customerName: order.customerName, externalPayments: order.metadata?.externalPayments || [] }
       }
     ];
   }
@@ -32,7 +32,7 @@ export function buildEntriesFromOrder({ order, previousStatus, nextStatus, shift
         source: order.source,
         label: `Cancelamento do pedido ${order.id.slice(0, 8)}`,
         occurredAt: now,
-        metadata: { customerName: order.customerName }
+        metadata: { customerName: order.customerName, externalPayments: order.metadata?.externalPayments || [] }
       }
     ];
   }
@@ -174,10 +174,18 @@ export function summarizeFinance(entries, { timeZone = DEFAULT_BUSINESS_TIME_ZON
       salesByHour[hourKey] = toMoney((salesByHour[hourKey] || 0) + Number(entry.amount));
     }
     if (["sale", "cancellation"].includes(entry.type)) {
-      const method = entry.paymentMethod || "unattributed";
-      paymentsByMethod[method] = toMoney(
-        (paymentsByMethod[method] || 0) + Number(entry.amount)
-      );
+      if (entry.metadata?.externalPayments?.length > 0) {
+        for (const ext of entry.metadata.externalPayments) {
+          const amt = entry.type === "sale" ? Number(ext.amount) : -Number(ext.amount);
+          const m = ext.type === "online" ? "app_paid" : (ext.method || "unattributed");
+          paymentsByMethod[m] = toMoney((paymentsByMethod[m] || 0) + amt);
+        }
+      } else {
+        const method = entry.paymentMethod || "unattributed";
+        paymentsByMethod[method] = toMoney(
+          (paymentsByMethod[method] || 0) + Number(entry.amount)
+        );
+      }
     }
   }
 

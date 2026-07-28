@@ -32,14 +32,15 @@ export async function ingestExternalOrder(input, executor, db) {
     customerName: input.customerName,
     deliveryAddress: input.deliveryAddress || null,
     discountPercent: input.discountPercent ?? 0,
-    paymentMethod: input.paymentMethod || "app_paid",
+    paymentMethod: input.paymentMethod || "payment_reconciliation_required",
     items: input.items || [],
     idempotencyKey,
     createdAt: input.createdAt,
     metadata: {
       ...(input.metadata || {}),
       externalMerchantId,
-      externalOrderId
+      externalOrderId,
+      externalPayments: input.externalPayments || []
     }
   }, {
     allowCustomItems: true,

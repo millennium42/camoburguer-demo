@@ -14,7 +14,8 @@ export const PAYMENT_METHODS = [
   "credit_card",
   "debit_card",
   "app_paid",
-  "mixed"
+  "mixed",
+  "payment_reconciliation_required"
 ];
 export const FINANCE_ENTRY_TYPES = [
   "sale",
