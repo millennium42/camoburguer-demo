@@ -1,213 +1,36 @@
 # Camoburguer Demo
 
-Aplicação operacional de hamburgueria para pedidos, comandas, cozinha, estoque e caixa gerencial em um núcleo único.
+O Camoburguer Demo é um projeto focado no desenvolvimento de um sistema resiliente de gestão de pedidos, cozinhas (KDS), caixas e integrações (Delivery Much / iFood) operado por inteligência artificial autônoma sob as diretrizes do programa **M1ND-10**.
 
-> Estado: **demo aprovada no CI**. iFood/Delivery Much não estão homologados e não devem ser habilitados com dados reais sem a devida configuração e proteção ativa.
+Todo o acervo de conhecimento deste software, incluindo arquitetura, fluxos financeiros, padronização de integrações e relatórios técnicos, foi unificado e consolidado para servir como fonte única de verdade ao longo da evolução contínua da base de código.
 
-[![CI](https://github.com/millennium42/camoburguer-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/millennium42/camoburguer-demo/actions/workflows/ci.yml)
-## O que funciona
+---
 
-- pedidos manuais de balcão, WhatsApp e OlaClick;
-- comandas/mesas com rodadas e cancelamentos corretivos;
-- catálogo snapshot, adicionais e descontos;
-- estoque transacional para `xis`, `dog` e `hamburguer`;
-- fila da cozinha e estados do pedido;
-- pagamentos parciais, estorno, abertura, reforço, sangria e fechamento;
-- ticket textual persistido em `print_jobs` e spool idempotente;
-- SSE para atualização da interface;
-- adapters iFood e Delivery Much atrás de flags, ainda sem homologação real.
+## Índice da Documentação Central
 
-## Limites importantes
+Toda a documentação agora reside no documento estruturado em:
+👉 **[docs/CAMOBURGUER_DOCS.md](docs/CAMOBURGUER_DOCS.md)**
 
-- Há autenticação com sessões, CSRF e RBAC, exigindo operador validado em toda interface administrativa.
-- Rotas operacionais de leitura e escrita não devem receber dados reais na internet sem o uso ativo destas sessões.
-- O print bridge em nuvem grava arquivo remoto; não imprime na rede local da cozinha sem túnel autenticado.
-- O financeiro é gerencial v1, sem fiscal e sem CMV por receita.
-- Catálogo é o snapshot OlaClick capturado em 2026-07-16.
+Abaixo estão os acessos diretos para as seções dentro do documento:
 
-## Arquitetura
+### 1. Visão Geral e Arquitetura
+* [Contexto Operacional](docs/CAMOBURGUER_DOCS.md#contexto-operacional) - Escopo e atores envolvidos.
+* [Arquitetura do Sistema](docs/CAMOBURGUER_DOCS.md#arquitetura-do-sistema) - Módulos, tabelas e fronteiras (Eventos vs HTTP).
+* [Guia de Desenvolvimento](docs/CAMOBURGUER_DOCS.md#guia-de-desenvolvimento) - Contratos rígidos, boas práticas para IA, estilo e fluxos de commit.
+* [Design](docs/CAMOBURGUER_DOCS.md#design) - Padronização do novo Frontend React e UX.
 
-```text
-manual/partners
-      │
-      ▼
-adapters/API Fastify ──► packages/domain
-      │                       │
-      ▼                       ▼
- PostgreSQL              ticket canônico
-      │                       │
-      ├── orders/estoque      ▼
-      ├── comandas/finance  print_jobs ──► print-bridge ──► spool
-      └── channel events/commands
-      │
-      ▼
-ops-web + SSE
-```
+### 2. Operação e Regras de Negócio
+* [Ciclo do Pedido](docs/CAMOBURGUER_DOCS.md#ciclo-do-pedido) - Estados de roteamento (Caixa → Cozinha → Despacho).
+* [Ciclo Financeiro e Caixa](docs/CAMOBURGUER_DOCS.md#ciclo-financeiro) - Fluxo de abertura e fechamento de `cash_shifts`.
+* [Pagamentos e Comandas](docs/CAMOBURGUER_DOCS.md#pagamentos-comandas) - Vinculação de tabs, rodadas e reconciliação.
+* [Estoque](docs/CAMOBURGUER_DOCS.md#estoque) - Fluxo FIFO, snapshot no momento do pedido.
+* [Padrão de Ticket da Cozinha](docs/CAMOBURGUER_DOCS.md#padrao-ticket-cozinha) - Modelo rígido de integração com impressoras (Print Bridge).
 
-Princípios:
+### 3. Integrações Externas e Automações
+* [Canais e Captura](docs/CAMOBURGUER_DOCS.md#canais-e-captura) - Adapter de mapeamento, iFood e DM.
+* [Automações por Cenário](docs/CAMOBURGUER_DOCS.md#automacoes-por-cenario) - Reconciliações automáticas baseadas em status de delivery (Ex: `cancel_to_local`).
 
-- `orders` é o único núcleo operacional;
-- pedido + baixa de estoque + reserva de impressão formam uma transação;
-- correções financeiras/estoque/ticket usam efeitos compensatórios;
-- diferenças de canal ficam nos adapters;
-- UI apresenta estado e não redefine regra de domínio.
-
-## Estrutura
-
-```text
-apps/api/                 API, persistência, SSE e adapters
-apps/ops-web/             painel estático do operador
-apps/print-bridge/        spool autenticado
-apps/event-simulator/     utilitário de demo
-packages/domain/          regras puras de pedido, caixa e ticket
-packages/finance-core/    efeitos e resumos gerenciais
-packages/shared-types/    enums/contratos
-scripts/                  seed, Graphify e verificação
-tests/                    unitário, contrato, UI e smoke
-docs/                     operação, arquitetura, auditoria e runbooks
-```
-
-O simulador opera somente por HTTP contra host local/efêmero, consulta catálogo
-e caixa atuais e exige `DEMO_ADMIN_PASSWORD` por ambiente. Exemplo local:
-
-```powershell
-$env:DEMO_ADMIN_PASSWORD="<senha do bootstrap>"
-npm run start:sim
-```
-
-Ele nunca executa seed ou SQL direto; qualquer etapa falha encerra dependentes,
-gera resumo por etapa e retorna exit code diferente de zero.
-
-## Início rápido no Ubuntu/WSL
-
-Pré-requisitos: Node.js 22+, npm, WSL 2/Ubuntu e Docker Desktop com integração WSL.
-
-```bash
-cd /caminho/para/o/camoburguer-demo
-rtk npm ci
-rtk proxy docker compose -p camoburguer-dev up -d --build
-```
-
-URLs:
-
-- painel e API, na mesma origem: `http://localhost:3001/app/`;
-- API: `http://localhost:3001/health`;
-- bridge: `http://localhost:3100/health`.
-
-Ao terminar:
-
-```bash
-rtk proxy docker compose -p camoburguer-dev down
-```
-
-Não use `down -v` no projeto padrão sem intenção explícita de apagar dados.
-
-## Validação
-
-```bash
-rtk npm run check
-rtk npm test
-rtk npm audit --omit=dev
-rtk proxy env PRINT_BRIDGE_TOKEN=local-print-bridge-token npm run smoke
-rtk git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check
-```
-
-`cr-at-eol` evita que o checkout CRLF do Windows seja confundido com espaço sobrando; espaços reais continuam sendo rejeitados.
-
-> O status real e as métricas de sucesso, sintaxe e auditoria de dependências são expostos continuamente pelo [GitHub Actions Workflow](https://github.com/millennium42/camoburguer-demo/actions/workflows/ci.yml) da branch `main`.
-
-O workflow do CI processa, para cada execução:
-- Validação de sintaxe e dependências
-- Execução transacional de todos os testes unitários/integração
-- E2E Smoke validando inicialização real com Postgres e Print Bridge simulado
-- Auditoria de pacotes limpos (sem vulnerabilidades)
-
-O smoke pressupõe a stack local e um banco efêmero. Ele cria e altera dados.
-
-## Impressão
-
-Ticket de cozinha:
-
-```text
-buildKitchenTicket()
-  → print_jobs (na transação do pedido)
-  → API envia bearer + payload
-  → print-bridge valida e grava uma vez por jobId
-```
-
-`window.print()` permanece somente para relatório financeiro de turno. O formato está em [docs/padrao-ticket-cozinha.md](docs/padrao-ticket-cozinha.md).
-
-## Integrações
-
-As flags começam desligadas:
-
-```env
-IFOOD_ENABLED=false
-DELIVERYMUCH_ENABLED=false
-```
-
-iFood usa autenticação centralizada, polling do módulo Events, detalhes do Order e ACK após commit. Delivery Much depende da especificação privada do estabelecimento. Nenhum dos dois foi validado com credenciais reais nesta auditoria.
-
-Antes de habilitar, cumprir [docs/roteiro-fase2-producao.md](docs/roteiro-fase2-producao.md).
-
-## Segurança/configuração
-
-Variáveis principais:
-
-| Variável | Default local | Função |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL local | conexão da API |
-| `PRINT_BRIDGE_URL` | `http://127.0.0.1:3100` | destino do spool |
-| `PRINT_BRIDGE_TOKEN` | vazio em dev | bearer API ↔ bridge; obrigatório no bridge em produção |
-| `CORS_ORIGINS` | origem da API/painel | allowlist separada por vírgula; o painel publicado usa a mesma origem |
-| `AUTO_SEED` | `false` | deve permanecer `false`; qualquer outro valor faz o boot falhar fechado |
-| `ADMIN_BOOTSTRAP_PASSWORD` | vazio | cria somente o primeiro administrador; nunca vai ao frontend |
-| `APP_ENV` | `development` | deve ser exatamente `demo` para permitir seed |
-| `DEMO_SEED_ENABLED` | `false` | habilitação explícita e temporária do seed |
-| `DEMO_SEED_TARGET` | vazio | alvo resolvido exato, sem credenciais, no formato `endereco:porta/banco` |
-
-O Blueprint do Render gera/referencia segredos para bridge/admin e adiciona headers do site. Isso não substitui autenticação do operador.
-
-O seed nunca roda no boot. Em um banco de demo inequivocamente descartável e no baseline
-permitido, configure os quatro gates acima e envie `POST /demo/seed` autenticado com JSON
-`{"confirmTarget":"endereco:porta/banco"}`. A API resolve o alvo no PostgreSQL, bloqueia e
-verifica as 13 tabelas antes da primeira mutação. O CLI é apenas um cliente HTTP:
-`DEMO_API_URL=http://127.0.0.1:3001 ADMIN_PASSWORD=... npm run seed:demo -- --confirm-target=endereco:porta/banco`.
-Ele não abre PostgreSQL; o token do chamador e todos os demais gates são verificados pela API.
-
-## Desenvolvimento com IA
-
-Toda tarefa deve obedecer `AGENTS.md` e o [guia de desenvolvimento assistido por IA](docs/guia-de-desenvolvimento.md):
-
-- WSL e `rtk` para shell;
-- `m1nd` primeiro em tarefa não trivial;
-- Graphify antes de navegação ampla e depois de mudança central;
-- Ponytail full;
-- preservar trabalho preexistente;
-- teste/documentação no mesmo diff;
-- distinguir prova direta de inferência;
-- sem push/deploy sem autorização.
-
-Papéis opcionais e gates estão em [SUBAGENTES.md](SUBAGENTES.md).
-
-## Documentação
-
-| Documento | Conteúdo |
-|---|---|
-| [Auditoria técnica](docs/auditoria-tecnica-2026-07-21.md) | achados, correções, provas e bloqueadores |
-| [Auditoria commit a commit](docs/auditoria-commit-a-commit.md) | 82 commits avaliados |
-| [Arquitetura](docs/arquitetura-do-sistema.md) | módulos, dados e fronteiras |
-| [Ciclo do pedido](docs/ciclo-do-pedido.md) | estados e invariantes |
-| [Ciclo financeiro](docs/ciclo-financeiro.md) | caixa, pagamentos e efeitos |
-| [Ticket da cozinha](docs/padrao-ticket-cozinha.md) | contrato textual e transporte |
-| [Deploy Render](docs/RENDER_DEPLOY.md) | publicação segura da demo |
-| [Roteiro de produção](docs/roteiro-fase2-producao.md) | gates ordenados |
-| [Guia IA](docs/guia-de-desenvolvimento.md) | workflow e definição de pronto |
-
-## Deploy público observado
-
-- painel esperado: `https://camoburguer-api.onrender.com/app/`
-- API esperada, na mesma origem: `https://camoburguer-api.onrender.com`
-- bridge esperado: `https://camoburguer-bridge.onrender.com`
-
-Não há alteração automática desse ambiente a partir do working tree local.
+### 4. Apêndice Histórico e Técnico
+* [Deploy no Render](docs/CAMOBURGUER_DOCS.md#render_deploy) - Configurações e variáveis de ambiente.
+* [Auditorias e Validações Anteriores](docs/CAMOBURGUER_DOCS.md#auditoria-tecnica-2026-07-21) - Relatórios consolidados da Fase 1.
+* [Evolução Histórica (5W2H)](docs/CAMOBURGUER_DOCS.md#5w2h-evolucao) - Decisões estruturais e justificativas pré-modernização.

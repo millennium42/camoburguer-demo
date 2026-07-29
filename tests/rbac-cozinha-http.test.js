@@ -85,7 +85,7 @@ async function createTestApp(db, ordersStore = {}) {
   app.addHook("preHandler", async (request, reply) => {
     const path = request.url.split("?")[0];
     if (path === "/auth/login") return;
-    const session = await authenticate(db, readCookie(request, "camoburguer_session"));
+    const session = await authenticate(db, readCookie(request, "camoburguer_session"), new Date("2026-07-28T14:00:00Z"));
     if (!session) return reply.code(401).send({ error: "Nao autorizado" });
     request.auth = session;
     if (isMutation(request.method)) {
