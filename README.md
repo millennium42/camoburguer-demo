@@ -2,8 +2,9 @@
 
 Aplicação operacional de hamburgueria para pedidos, comandas, cozinha, estoque e caixa gerencial em um núcleo único.
 
-> Estado: **demo validada localmente**. O deploy público pode estar em commit anterior. iFood/Delivery Much não estão homologados e não devem ser habilitados com dados reais enquanto API/SSE estiverem sem autenticação de operador.
+> Estado: **demo aprovada no CI**. iFood/Delivery Much não estão homologados e não devem ser habilitados com dados reais sem a devida configuração e proteção ativa.
 
+[![CI](https://github.com/millennium42/camoburguer-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/millennium42/camoburguer-demo/actions/workflows/ci.yml)
 ## O que funciona
 
 - pedidos manuais de balcão, WhatsApp e OlaClick;
@@ -18,13 +19,11 @@ Aplicação operacional de hamburgueria para pedidos, comandas, cozinha, estoque
 
 ## Limites importantes
 
-- Não há login/identidade de operador.
-- Rotas operacionais de leitura e escrita não podem receber dados reais na internet nesse estado.
-- O print bridge em nuvem grava arquivo remoto; não imprime na rede local da cozinha.
+- Há autenticação com sessões, CSRF e RBAC, exigindo operador validado em toda interface administrativa.
+- Rotas operacionais de leitura e escrita não devem receber dados reais na internet sem o uso ativo destas sessões.
+- O print bridge em nuvem grava arquivo remoto; não imprime na rede local da cozinha sem túnel autenticado.
 - O financeiro é gerencial v1, sem fiscal e sem CMV por receita.
 - Catálogo é o snapshot OlaClick capturado em 2026-07-16.
-
-Veja a [auditoria integral](docs/auditoria-tecnica-2026-07-21.md) e a [matriz dos 82 commits](docs/auditoria-commit-a-commit.md).
 
 ## Arquitetura
 
@@ -84,7 +83,7 @@ gera resumo por etapa e retorna exit code diferente de zero.
 Pré-requisitos: Node.js 22+, npm, WSL 2/Ubuntu e Docker Desktop com integração WSL.
 
 ```bash
-cd /mnt/c/Users/milla/Documents/Projetos/Git/camoburguer-demo
+cd /caminho/para/o/camoburguer-demo
 rtk npm ci
 rtk proxy docker compose -p camoburguer-dev up -d --build
 ```
@@ -115,19 +114,15 @@ rtk git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol 
 
 `cr-at-eol` evita que o checkout CRLF do Windows seja confundido com espaço sobrando; espaços reais continuam sendo rejeitados.
 
-Snapshot desta auditoria:
+> O status real e as métricas de sucesso, sintaxe e auditoria de dependências são expostos continuamente pelo [GitHub Actions Workflow](https://github.com/millennium42/camoburguer-demo/actions/workflows/ci.yml) da branch `main`.
 
-| Gate | Resultado |
-|---|---|
-| sintaxe | todos os arquivos JS/MJS válidos |
-| testes | 36/36 |
-| audit npm produção | 0 vulnerabilidades conhecidas |
-| imagens Docker | build aprovado |
-| API/PostgreSQL/bridge | health aprovado |
-| smoke E2E | aprovado |
-| SSE/CORS | aprovado localmente |
+O workflow do CI processa, para cada execução:
+- Validação de sintaxe e dependências
+- Execução transacional de todos os testes unitários/integração
+- E2E Smoke validando inicialização real com Postgres e Print Bridge simulado
+- Auditoria de pacotes limpos (sem vulnerabilidades)
 
-O smoke pressupõe a stack local e um banco descartável/preparado. Ele cria e altera dados.
+O smoke pressupõe a stack local e um banco efêmero. Ele cria e altera dados.
 
 ## Impressão
 
