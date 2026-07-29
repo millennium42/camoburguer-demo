@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
+import fastifyStatic from "@fastify/static";
 import { toMoney } from "@camoburguer/shared-types";
 import {
   ADD_ONS,
@@ -84,8 +85,8 @@ const sse = createSseHub();
 const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_paid"];
 const STOCK_CATEGORIES = ["xis", "dog", "hamburguer"];
 const PREPARATION_MODES = ["kitchen", "direct_handoff"];
-const OPS_WEB_DIR = fileURLToPath(new URL("../../ops-web/", import.meta.url));
-const PUBLIC_UI_PATHS = new Set(["/app", "/app/", "/app/main.js", "/app/styles.css"]);
+const OPS_WEB_DIR = fileURLToPath(new URL("../../ops-web/dist/", import.meta.url));
+const PUBLIC_UI_PATHS = new Set(["/app", "/app/"]);
 
 await app.register(helmet, {
   contentSecurityPolicy: false,
@@ -154,7 +155,7 @@ function isPublicRequest(request) {
   const preflight = request.method === "OPTIONS"
     && config.corsOrigins.includes(String(request.headers.origin || ""))
     && Boolean(request.headers["access-control-request-method"]);
-  const publicUi = request.method === "GET" && PUBLIC_UI_PATHS.has(path);
+  const publicUi = (request.method === "GET" || request.method === "HEAD") && (PUBLIC_UI_PATHS.has(path) || path.startsWith("/app/"));
   return preflight || publicUi || path === "/health" || (request.method === "POST" && path === "/auth/login");
 }
 
@@ -274,17 +275,16 @@ app.post("/auth/password", async (request, reply) => {
 });
 
 app.get("/app", async (_request, reply) => reply.redirect("/app/"));
-app.get("/app/", async (_request, reply) => {
-  reply.type("text/html; charset=utf-8");
-  return readFile(`${OPS_WEB_DIR}/index.html`);
+app.register(fastifyStatic, {
+  root: OPS_WEB_DIR,
+  prefix: "/app/",
 });
-app.get("/app/main.js", async (_request, reply) => {
-  reply.type("text/javascript; charset=utf-8");
-  return readFile(`${OPS_WEB_DIR}/main.js`);
-});
-app.get("/app/styles.css", async (_request, reply) => {
-  reply.type("text/css; charset=utf-8");
-  return readFile(`${OPS_WEB_DIR}/styles.css`);
+
+app.setNotFoundHandler((request, reply) => {
+  if (request.url.startsWith("/app/")) {
+    return reply.sendFile("index.html");
+  }
+  reply.code(404).send({ error: "Not Found" });
 });
 
 function normalizeCatalogItem(input, current = null) {
