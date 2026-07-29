@@ -329,12 +329,8 @@ function normalizeCatalogItem(input, current = null) {
 }
 
 app.setErrorHandler((error, request, reply) => {
-  const clientError = Boolean(error.validation) || (!error.code && /inválid|obrigatóri|booleano|deve ter|transição|item|preço|valor/i.test(error.message));
-  const publicError = clientError || Number(error.statusCode) < 500;
-  if (!publicError) request.log.error(error);
-  return reply
-    .code(clientError ? 400 : (error.statusCode || 500))
-    .send({ message: publicError ? error.message : "Erro interno do servidor" });
+  const { statusCode, payload } = mapPostgresError(error, request.log);
+  return reply.code(statusCode).send(payload);
 });
 
 async function insertOrder(order, executor = db) {
