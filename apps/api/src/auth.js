@@ -7,7 +7,40 @@ const SESSION_ABSOLUTE_MS = 12 * 60 * 60 * 1000;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_FAILURE = { error: "Credenciais invalidas" };
-const revokedTokens = new Set();
+
+class TtlCache {
+  constructor(maxSize, defaultTtl) {
+    this.map = new Map();
+    this.maxSize = maxSize;
+    this.defaultTtl = defaultTtl;
+  }
+  set(key, value, ttl = this.defaultTtl) {
+    if (this.map.size >= this.maxSize && !this.map.has(key)) {
+      this.map.delete(this.map.keys().next().value);
+    }
+    this.map.set(key, { value, expiresAt: Date.now() + ttl });
+  }
+  get(key) {
+    const entry = this.map.get(key);
+    if (!entry) return undefined;
+    if (Date.now() > entry.expiresAt) {
+      this.map.delete(key);
+      return undefined;
+    }
+    return entry.value;
+  }
+  has(key) {
+    return this.get(key) !== undefined;
+  }
+  delete(key) {
+    this.map.delete(key);
+  }
+  add(key, ttl = this.defaultTtl) {
+    this.set(key, true, ttl);
+  }
+}
+
+const revokedTokens = new TtlCache(10000, SESSION_ABSOLUTE_MS);
 
 export const ROLE_PERMISSIONS = Object.freeze({
   admin: ["*"],
@@ -15,7 +48,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
   kitchen: ["orders:read", "orders:prepare", "sse:orders"]
 });
 
-const loginAttempts = new Map();
+const loginAttempts = new TtlCache(10000, LOGIN_WINDOW_MS);
 
 function hashToken(token) {
   return createHash("sha256").update(String(token)).digest("base64url");
@@ -131,14 +164,19 @@ export async function authenticate(db, token, now = new Date()) {
   const tokenHash = hashToken(token);
   if (revokedTokens.has(tokenHash)) return null;
   const result = await db.query(
-    `SELECT s.id, s.user_id, s.csrf_hash, s.expires_at, s.idle_expires_at, u.username, u.role
+    `SELECT s.id, s.user_id, s.csrf_hash, s.expires_at, s.idle_expires_at, s.last_seen_at, u.username, u.role
      FROM auth_sessions s JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = $1 AND s.revoked_at IS NULL`, [tokenHash]
   );
   const session = result.rows[0];
   if (!session || new Date(session.expires_at) <= now || new Date(session.idle_expires_at) <= now) return null;
   const idleExpiresAt = new Date(Math.min(now.getTime() + SESSION_IDLE_MS, new Date(session.expires_at).getTime()));
-  await db.query("UPDATE auth_sessions SET last_seen_at = $2, idle_expires_at = $3 WHERE id = $1", [session.id, now, idleExpiresAt]);
+  
+  const MIN_UPDATE_WINDOW_MS = 5 * 60 * 1000;
+  const lastSeenMs = session.last_seen_at ? new Date(session.last_seen_at).getTime() : 0;
+  if (now.getTime() - lastSeenMs > MIN_UPDATE_WINDOW_MS) {
+    await db.query("UPDATE auth_sessions SET last_seen_at = $2, idle_expires_at = $3 WHERE id = $1", [session.id, now, idleExpiresAt]);
+  }
   return {
     sessionId: session.id,
     csrfHash: session.csrf_hash,
