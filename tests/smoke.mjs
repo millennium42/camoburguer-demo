@@ -70,7 +70,14 @@ async function observeOrderEvents() {
 
 const web = await fetch(webBase);
 assert.equal(web.status, 200);
-assert.match(await web.text(), /Pedidos, cozinha e financeiro/);
+const webHtml = await web.text();
+assert.match(webHtml, /id="root"/);
+assert.match(webHtml, /\/app\/assets\/index-[^"]+\.js/);
+assert.match(webHtml, /\/app\/assets\/index-[^"]+\.css/);
+
+const legacyWeb = await fetch(`${apiBase}/app/legacy/`);
+assert.equal(legacyWeb.status, 200);
+assert.match(await legacyWeb.text(), /Pedidos, cozinha e financeiro/);
 
 // M-02: Garantir que GET e HEAD na raiz redirecionam sem auth
 const rootGet = await fetch(apiBase + "/", { redirect: "manual" });
@@ -99,6 +106,10 @@ const cookies = (loginResponse.headers.getSetCookie?.() || [loginResponse.header
   .filter(Boolean)
   .join("; ");
 authHeaders = { cookie: cookies, "x-csrf-token": login.csrfToken };
+const me = await api("/auth/me");
+assert.equal(me.user.username, "admin");
+assert.equal(me.user.role, "admin");
+assert.equal(me.csrfToken, login.csrfToken);
 const catalog = await api("/catalog");
 assert.equal(catalog.capturedAt, "2026-07-16");
 assert.ok(catalog.items.length >= 51);

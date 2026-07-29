@@ -44,8 +44,8 @@ const revokedTokens = new TtlCache(10000, SESSION_ABSOLUTE_MS);
 
 export const ROLE_PERMISSIONS = Object.freeze({
   admin: ["*"],
-  operator: ["orders", "tabs", "cash", "finance", "catalog:read", "stock:read", "print:read", "sse:orders", "sse:finance"],
-  kitchen: ["orders:read", "orders:prepare", "sse:orders"]
+  operator: ["session", "orders", "tabs", "cash", "finance", "catalog:read", "stock:read", "print:read", "sse:orders", "sse:finance"],
+  kitchen: ["session", "orders:read", "orders:prepare", "sse:orders"]
 });
 
 const loginAttempts = new TtlCache(10000, LOGIN_WINDOW_MS);
@@ -74,6 +74,8 @@ export async function verifyPassword(password, stored) {
 }
 
 export function permissionForRequest(method, path) {
+  if (path === "/auth/me" && method === "GET") return "session";
+  if (path === "/audit") return "admin";
   if (path === "/events/orders") return "sse:orders";
   if (path === "/events/finance") return "sse:finance";
   if (path === "/kitchen/queue") return "orders:read";

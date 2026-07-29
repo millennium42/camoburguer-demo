@@ -11,7 +11,18 @@
   ],
   "scripts": {
     "check": "node scripts/check-syntax.mjs",
-    "test": "node --test tests/*.test.js",
+    "check:backend": "npm run check",
+    "check:frontend": "npm run lint && npm run typecheck && npm run build:frontend",
+    "lint": "npm --prefix apps/ops-web run lint",
+    "typecheck": "npm --prefix apps/ops-web exec -- tsc -b apps/ops-web/tsconfig.json --pretty false",
+    "build": "npm run build:frontend",
+    "build:frontend": "npm --prefix apps/ops-web run build",
+    "test": "npm run test:unit",
+    "test:unit": "node --test tests/*.test.js",
+    "test:frontend": "node --test tests/ops-web.test.js",
+    "test:db": "node --test tests/seed-demo-postgres.test.js",
+    "test:e2e": "playwright test",
+    "test:a11y": "playwright test --grep @a11y",
     "smoke": "node tests/smoke.mjs",
     "start:api": "npm run start --workspace @camoburguer/api",
     "start:print": "npm run start --workspace @camoburguer/print-bridge",
@@ -23,5 +34,9 @@
   },
   "dependencies": {
     "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
+    "@playwright/test": "^1.55.0"
   }
 }

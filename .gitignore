@@ -5,6 +5,8 @@ node_modules/
 dist/
 coverage/
 tmp/
+playwright-report/
+test-results/
 apps/print-bridge/spool/
 apps/print-bridge/data/
 *.log

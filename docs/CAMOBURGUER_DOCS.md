@@ -1149,7 +1149,7 @@ O Camoburguer opera como restaurante de pequeno porte com pedidos vindos de balc
 - Adicionais são snapshots comerciais no item; não possuem estoque individual nesta versão.
 
 #### Evoluções da Interface e Integrações
-- **Design System:** A aplicação adota o tema nativo "Black & Brown" focado em ergonomia visual para ambientes de baixa iluminação, combinando alto contraste com micro-interações via glassmorphism.
+- **Design System:** A aplicação adota uma paleta quente de operação (`creme`, `âmbar`, `marrom`) com superfícies claras, contraste alto, tipografia dupla (`Outfit` para títulos e `IBM Plex Sans` para operação) e micro-interações discretas. O contrato vivo está em `docs/DESIGN.md`.
 - **Autorização de Integrações:** Os pedidos de canais externos (iFood, Delivery Much) não entram diretamente na fila da cozinha. Eles são estacionados em uma **Fila de Autorização** onde o operador deve explicitamente Aceitar ou Recusar o pedido, mantendo o controle total da aceitação sob demanda sem impactar o estoque ou impressoras prematuramente.
 
 
@@ -1168,16 +1168,16 @@ O Design System da Camoburguer é focado na eficiência, usabilidade sob alta pr
 4. **WCAG 2.2 AA**: Foco visível (`focus-visible`), contraste estrito, navegação primária toda alcançável via teclado.
 
 #### 2. Cores e Tokens (Base Tailwind/Shadcn)
-A paleta prioriza alto contraste. Não usamos cores estridentes sem necessidade contextual.
-- **Background**: `#ffffff` (Base), `#f8fafc` (Muted/Superfície)
-- **Foreground**: `#0f172a` (Primário), `#475569` (Secundário)
-- **Brand/Ação Primária**: `#ea580c` (Laranja Camo) - Usado em CTAs de finalização de pedidos. Hover: `#c2410c`.
-- **Ação Secundária**: `#e2e8f0` (Borda/Background) com texto `#0f172a`.
-- **Destrutivo**: `#ef4444`. Hover: `#dc2626`. Usado para cancelamento e estornos.
-- **Sucesso (Cozinha/Pronto)**: `#22c55e`. Usado em liberação de rodadas.
+A paleta prioriza contraste alto sem cair em aparência clínica.
+- **Background**: `hsl(37 56% 98%)` com apoio de `#f8f3e7` no `body`.
+- **Foreground**: `hsl(18 56% 14%)` com textos de apoio em `hsl(19 29% 38%)`.
+- **Brand/Ação Primária**: `hsl(21 88% 34%)` / `#a53d0a`.
+- **Ação Secundária**: `hsl(33 47% 92%)` com texto escuro quente.
+- **Acento/Superfícies**: `hsl(29 73% 92%)`, cartões brancos translúcidos e gradientes quentes no shell.
+- **Estados**: sucesso em verde escuro `#166534`, atenção em âmbar profundo `#92400e`, risco em vermelho `#b91c1c`.
 
 #### 3. Tipografia
-- **Família Font-Sans**: `Inter`, `Roboto` ou system-ui. Foco em dígitos numéricos tabulares (`tabular-nums`) para leitura de valores financeiros precisos.
+- **Família Font-Sans**: `IBM Plex Sans` para corpo operacional e `Outfit` para headings. Foco em leitura rápida, contraste e hierarquia evidente em painéis densos.
 - **Escala**:
   - H1: `2rem` (`32px`), Bold, Título de Painéis.
   - H2: `1.5rem` (`24px`), Semi-bold, Divisão de Seções.
@@ -2301,8 +2301,9 @@ O bridge em nuvem apenas grava spool remoto. Para cozinha:
 
 #### Gate 6 — release operacional
 
-- CI verde e smoke em ambiente limpo;
+- CI verde com `check`, lint, typecheck, build, unitários, PostgreSQL efêmero, smoke autenticado, Playwright e axe;
 - teste visual desktop/390 px;
+- validação explícita da fronteira publicada entre shell React (`/app/`) e console legado (`/app/legacy/`);
 - sandbox dos dois parceiros aprovado ou flags desligadas;
 - carga representativa do pico de jantar;
 - dashboards/alertas e plantão definido;
@@ -2325,4 +2326,3 @@ Esses itens mudam o produto e não fazem parte do financeiro gerencial v1.
 
 
 ---
-

@@ -1,89 +1,159 @@
+import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
 const connectionString = process.env.DATABASE_URL || process.env.TEST_DATABASE_URL;
 
-if (!connectionString) {
-  console.error("Variável de ambiente DATABASE_URL não definida.");
-  process.exit(1);
+function usage() {
+  return "Uso: node scripts/reconcile-shifts.js <canonical_id> <duplicate_id> <declared_amount> <reason>";
 }
 
-const args = process.argv.slice(2);
-if (args.length !== 4) {
-  console.error("Uso: node scripts/reconcile-shifts.js <canonical_id> <duplicate_id> <declared_amount> <reason>");
-  process.exit(1);
+function fail(message) {
+  const error = new Error(message);
+  error.exposed = true;
+  return error;
 }
 
-const [canonicalId, duplicateId, declaredAmountStr, reason] = args;
-const declaredAmount = Number(declaredAmountStr);
+function parseArgs(argv) {
+  const args = argv.slice(2);
+  if (args.length !== 4) {
+    throw fail(usage());
+  }
 
-if (isNaN(declaredAmount)) {
-  console.error("Erro: declared_amount deve ser um número inteiro (em centavos).");
-  process.exit(1);
-}
-if (!reason || reason.trim().length < 5) {
-  console.error("Erro: reason deve ter pelo menos 5 caracteres.");
-  process.exit(1);
+  const [canonicalId, duplicateId, declaredAmountRaw, reasonRaw] = args;
+  const declaredAmount = Number(declaredAmountRaw);
+  const reason = String(reasonRaw || "").trim();
+
+  if (!connectionString) {
+    throw fail("Variavel de ambiente DATABASE_URL ou TEST_DATABASE_URL nao definida.");
+  }
+  if (!canonicalId || !duplicateId) {
+    throw fail("Erro: informe os IDs canônico e duplicado.");
+  }
+  if (canonicalId === duplicateId) {
+    throw fail("Erro: canonical_id e duplicate_id devem ser diferentes.");
+  }
+  if (!Number.isFinite(declaredAmount) || declaredAmount < 0) {
+    throw fail("Erro: declared_amount deve ser um numero decimal em reais.");
+  }
+  if (reason.length < 5) {
+    throw fail("Erro: reason deve ter pelo menos 5 caracteres.");
+  }
+
+  return { canonicalId, duplicateId, declaredAmount, reason };
 }
 
-async function reconcile() {
+async function auditIfAvailable(client, { canonicalShift, duplicateShift, duplicateClosed, declaredAmount, differenceAmount, reason }) {
+  const { rows } = await client.query("SELECT to_regclass('public.audit_events') AS audit_table");
+  if (!rows[0]?.audit_table) return;
+
+  await client.query(
+    `INSERT INTO audit_events
+      (id, actor_id, action, resource_path, state_before, state_after, result)
+     VALUES ($1, NULL, $2, $3, $4::jsonb, $5::jsonb, 'success')`,
+    [
+      randomUUID(),
+      "cash.shift.duplicate_reconciled",
+      "/scripts/reconcile-shifts",
+      JSON.stringify({
+        canonicalShift,
+        duplicateShift,
+        declaredAmount,
+        reason
+      }),
+      JSON.stringify({
+        canonicalShift,
+        duplicateShift: duplicateClosed,
+        differenceAmount,
+        declaredAmount,
+        reason
+      })
+    ]
+  );
+}
+
+async function reconcile({ canonicalId, duplicateId, declaredAmount, reason }) {
   const pool = new Pool({ connectionString });
   const client = await pool.connect();
+  let finished = false;
 
   try {
     await client.query("BEGIN");
 
-    // Verificar se os turnos existem e estão abertos
-    const { rows: shifts } = await client.query(
-      "SELECT id, status, expected_amount FROM cash_shifts WHERE id IN ($1, $2)",
-      [canonicalId, duplicateId]
+    const { rows } = await client.query(
+      `SELECT id, status, expected_amount, declared_amount, difference_amount, notes, opened_at, closed_at
+       FROM cash_shifts
+       WHERE id = ANY($1::text[])
+       FOR UPDATE`,
+      [[canonicalId, duplicateId]]
     );
 
-    if (shifts.length !== 2) {
-      console.error("Erro: Um ou ambos os IDs de caixa não foram encontrados.");
-      await client.query("ROLLBACK");
-      process.exit(1);
+    if (rows.length !== 2) {
+      throw fail("Erro: Um ou ambos os IDs de caixa nao foram encontrados.");
     }
 
-    for (const shift of shifts) {
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const canonicalShift = byId.get(canonicalId);
+    const duplicateShift = byId.get(duplicateId);
+
+    for (const shift of [canonicalShift, duplicateShift]) {
       if (shift.status !== "open") {
-        console.error(\`Erro: O caixa \${shift.id} não está aberto (status: \${shift.status}).\`);
-        await client.query("ROLLBACK");
-        process.exit(1);
+        throw fail(`Erro: O caixa ${shift.id} nao esta aberto (status: ${shift.status}).`);
       }
     }
 
-    const duplicateShift = shifts.find(s => s.id === duplicateId);
-    
-    // Calcular a diferença para o fechamento
-    const differenceAmount = declaredAmount - Number(duplicateShift.expected_amount);
-
-    // Fechar o caixa duplicado
-    await client.query(
-      \`UPDATE cash_shifts
+    const differenceAmount = Number((declaredAmount - Number(duplicateShift.expected_amount)).toFixed(2));
+    const note = `[RECONCILIACAO] ${reason}`;
+    const { rows: updatedRows } = await client.query(
+      `UPDATE cash_shifts
        SET status = 'closed',
            declared_amount = $1,
            difference_amount = $2,
-           notes = $3,
+           notes = CASE
+             WHEN COALESCE(notes, '') = '' THEN $3
+             ELSE notes || E'\n' || $3
+           END,
            closed_at = NOW()
-       WHERE id = $4\`,
-      [declaredAmount, differenceAmount, \`[RECONCILIAÇÃO] \${reason}\`, duplicateId]
+       WHERE id = $4
+       RETURNING id, status, expected_amount, declared_amount, difference_amount, notes, opened_at, closed_at`,
+      [declaredAmount, differenceAmount, note, duplicateId]
     );
 
-    // Auditoria (se existir tabela, senão anotamos no notes acima. Para manter invariantes estritos, vamos criar uma entrada se houver log)
-    // O sistema não possui uma tabela 'audit_logs' visível no schema parcial acima, mas adicionamos no "notes" a rastreabilidade.
-    
-    await client.query("COMMIT");
-    console.log(\`Sucesso: Caixa duplicado \${duplicateId} foi fechado. O caixa canônico \${canonicalId} permanece aberto.\`);
-    process.exit(0);
+    const duplicateClosed = updatedRows[0];
 
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Erro fatal durante a reconciliação:", err);
-    process.exit(1);
+    await auditIfAvailable(client, {
+      canonicalShift,
+      duplicateShift,
+      duplicateClosed,
+      declaredAmount,
+      differenceAmount,
+      reason
+    });
+
+    await client.query("COMMIT");
+    finished = true;
+    console.log(
+      `Sucesso: caixa duplicado ${duplicateId} foi fechado. O caixa canônico ${canonicalId} permanece aberto.`
+    );
+    return 0;
+  } catch (error) {
+    if (!finished) {
+      await client.query("ROLLBACK").catch(() => {});
+    }
+    console.error(error.message || error);
+    return 1;
   } finally {
     client.release();
-    pool.end();
+    await pool.end();
   }
 }
 
-reconcile();
+async function main() {
+  try {
+    return await reconcile(parseArgs(process.argv));
+  } catch (error) {
+    console.error(error.message || error);
+    return 1;
+  }
+}
+
+process.exitCode = await main();

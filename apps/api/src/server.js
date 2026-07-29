@@ -76,6 +76,7 @@ import {
   printPayload,
   PRINT_MAX_ATTEMPTS
 } from "./print-queue.js";
+import { mapPostgresError } from "./error-mapper.js";
 
 assertSafeAutoSeed(process.env.AUTO_SEED);
 
@@ -86,6 +87,7 @@ const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_pa
 const STOCK_CATEGORIES = ["xis", "dog", "hamburguer"];
 const PREPARATION_MODES = ["kitchen", "direct_handoff"];
 const OPS_WEB_DIR = fileURLToPath(new URL("../../ops-web/dist/", import.meta.url));
+const OPS_WEB_LEGACY_DIR = fileURLToPath(new URL("../../ops-web-legacy/", import.meta.url));
 const PUBLIC_UI_PATHS = new Set(["/", "/app", "/app/"]);
 
 await app.register(helmet, {
@@ -257,6 +259,13 @@ app.post("/auth/login", async (request, reply) => {
   return { user: result.user, csrfToken: result.csrfToken, expiresAt: result.expiresAt.toISOString() };
 });
 
+app.get("/auth/me", async (request) => ({
+  user: request.auth.user,
+  csrfToken: readCookie(request, "camoburguer_csrf"),
+  expiresAt: request.auth.expiresAt.toISOString(),
+  idleExpiresAt: request.auth.idleExpiresAt.toISOString()
+}));
+
 app.post("/auth/logout", async (request, reply) => {
   try {
     await revokeSession(db, readCookie(request, "camoburguer_session"));
@@ -277,12 +286,21 @@ app.post("/auth/password", async (request, reply) => {
 });
 
 app.get("/app", async (_request, reply) => reply.redirect("/app/"));
+app.get("/app/legacy", async (_request, reply) => reply.redirect("/app/legacy/"));
+app.register(fastifyStatic, {
+  root: OPS_WEB_LEGACY_DIR,
+  prefix: "/app/legacy/",
+  decorateReply: false,
+});
 app.register(fastifyStatic, {
   root: OPS_WEB_DIR,
   prefix: "/app/",
 });
 
 app.setNotFoundHandler((request, reply) => {
+  if (request.url.startsWith("/app/legacy/")) {
+    return reply.code(404).send({ error: "Not Found" });
+  }
   if (request.url.startsWith("/app/")) {
     return reply.sendFile("index.html");
   }
@@ -1042,10 +1060,41 @@ app.get("/catalog", async (request, reply) => {
 app.post("/catalog/items", async (request, reply) => {
   if (!requireDemoAdmin(request, reply)) return reply;
   const item = normalizeCatalogItem(request.body);
+  const idempotencyKey = String(request.headers["idempotency-key"] || "").trim() || null;
+  const requestFingerprint = idempotencyKey
+    ? fingerprint({ operation: "catalog-item:create", item })
+    : null;
   try {
-    const saved = await insertCatalogItem(item, db);
-    emitOrderEvent("catalog.changed", { action: "created", item: saved });
-    return reply.code(201).send(saved);
+    const result = await db.transaction(async (client) => {
+      if (idempotencyKey) {
+        const claim = await claimIdempotency(client, {
+          key: idempotencyKey,
+          operation: "catalog-item:create",
+          resource: `catalog-item:${item.sku}`,
+          requestFingerprint
+        });
+        if (claim.conflict) return { idempotencyConflict: claim.conflict };
+        if (claim.repeated) {
+          const saved = await getCatalogItem(claim.resultId, client);
+          return saved
+            ? { saved, repeated: true, responseStatus: claim.responseStatus }
+            : { idempotencyConflict: "idempotency_result_missing" };
+        }
+      }
+      const saved = await insertCatalogItem(item, client);
+      await auditMutation(client, request, "catalog.item_added", null, saved);
+      if (idempotencyKey) {
+        await completeIdempotency(client, idempotencyKey, {
+          resultType: "catalog_item",
+          resultId: saved.sku,
+          responseStatus: 201
+        });
+      }
+      return { saved, repeated: false, responseStatus: 201 };
+    });
+    if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
+    if (!result.repeated) emitOrderEvent("catalog.changed", { action: "created", item: result.saved });
+    return reply.code(result.responseStatus).send(result.saved);
   } catch (error) {
     if (error.code === "23505") return reply.code(409).send({ message: "SKU já existe e não pode ser reutilizado" });
     throw error;
@@ -1062,7 +1111,9 @@ app.patch("/catalog/items/:sku", async (request, reply) => {
     const existing = await getCatalogItem(request.params.sku, client, { forUpdate: true });
     if (!existing || existing.archivedAt) return { notFound: true };
     if (expectedUpdatedAt && existing.updatedAt !== expectedUpdatedAt) return { stale: true };
-    return { saved: await updateCatalogItem(existing.sku, normalizeCatalogItem(request.body, existing), client) };
+    const saved = await updateCatalogItem(existing.sku, normalizeCatalogItem(request.body, existing), client);
+    await auditMutation(client, request, "catalog.item_updated", existing, saved);
+    return { saved };
   });
   if (result.notFound) return reply.code(404).send({ message: "Item de catálogo não encontrado" });
   if (result.stale) return reply.code(412).send({ message: "Item alterado por outra operação; recarregue antes de salvar" });
@@ -1079,7 +1130,9 @@ app.delete("/catalog/items/:sku", async (request, reply) => {
     if (!existing) return { notFound: true };
     if (existing.archivedAt) return { saved: existing, repeated: true };
     if (expectedUpdatedAt && existing.updatedAt !== expectedUpdatedAt) return { stale: true };
-    return { saved: await archiveCatalogItem(existing.sku, client), repeated: false };
+    const saved = await archiveCatalogItem(existing.sku, client);
+    await auditMutation(client, request, "catalog.item_archived", existing, saved);
+    return { saved, repeated: false };
   });
   if (result.notFound) return reply.code(404).send({ message: "Item de catálogo não encontrado" });
   if (result.stale) return reply.code(412).send({ message: "Item alterado por outra operação; recarregue antes de arquivar" });
@@ -1945,34 +1998,44 @@ app.get("/print-jobs", async (request, reply) => {
 });
 
 app.post("/print-jobs/:jobId/reprocess", async (request, reply) => {
-  const { rows } = await db.query(
-    `UPDATE print_jobs
-     SET status = 'retry_wait',
-         attempts = 0,
-         next_attempt_at = NOW(),
-         error = NULL,
-         error_class = NULL,
-         last_error_code = NULL,
-         dead_lettered_at = NULL,
-         lease_owner = NULL,
-         lease_expires_at = NULL,
-         history = history || jsonb_build_array(jsonb_build_object(
-           'at', NOW(), 'event', 'manual_reprocess',
-           'actorId', $2::text
-         ))
-     WHERE id = $1 AND status = 'dead_letter'
-     RETURNING *`,
-    [request.params.jobId, request.auth.user.id]
-  );
-  if (!rows[0]) {
-    const existing = await db.query("SELECT status FROM print_jobs WHERE id = $1", [request.params.jobId]);
+  const result = await db.transaction(async (client) => {
+    const existing = await client.query("SELECT * FROM print_jobs WHERE id = $1 FOR UPDATE", [request.params.jobId]);
+    const original = existing.rows[0];
+    if (!original) return { notFound: true };
+    if (original.status !== "dead_letter") return { conflict: true };
+    const { rows } = await client.query(
+      `UPDATE print_jobs
+       SET status = 'retry_wait',
+           attempts = 0,
+           next_attempt_at = NOW(),
+           error = NULL,
+           error_class = NULL,
+           last_error_code = NULL,
+           dead_lettered_at = NULL,
+           lease_owner = NULL,
+           lease_expires_at = NULL,
+           history = history || jsonb_build_array(jsonb_build_object(
+             'at', NOW(), 'event', 'manual_reprocess',
+             'actorId', $2::text
+           ))
+       WHERE id = $1
+       RETURNING *`,
+      [request.params.jobId, request.auth.user.id]
+    );
+    const saved = mapPrintJob(rows[0]);
+    await auditMutation(client, request, "print_job.reprocessed", original, saved);
+    return { saved };
+  });
+  if (result.notFound) return reply.code(404).send({ message: "Job de impressao nao encontrado" });
+  const existing = { rows: [true] };
+  if (result.conflict) {
     if (!existing.rows[0]) return reply.code(404).send({ message: "Job de impressão não encontrado" });
     return reply.code(409).send({
       code: "PRINT_JOB_NOT_DEAD_LETTER",
       message: "Somente jobs em dead-letter podem ser reprocessados"
     });
   }
-  return reply.code(202).send({ ok: true, printJob: mapPrintJob(rows[0]) });
+  return reply.code(202).send({ ok: true, printJob: result.saved });
 });
 
 app.get("/kitchen/queue", async () => {

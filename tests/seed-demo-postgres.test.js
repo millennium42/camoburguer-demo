@@ -565,12 +565,10 @@ if (!connectionString) {
 
         const appPage = await fetch(`${server.base}/app/`);
         assert.equal(appPage.status, 200);
-        assert.match(await appPage.text(), /Gest.o Operacional/);
-        const appScript = await fetch(`${server.base}/app/main.js`);
-        const appSource = await appScript.text();
-        assert.equal(appScript.status, 200);
-        assert.match(appSource, /const apiBase = ""/);
-        assert.doesNotMatch(appSource, /localStorage|sessionStorage|replace\('ops-web', 'api'\)/);
+        const appHtml = await appPage.text();
+        assert.match(appHtml, /id="root"/);
+        assert.match(appHtml, /\/app\/assets\/index-[^"]+\.js/);
+        assert.match(appHtml, /\/app\/assets\/index-[^"]+\.css/);
       } finally {
         await stopServer(server);
       }
@@ -825,8 +823,8 @@ if (!connectionString) {
         })).status, 403);
         const auditBefore = Number((await pool.query(
           `SELECT COUNT(*) FROM audit_events
-           WHERE resource_path = '/print-jobs/p16-dead/reprocess'
-             AND action = 'POST'`
+            WHERE resource_path = '/print-jobs/p16-dead/reprocess'
+              AND action = 'print_job.reprocessed'`
         )).rows[0].count);
         const admin = await adminSession(pair[0]);
         const reprocessed = await requestAs(pair[0], admin, "/print-jobs/p16-dead/reprocess", {
@@ -842,8 +840,8 @@ if (!connectionString) {
         })).status, 409);
         assert.equal(Number((await pool.query(
           `SELECT COUNT(*) FROM audit_events
-           WHERE resource_path = '/print-jobs/p16-dead/reprocess'
-             AND action = 'POST'`
+            WHERE resource_path = '/print-jobs/p16-dead/reprocess'
+              AND action = 'print_job.reprocessed'`
         )).rows[0].count), auditBefore + 1);
       } finally {
         for (const server of servers) await stopServer(server);
@@ -1070,6 +1068,7 @@ if (!connectionString) {
     test("fluxos manuais e integrados permanecem isolados por mapping e fallback legado", async () => {
       await resetBaseline();
       const server = await startServer();
+      const admin = await adminSession(server);
       try {
         const admin = await adminSession(server);
         const before = await countOperationalRows();
@@ -1129,6 +1128,82 @@ if (!connectionString) {
           assert.equal(manual.status, 201, source);
           assert.equal(manual.body.hasChannelMapping, false);
         }
+      } finally {
+        await stopServer(server);
+      }
+    });
+
+    test("cancelamento tardio em rodada preserva saldo e registra perda auditável", async () => {
+      await resetBaseline();
+      const server = await startServer();
+      try {
+        const admin = await adminSession(server);
+        assert.equal((await requestAs(server, admin, "/inventory/xis/adjustments", {
+          method: "POST",
+          headers: { "Idempotency-Key": "h05-setup-stock" },
+          body: { delta: 5, reason: "carga para cancelamento tardio" }
+        })).status, 201);
+
+        const createdTab = await requestAs(server, admin, "/tabs", {
+          method: "POST",
+          body: { label: "H05-preparo" }
+        });
+        assert.equal(createdTab.status, 201);
+
+        const round = await requestAs(server, admin, `/tabs/${createdTab.body.id}/rounds`, {
+          method: "POST",
+          headers: { "Idempotency-Key": "h05-round" },
+          body: { items: [{ sku: "x-simples", quantity: 1 }] }
+        });
+        assert.equal(round.status, 201, `${JSON.stringify(round.body)}\n${server.output()}`);
+
+        assert.equal((await requestAs(server, admin, `/orders/${round.body.id}/status`, {
+          method: "PATCH",
+          body: { status: "in_preparation" }
+        })).status, 200);
+
+        const balanceBeforeCancellation = Number((await pool.query(
+          "SELECT quantity FROM stock_balances WHERE category = 'xis'"
+        )).rows[0].quantity);
+
+        const cancelled = await requestAs(server, admin, `/tabs/${createdTab.body.id}/rounds/${round.body.id}/cancellations`, {
+          method: "POST",
+          headers: { "Idempotency-Key": "h05-cancel" },
+          body: {
+            items: [{ itemId: round.body.items[0].id, quantity: 1 }],
+            reason: "cancelamento após preparo"
+          }
+        });
+        assert.equal(cancelled.status, 201, `${JSON.stringify(cancelled.body)}\n${server.output()}`);
+
+        const balanceAfterCancellation = Number((await pool.query(
+          "SELECT quantity FROM stock_balances WHERE category = 'xis'"
+        )).rows[0].quantity);
+        assert.equal(balanceAfterCancellation, balanceBeforeCancellation);
+
+        const lossMovements = await pool.query(
+          `SELECT delta, reason, metadata
+             FROM stock_movements
+            WHERE order_id = $1 AND category = 'xis'`,
+          [cancelled.body.id]
+        );
+        assert.equal(lossMovements.rowCount, 1);
+        assert.equal(lossMovements.rows[0].reason, "cancellation_loss");
+        assert.equal(Number(lossMovements.rows[0].delta), 0);
+        assert.equal(Number(lossMovements.rows[0].metadata.lostQuantity), 1);
+        assert.equal(lossMovements.rows[0].metadata.roundKind, "cancellation");
+
+        await assert.rejects(
+          pool.query(
+            `INSERT INTO stock_movements (id, category, delta, reason, metadata)
+             VALUES ('h05-invalid-zero', 'xis', 0, 'manual_zero', '{}'::jsonb)`
+          ),
+          (error) => {
+            assert.equal(error.code, "23514");
+            assert.match(error.message, /stock_movements_delta_check/);
+            return true;
+          }
+        );
       } finally {
         await stopServer(server);
       }
@@ -1838,13 +1913,17 @@ if (!connectionString) {
       try {
         await pool.query(
           `INSERT INTO idempotency_records (idempotency_key, operation, resource, fingerprint, canonical_version)
-           VALUES ('legacy-key-v1', 'tab-round:create', 'tab:test', 'fake-fingerprint', 'v1')`
+           VALUES ('legacy-key-v1', 'tab-round:create', 'tab:test', $1, 'v1')`,
+          ["0".repeat(64)]
+        );
+        await pool.query(
+          "INSERT INTO service_tabs (id, kind, label, status) VALUES ('test', 'tab', 'Mesa legado', 'open')"
         );
         
-        const res = await requestAs(server, admin, "/orders", {
+        const res = await requestAs(server, admin, "/tabs/test/rounds", {
           method: "POST",
           headers: { "Idempotency-Key": "legacy-key-v1" },
-          body: { items: [], status: "received" }
+          body: { items: [{ sku: "refrigerante-lata", quantity: 1 }] }
         });
         
         assert.equal(res.status, 409);
@@ -2030,6 +2109,7 @@ if (!connectionString) {
       const server = await startServer();
       try {
         // 1. Autorização na rota
+        const admin = await adminSession(server);
         const unauthorized = await requestAs(server, null, "/audit", { method: "GET" });
         assert.equal(unauthorized.status, 401);
         
@@ -2037,10 +2117,10 @@ if (!connectionString) {
         // Vamos renomear audit_events para forçar a falha do INSERT do hook e ver se o transaction rollback da negócio atua
         await pool.query("ALTER TABLE audit_events RENAME TO audit_events_hidden");
         try {
-          const brokenCreate = await requestAs(server, admin, "/catalog", {
+          const brokenCreate = await requestAs(server, admin, "/catalog/items", {
             method: "POST",
             headers: { "Idempotency-Key": "h06-fail" },
-            body: { sku: "h06-item", name: "H06 Fail", price: 10, stockCategory: null, preparationMode: "kitchen", imageUrl: null, orderIndex: 0, metadata: {} }
+            body: { sku: "h06-item", name: "H06 Fail", category: "Teste", price: 10, stockCategory: null, preparationMode: "kitchen" }
           });
           assert.equal(brokenCreate.status, 500); // Falhou pq auditEvents inseriu falhando a transação inteira
           
@@ -2052,18 +2132,18 @@ if (!connectionString) {
         }
 
         // 3. Sanitização e Replay Idempotente
-        const validCreate = await requestAs(server, admin, "/catalog", {
+        const validCreate = await requestAs(server, admin, "/catalog/items", {
           method: "POST",
           headers: { "Idempotency-Key": "h06-valid" },
-          body: { sku: "h06-valid-item", name: "H06 Valid", price: 10, stockCategory: null, preparationMode: "kitchen", imageUrl: null, orderIndex: 0, metadata: {} }
+          body: { sku: "h06-valid-item", name: "H06 Valid", category: "Teste", price: 10, stockCategory: null, preparationMode: "kitchen" }
         });
         assert.equal(validCreate.status, 201);
         
         // Replay
-        const replayCreate = await requestAs(server, admin, "/catalog", {
+        const replayCreate = await requestAs(server, admin, "/catalog/items", {
           method: "POST",
           headers: { "Idempotency-Key": "h06-valid" },
-          body: { sku: "h06-valid-item", name: "H06 Valid", price: 10, stockCategory: null, preparationMode: "kitchen", imageUrl: null, orderIndex: 0, metadata: {} }
+          body: { sku: "h06-valid-item", name: "H06 Valid", category: "Teste", price: 10, stockCategory: null, preparationMode: "kitchen" }
         });
         assert.equal(replayCreate.status, 201);
         

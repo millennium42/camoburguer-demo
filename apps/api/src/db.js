@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS stock_balances (
 CREATE TABLE IF NOT EXISTS stock_movements (
   id TEXT PRIMARY KEY,
   category TEXT NOT NULL REFERENCES stock_balances(category),
-  delta INTEGER NOT NULL CHECK (delta <> 0),
+  delta INTEGER NOT NULL,
   reason TEXT NOT NULL,
   order_id TEXT NULL REFERENCES orders(id) ON DELETE SET NULL,
   idempotency_key TEXT NULL,
@@ -393,6 +393,11 @@ CREATE INDEX IF NOT EXISTS channel_events_status ON channel_events (status) WHER
 CREATE INDEX IF NOT EXISTS channel_commands_pending ON channel_commands (channel, status, next_attempt_at) WHERE status IN ('pending', 'processing');
 CREATE INDEX IF NOT EXISTS channel_commands_recovery ON channel_commands (channel, status, lease_expires_at, next_attempt_at)
   WHERE status IN ('pending', 'processing', 'ambiguous', 'awaiting_event');
+
+ALTER TABLE stock_movements DROP CONSTRAINT IF EXISTS stock_movements_delta_check;
+ALTER TABLE stock_movements ADD CONSTRAINT stock_movements_delta_check
+  CHECK (delta <> 0 OR reason = 'cancellation_loss') NOT VALID;
+ALTER TABLE stock_movements VALIDATE CONSTRAINT stock_movements_delta_check;
 
 DO $migration$
 BEGIN

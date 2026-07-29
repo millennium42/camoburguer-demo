@@ -21,6 +21,8 @@ test("senha scrypt e verificavel sem aceitar senha diferente", async () => {
 
 test("matriz RBAC limita cozinha e operador e veda permissao generica orders a cozinha", () => {
   assert.equal(hasPermission("admin", "admin"), true);
+  assert.equal(hasPermission("operator", "session"), true);
+  assert.equal(hasPermission("kitchen", "session"), true);
   assert.equal(hasPermission("operator", "cash"), true);
   assert.equal(hasPermission("operator", "orders"), true);
   assert.equal(hasPermission("operator", "admin"), false);
@@ -31,6 +33,8 @@ test("matriz RBAC limita cozinha e operador e veda permissao generica orders a c
 });
 
 test("classificacao centralizada designa PATCH status para orders:prepare e deixa rota desconhecida sem permissao", () => {
+  assert.equal(permissionForRequest("GET", "/auth/me"), "session");
+  assert.equal(permissionForRequest("GET", "/audit"), "admin");
   assert.equal(permissionForRequest("GET", "/orders"), "orders:read");
   assert.equal(permissionForRequest("PATCH", "/orders/123/status"), "orders:prepare");
   assert.equal(permissionForRequest("PATCH", "/orders/123/discount"), "orders");

@@ -1,32 +1,23 @@
-# React + TypeScript + Vite
+# Ops Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Shell React operacional publicado pela API em `/app/`.
 
-Currently, two official plugins are available:
+## Papel atual
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- autenticação por sessão real via `/auth/login` e restauração por `/auth/me`;
+- leitura operacional de pedidos, cozinha, comandas, estoque, caixa, integrações e auditoria;
+- convivência explícita com o console legado publicado em `/app/legacy/` para o funil completo de catálogo e pedido enquanto a migração segue aberta.
 
-## React Compiler
+## Comandos úteis
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `npm --prefix apps/ops-web ci`
+- `npm run lint`
+- `npm run typecheck`
+- `npm run build`
 
-## Expanding the Oxlint configuration
+## Contratos que não podem regredir
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+- cookies `HttpOnly` + `SameSite=Strict` continuam sendo a fonte de identidade;
+- CSRF fica apenas em memória no cliente;
+- o shell React não reimplementa regras finais de preço, estoque, caixa ou RBAC;
+- o design vivo e os tokens canônicos estão em `docs/DESIGN.md`.

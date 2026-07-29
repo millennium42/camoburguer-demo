@@ -11,18 +11,24 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
+      - run: npm --prefix apps/ops-web ci
+      - run: npx playwright install --with-deps chromium
       - run: npm run check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
       - run: npm test
       - run: npm audit --omit=dev
-      - run: docker compose -p camoburguer-auto-seed-test up -d --build --wait --wait-timeout 120
+      - run: git diff --check
+      - run: docker compose -p camoburguer-auto-seed-test up -d db --wait --wait-timeout 120
         env:
           ADMIN_BOOTSTRAP_PASSWORD: ci-demo-admin-password
           POSTGRES_DB: camoburguer_auto_seed_test
@@ -43,15 +49,18 @@ jobs:
           container_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$container_id")"
           [[ "$container_ip" =~ ^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)[0-9.]+$ ]]
           test "$(POSTGRES_DB="$database" docker compose -p "$project" exec -T db psql -U camoburguer -d "$database" -Atc 'select current_database()')" = "$database"
-          effective_url="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T api printenv DATABASE_URL)"
-          test "$effective_url" = "postgres://camoburguer:camoburguer@db:5432/$database"
           server_identity="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T -e PGPASSWORD=camoburguer db psql -h "$container_ip" -U camoburguer -d "$database" -Atc "select host(inet_server_addr()) || ':' || inet_server_port() || '/' || current_database()")"
           test "$server_identity" = "$container_ip:5432/$database"
       - name: Testes reais do seed no PostgreSQL efêmero
-        run: node --test tests/seed-demo-postgres.test.js
+        run: npm run test:db
         env:
           TEST_DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_auto_seed_test
           TEST_POSTGRES_PROFILE: ci-compose
+      - run: POSTGRES_DB=camoburguer_auto_seed_test docker compose -p camoburguer-auto-seed-test down -v
+      - run: docker compose -p camoburguer-auto-seed-test up -d --build --wait --wait-timeout 120 api print-bridge
+        env:
+          ADMIN_BOOTSTRAP_PASSWORD: ci-demo-admin-password
+          POSTGRES_DB: camoburguer_auto_seed_test
       - name: Seed explícito no PostgreSQL efêmero do CI
         shell: bash
         run: |
@@ -79,10 +88,29 @@ jobs:
           DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_auto_seed_test
           PRINT_BRIDGE_TOKEN: local-print-bridge-token
           ADMIN_BOOTSTRAP_PASSWORD: ci-demo-admin-password
+      - run: npm run test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3001
+          ADMIN_BOOTSTRAP_PASSWORD: ci-demo-admin-password
       - name: Simulador HTTP autenticado e verificável
         run: docker compose -p camoburguer-auto-seed-test --profile seed run --rm --build event-simulator
         env:
           ADMIN_BOOTSTRAP_PASSWORD: ci-demo-admin-password
           POSTGRES_DB: camoburguer_auto_seed_test
+      - if: failure()
+        name: Coletar artefatos do Compose
+        shell: bash
+        run: |
+          mkdir -p ci-artifacts
+          POSTGRES_DB=camoburguer_auto_seed_test docker compose -p camoburguer-auto-seed-test logs --no-color > ci-artifacts/compose.log || true
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-artifacts
+          if-no-files-found: ignore
+          path: |
+            ci-artifacts
+            playwright-report
+            test-results
       - if: always()
         run: POSTGRES_DB=camoburguer_auto_seed_test docker compose -p camoburguer-auto-seed-test down -v
