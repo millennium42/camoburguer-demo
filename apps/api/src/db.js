@@ -361,17 +361,6 @@ UPDATE cash_shifts
 SET status = 'closed', closed_at = COALESCE(closed_at, NOW())
 WHERE status = 'closing';
 
-WITH duplicate_open_shifts AS (
-  SELECT id, ROW_NUMBER() OVER (ORDER BY opened_at DESC, id DESC) AS position
-  FROM cash_shifts
-  WHERE status = 'open'
-)
-UPDATE cash_shifts
-SET status = 'closed',
-    declared_amount = COALESCE(declared_amount, expected_amount),
-    difference_amount = COALESCE(difference_amount, 0),
-    closed_at = COALESCE(closed_at, NOW())
-WHERE id IN (SELECT id FROM duplicate_open_shifts WHERE position > 1);
 
 CREATE UNIQUE INDEX IF NOT EXISTS orders_idempotency_key_unique
   ON orders (idempotency_key) WHERE idempotency_key IS NOT NULL;
@@ -445,6 +434,17 @@ export function createDb(connectionString) {
   const pool = new Pool({ connectionString });
   return {
     async init() {
+      try {
+        const { rows } = await pool.query("SELECT id, opened_at FROM cash_shifts WHERE status = 'open'");
+        if (rows.length > 1) {
+          const ids = rows.map(r => r.id).join(', ');
+          const times = rows.map(r => new Date(r.opened_at).toISOString()).join(', ');
+          console.error(`[FATAL] Detectados múltiplos caixas abertos: IDs (${ids}) abertos em (${times}). Falha de segurança. Reconciliação manual obrigatória. Consulte o runbook em docs/operacao/runbook-duplicatas.md`);
+          process.exit(1);
+        }
+      } catch (e) {
+        // Ignora se a tabela não existir
+      }
       await pool.query(schemaSql);
       await pool.query(
         `INSERT INTO catalog_items (
