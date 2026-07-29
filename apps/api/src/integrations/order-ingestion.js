@@ -49,18 +49,39 @@ export async function ingestExternalOrder(input, executor, db) {
     validateCatalogAvailability: false
   });
 
-  const savedOrder = await db.insertOrder(order, executor);
-
-  await insertChannelMapping({
-    id: randomUUID(),
-    orderId: savedOrder.id,
-    channel: input.source,
-    merchantId: externalMerchantId,
-    externalId: externalOrderId,
-    externalStatus: input.externalStatus,
-    syncStatus: "synchronized",
-    metadata: input.metadata || {}
-  }, executor);
+  let savedOrder;
+  await executor.query("SAVEPOINT before_insert_order");
+  try {
+    savedOrder = await db.insertOrder(order, executor);
+    await insertChannelMapping({
+      id: randomUUID(),
+      orderId: savedOrder.id,
+      channel: input.source,
+      merchantId: externalMerchantId,
+      externalId: externalOrderId,
+      externalStatus: input.externalStatus,
+      syncStatus: "synchronized",
+      metadata: input.metadata || {}
+    }, executor);
+    await executor.query("RELEASE SAVEPOINT before_insert_order");
+  } catch (error) {
+    await executor.query("ROLLBACK TO SAVEPOINT before_insert_order");
+    if (error.code === '23505') {
+      const concurrentMapping = await findChannelMapping({
+        channel: input.source,
+        merchantId: externalMerchantId,
+        externalId: externalOrderId
+      }, executor);
+      
+      if (concurrentMapping) {
+        return {
+          repeated: true,
+          orderId: concurrentMapping.orderId
+        };
+      }
+    }
+    throw error;
+  }
 
   return {
     repeated: false,
