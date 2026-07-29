@@ -85,7 +85,7 @@ const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_pa
 const STOCK_CATEGORIES = ["xis", "dog", "hamburguer"];
 const PREPARATION_MODES = ["kitchen", "direct_handoff"];
 const OPS_WEB_DIR = fileURLToPath(new URL("../../ops-web/", import.meta.url));
-const PUBLIC_UI_PATHS = new Set(["/app", "/app/", "/app/main.js", "/app/styles.css"]);
+const PUBLIC_UI_PATHS = new Set(["/", "/app", "/app/", "/app/main.js", "/app/styles.css"]);
 
 await app.register(helmet, {
   contentSecurityPolicy: false,
@@ -154,7 +154,7 @@ function isPublicRequest(request) {
   const preflight = request.method === "OPTIONS"
     && config.corsOrigins.includes(String(request.headers.origin || ""))
     && Boolean(request.headers["access-control-request-method"]);
-  const publicUi = request.method === "GET" && PUBLIC_UI_PATHS.has(path);
+  const publicUi = (request.method === "GET" || request.method === "HEAD") && PUBLIC_UI_PATHS.has(path);
   return preflight || publicUi || path === "/health" || (request.method === "POST" && path === "/auth/login");
 }
 
@@ -1028,7 +1028,7 @@ app.get("/health", async (_request, reply) => {
     return reply.code(503).send({ ok: false, service: "api", database: "unreachable" });
   }
 });
-app.get("/", async (request, reply) => ({ status: "ok" }));
+app.get("/", async (_request, reply) => reply.redirect("/app/"));
 // HEAD route removed – Fastify automatically supports HEAD for GET routes
 app.get("/catalog", async (request, reply) => {
   const includeArchived = request.query?.includeArchived === "true";

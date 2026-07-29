@@ -71,6 +71,20 @@ async function observeOrderEvents() {
 const web = await fetch(webBase);
 assert.equal(web.status, 200);
 assert.match(await web.text(), /Pedidos, cozinha e financeiro/);
+
+// M-02: Garantir que GET e HEAD na raiz redirecionam sem auth
+const rootGet = await fetch(apiBase + "/", { redirect: "manual" });
+assert.equal(rootGet.status, 302);
+assert.equal(rootGet.headers.get("location"), "/app/");
+
+const rootHead = await fetch(apiBase + "/", { method: "HEAD", redirect: "manual" });
+assert.equal(rootHead.status, 302);
+assert.equal(rootHead.headers.get("location"), "/app/");
+
+// M-02: Garantir que POST na raiz retorna 404 limpo (ou 401 dependendo do hook, mas como nao esta em PUBLIC_UI_PATHS pra POST, e 401!)
+const rootPost = await fetch(apiBase + "/", { method: "POST" });
+assert.equal(rootPost.status, 401);
+
 assert.equal((await api("/health")).ok, true);
 assert.equal((await api("/health")).database, "reachable");
 const loginResponse = await fetch(`${apiBase}/auth/login`, {
