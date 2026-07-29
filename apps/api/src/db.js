@@ -366,17 +366,6 @@ UPDATE cash_shifts
 SET status = 'closed', closed_at = COALESCE(closed_at, NOW())
 WHERE status = 'closing';
 
-WITH duplicate_open_shifts AS (
-  SELECT id, ROW_NUMBER() OVER (ORDER BY opened_at DESC, id DESC) AS position
-  FROM cash_shifts
-  WHERE status = 'open'
-)
-UPDATE cash_shifts
-SET status = 'closed',
-    declared_amount = COALESCE(declared_amount, expected_amount),
-    difference_amount = COALESCE(difference_amount, 0),
-    closed_at = COALESCE(closed_at, NOW())
-WHERE id IN (SELECT id FROM duplicate_open_shifts WHERE position > 1);
 
 CREATE UNIQUE INDEX IF NOT EXISTS orders_idempotency_key_unique
   ON orders (idempotency_key) WHERE idempotency_key IS NOT NULL;
@@ -442,6 +431,44 @@ ALTER TABLE orders VALIDATE CONSTRAINT orders_delivery_address_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_discount_percent_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_tab_round_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_round_kind_check;
+
+DO $migration$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_fulfillment_mode_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_fulfillment_mode_check
+      CHECK (fulfillment_mode IN ('delivery', 'pickup', 'local')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_delivery_address_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_delivery_address_check
+      CHECK (fulfillment_mode <> 'delivery' OR NULLIF(BTRIM(delivery_address), '') IS NOT NULL) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_discount_percent_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_discount_percent_check
+      CHECK (discount_percent BETWEEN 0 AND 100) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_tab_round_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_tab_round_check
+      CHECK ((tab_id IS NULL AND round_number IS NULL) OR (tab_id IS NOT NULL AND round_number > 0)) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_round_kind_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_round_kind_check
+      CHECK (round_kind IN ('production', 'cancellation')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_reversal_check') THEN
+    ALTER TABLE orders ADD CONSTRAINT orders_reversal_check
+      CHECK ((round_kind = 'production' AND reverses_order_id IS NULL) OR (round_kind = 'cancellation' AND tab_id IS NOT NULL AND reverses_order_id IS NOT NULL)) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'cash_shifts_status_check') THEN
+    ALTER TABLE cash_shifts ADD CONSTRAINT cash_shifts_status_check
+      CHECK (status IN ('open', 'closed')) NOT VALID;
+  END IF;
+END $migration$;
+
+ALTER TABLE orders VALIDATE CONSTRAINT orders_fulfillment_mode_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_delivery_address_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_discount_percent_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_tab_round_check;
+ALTER TABLE orders VALIDATE CONSTRAINT orders_round_kind_check;
 ALTER TABLE orders VALIDATE CONSTRAINT orders_reversal_check;
 ALTER TABLE cash_shifts VALIDATE CONSTRAINT cash_shifts_status_check;
 `;
@@ -450,6 +477,7 @@ export function createDb(connectionString) {
   const pool = new Pool({ connectionString });
   return {
     async init() {
+      // Check for duplicate channel mappings (M-03)
       const { rows: tableCheck } = await pool.query(
         "SELECT 1 FROM information_schema.tables WHERE table_name = 'channel_mappings'"
       );
@@ -460,6 +488,19 @@ export function createDb(connectionString) {
         if (duplicates.length > 0) {
           throw new Error(`Invariante quebrado: Existem multiplos mapeamentos para o mesmo pedido em channel_mappings (ex: order_id=${duplicates[0].order_id}). Remova a duplicata manualmente antes de migrar.`);
         }
+      }
+
+      // Check for multiple open cash shifts (M-05)
+      try {
+        const { rows } = await pool.query("SELECT id, opened_at FROM cash_shifts WHERE status = 'open'");
+        if (rows.length > 1) {
+          const ids = rows.map(r => r.id).join(', ');
+          const times = rows.map(r => new Date(r.opened_at).toISOString()).join(', ');
+          console.error(`[FATAL] Detectados múltiplos caixas abertos: IDs (${ids}) abertos em (${times}). Falha de segurança. Reconciliação manual obrigatória. Consulte o runbook em docs/operacao/runbook-duplicatas.md`);
+          process.exit(1);
+        }
+      } catch (e) {
+        // Table might not exist yet during fresh setup, ignore.
       }
       await pool.query(schemaSql);
       await pool.query(
