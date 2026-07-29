@@ -118,6 +118,8 @@ function sendIdempotencyConflict(reply, code) {
     code,
     message: code === "legacy_idempotency_unverifiable"
       ? "Chave idempotente legada sem fingerprint verificavel"
+      : code === "idempotency_version_mismatch"
+      ? "Versão do fingerprint idempotente defasada; refaça a requisição"
       : "Idempotency-Key ja usada com outra operacao, recurso ou payload"
   });
 }
