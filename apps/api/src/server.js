@@ -86,7 +86,7 @@ const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_pa
 const STOCK_CATEGORIES = ["xis", "dog", "hamburguer"];
 const PREPARATION_MODES = ["kitchen", "direct_handoff"];
 const OPS_WEB_DIR = fileURLToPath(new URL("../../ops-web/dist/", import.meta.url));
-const PUBLIC_UI_PATHS = new Set(["/app", "/app/"]);
+const PUBLIC_UI_PATHS = new Set(["/", "/app", "/app/"]);
 
 await app.register(helmet, {
   contentSecurityPolicy: false,
@@ -1026,7 +1026,7 @@ app.get("/health", async (_request, reply) => {
     return reply.code(503).send({ ok: false, service: "api", database: "unreachable" });
   }
 });
-app.get("/", async (request, reply) => ({ status: "ok" }));
+app.get("/", async (_request, reply) => reply.redirect("/app/"));
 // HEAD route removed – Fastify automatically supports HEAD for GET routes
 app.get("/catalog", async (request, reply) => {
   const includeArchived = request.query?.includeArchived === "true";
