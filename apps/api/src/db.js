@@ -253,7 +253,8 @@ CREATE TABLE IF NOT EXISTS channel_mappings (
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (channel, merchant_id, external_id)
+  UNIQUE (channel, merchant_id, external_id),
+  UNIQUE (order_id)
 );
 
 CREATE TABLE IF NOT EXISTS channel_events (
@@ -341,6 +342,10 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'print_jobs_status_check') THEN
     ALTER TABLE print_jobs ADD CONSTRAINT print_jobs_status_check
       CHECK (status IN ('pending', 'sending', 'retry_wait', 'printed', 'dead_letter')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'channel_mappings_order_id_key') THEN
+    ALTER TABLE channel_mappings ADD CONSTRAINT channel_mappings_order_id_key
+      UNIQUE (order_id);
   END IF;
 END $migration$;
 ALTER TABLE print_jobs VALIDATE CONSTRAINT print_jobs_status_check;
@@ -445,6 +450,17 @@ export function createDb(connectionString) {
   const pool = new Pool({ connectionString });
   return {
     async init() {
+      const { rows: tableCheck } = await pool.query(
+        "SELECT 1 FROM information_schema.tables WHERE table_name = 'channel_mappings'"
+      );
+      if (tableCheck.length > 0) {
+        const { rows: duplicates } = await pool.query(
+          "SELECT order_id FROM channel_mappings GROUP BY order_id HAVING COUNT(*) > 1 LIMIT 1"
+        );
+        if (duplicates.length > 0) {
+          throw new Error(`Invariante quebrado: Existem multiplos mapeamentos para o mesmo pedido em channel_mappings (ex: order_id=${duplicates[0].order_id}). Remova a duplicata manualmente antes de migrar.`);
+        }
+      }
       await pool.query(schemaSql);
       await pool.query(
         `INSERT INTO catalog_items (

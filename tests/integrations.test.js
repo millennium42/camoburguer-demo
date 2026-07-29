@@ -68,6 +68,7 @@ test("ingestão externa cria um pedido completo e mapeamento estável", async ()
   const executor = {
     async query(sql, values) {
       if (sql.startsWith("SELECT * FROM channel_mappings")) return { rows: [] };
+      if (sql.startsWith("SAVEPOINT") || sql.startsWith("RELEASE SAVEPOINT") || sql.startsWith("ROLLBACK TO SAVEPOINT")) return;
       if (sql.startsWith("INSERT INTO channel_mappings")) {
         return { rows: [mappingRow({
           id: values[0],
@@ -112,6 +113,7 @@ test("ingestão externa usa classificação operacional sem sobrescrever a venda
   const executor = {
     async query(sql, values) {
       if (sql.startsWith("SELECT * FROM channel_mappings")) return { rows: [] };
+      if (sql.startsWith("SAVEPOINT") || sql.startsWith("RELEASE SAVEPOINT") || sql.startsWith("ROLLBACK TO SAVEPOINT")) return;
       if (sql.includes("FROM catalog_items")) {
         assert.deepEqual(values[0], ["bala-parceiro"]);
         assert.equal(sql.includes("archived_at IS NULL"), false);
