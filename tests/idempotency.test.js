@@ -29,7 +29,7 @@ test("canonicalizacao ordena objetos, itens e adicionais sem depender da ordem J
   assert.equal(canonicalJson(left), canonicalJson(right));
   assert.equal(fingerprint(left), fingerprint(right));
   assert.match(fingerprint(left), /^[0-9a-f]{64}$/);
-  assert.equal(CANONICAL_VERSION, "v1");
+  assert.equal(CANONICAL_VERSION, "v2");
 });
 
 test("dinheiro usa centavos decimais exatos e rejeita mais de duas casas", () => {
@@ -54,6 +54,11 @@ test("campos opcionais equivalentes convergem e mudanca semantica diverge", () =
   assert.notEqual(
     fingerprint(base),
     fingerprint(orderFingerprintPayload({ items: [{ sku: "x", quantity: 2 }] }))
+  );
+  
+  assert.notEqual(
+    fingerprint(base),
+    fingerprint(orderFingerprintPayload({ items: [{ sku: "x", quantity: 1 }], status: "completed" }))
   );
 });
 

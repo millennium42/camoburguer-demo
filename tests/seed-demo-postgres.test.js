@@ -1830,6 +1830,30 @@ if (!connectionString) {
         await stopPrintBridge(bridge);
       }
     });
+    test("M-02: conflito explícito para chave idempotente de versão defasada (v1)", async () => {
+      await resetBaseline();
+      const server = await startServer();
+      const admin = await adminSession(server);
+      
+      try {
+        await pool.query(
+          `INSERT INTO idempotency_records (idempotency_key, operation, resource, fingerprint, canonical_version)
+           VALUES ('legacy-key-v1', 'tab-round:create', 'tab:test', 'fake-fingerprint', 'v1')`
+        );
+        
+        const res = await requestAs(server, admin, "/orders", {
+          method: "POST",
+          headers: { "Idempotency-Key": "legacy-key-v1" },
+          body: { items: [], status: "received" }
+        });
+        
+        assert.equal(res.status, 409);
+        assert.equal(res.body.code, "idempotency_version_mismatch");
+        
+      } finally {
+        await stopServer(server);
+      }
+    });
 
     test("troca de senha revoga todas as sessoes do usuario", async () => {
       const server = await startServer();

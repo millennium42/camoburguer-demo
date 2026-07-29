@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-export const CANONICAL_VERSION = "v1";
+export const CANONICAL_VERSION = "v2";
 
 function decimalUnits(value, scale, label) {
   const raw = String(value ?? 0).trim();
@@ -87,6 +87,7 @@ export function orderFingerprintPayload(body = {}, overrides = {}) {
   const tabId = value.tabId || null;
   return {
     source: String(value.source || "counter"),
+    status: String(value.status || "received"),
     customerName: String(value.customerName || "Cliente"),
     fulfillmentMode,
     deliveryAddress: fulfillmentMode === "delivery"
@@ -146,10 +147,12 @@ export async function claimIdempotency(executor, {
   );
   const existing = rows[0];
   if (existing) {
+    if (existing.canonical_version !== CANONICAL_VERSION) {
+      return { conflict: "idempotency_version_mismatch" };
+    }
     const matches = existing.operation === operation
       && existing.resource === resource
-      && existing.fingerprint === requestFingerprint
-      && existing.canonical_version === CANONICAL_VERSION;
+      && existing.fingerprint === requestFingerprint;
     if (!matches) return { conflict: "idempotency_payload_mismatch" };
     if (!existing.result_id) return { conflict: "idempotency_incomplete" };
     return {
