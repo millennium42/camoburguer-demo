@@ -9,9 +9,10 @@ const app = Fastify({ logger: true, bodyLimit: 128 * 1024 });
 const port = Number(process.env.PORT || 3100);
 const spoolDir = process.env.PRINT_SPOOL_DIR || join(process.cwd(), "spool");
 const bridgeToken = String(process.env.PRINT_BRIDGE_TOKEN || "").trim();
+const insecureLocal = process.env.PRINT_BRIDGE_INSECURE_LOCAL === "true";
 
-if (process.env.NODE_ENV === "production" && !bridgeToken) {
-  throw new Error("PRINT_BRIDGE_TOKEN é obrigatório em produção");
+if (!bridgeToken && !insecureLocal) {
+  throw new Error("PRINT_BRIDGE_TOKEN é obrigatório por padrão. Use PRINT_BRIDGE_INSECURE_LOCAL=true apenas para desenvolvimento local.");
 }
 
 await mkdir(spoolDir, { recursive: true });
@@ -25,7 +26,8 @@ app.addHook("onSend", async (_request, reply, payload) => {
 app.get("/health", async () => ({ ok: true, service: "print-bridge" }));
 
 function authorize(request, reply) {
-  if (bridgeToken && !equalSecret(request.headers.authorization, `Bearer ${bridgeToken}`)) {
+  if (insecureLocal && !bridgeToken) return true;
+  if (!bridgeToken || !equalSecret(request.headers.authorization, `Bearer ${bridgeToken}`)) {
     reply.code(401).send({ error: "Não autorizado" });
     return false;
   }
@@ -104,4 +106,8 @@ app.post("/privacy/anonymize", async (request, reply) => {
   return { ok: true, sanitized };
 });
 
-await app.listen({ host: "0.0.0.0", port });
+const host = (insecureLocal && !bridgeToken) ? "127.0.0.1" : "0.0.0.0";
+if (insecureLocal && !bridgeToken) {
+  app.log.warn("ATENÇÃO: print-bridge operando em modo INSEGURO no localhost.");
+}
+await app.listen({ host, port });
