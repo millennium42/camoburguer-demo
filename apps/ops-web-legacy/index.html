@@ -13,6 +13,12 @@
         <p id="login-error" role="alert" hidden></p>
         <label>Usuário <input name="username" autocomplete="username" required value="admin" /></label>
         <label>Senha <input name="password" type="password" autocomplete="current-password" required /></label>
+        <p class="lede" style="margin: 0;">Atalhos de demonstracao com sessao real e preparo automatico da base quando habilitado.</p>
+        <div class="actions" aria-label="Acessos rapidos da demonstracao" style="margin-top: 0;">
+          <button type="button" class="secondary" data-demo-login="admin">Entrar como admin demo</button>
+          <button type="button" class="secondary" data-demo-login="operator">Entrar como atendimento demo</button>
+          <button type="button" class="secondary" data-demo-login="kitchen">Entrar como cozinha demo</button>
+        </div>
         <button type="submit" class="primary">Entrar</button>
       </form>
     </dialog>

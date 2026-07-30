@@ -87,6 +87,7 @@ const STOCK_CATEGORIES = ["xis", "dog", "hamburguer"];
 const PREPARATION_MODES = ["kitchen", "direct_handoff"];
 const OPS_WEB_DIR = fileURLToPath(new URL("../../ops-web-legacy/", import.meta.url));
 const PUBLIC_UI_PATHS = new Set(["/", "/app", "/app/", "/app/main.js", "/app/styles.css", "/app/legacy", "/app/legacy/"]);
+const DEMO_ROLES = new Set(["admin", "operator", "kitchen"]);
 
 await app.register(helmet, {
   contentSecurityPolicy: false,
@@ -111,6 +112,45 @@ function requireDemoAdmin(request, reply) {
   if (request.auth?.user?.role === "admin") return true;
   reply.code(403).send({ error: "Permissao insuficiente" });
   return false;
+}
+
+function requireDemoDirectAccess(reply) {
+  if (config.appEnvironment === "demo") return true;
+  reply.code(403).send({
+    code: "demo_access_disabled",
+    error: "Acesso rapido disponivel somente no ambiente demo."
+  });
+  return false;
+}
+
+async function ensureDemoUsers() {
+  return db.transaction(async (client) => {
+    const adminResult = await client.query(
+      "SELECT id, username, role, password_hash FROM users WHERE username = 'admin' LIMIT 1"
+    );
+    const admin = adminResult.rows[0];
+    if (!admin) {
+      const error = new Error("Administrador bootstrap ausente.");
+      error.code = "bootstrap_admin_missing";
+      error.statusCode = 503;
+      throw error;
+    }
+
+    for (const role of ["operator", "kitchen"]) {
+      await client.query(
+        `INSERT INTO users (id, username, role, password_hash)
+         VALUES ($1, $2, $2, $3)
+         ON CONFLICT (username) DO UPDATE
+         SET role = EXCLUDED.role, password_hash = EXCLUDED.password_hash, credential_changed_at = NOW()`,
+        [randomUUID(), role, admin.password_hash]
+      );
+    }
+
+    const { rows } = await client.query(
+      "SELECT id, username, role FROM users WHERE username IN ('admin', 'operator', 'kitchen')"
+    );
+    return Object.fromEntries(rows.map((row) => [row.role, row]));
+  });
 }
 
 function sendIdempotencyConflict(reply, code) {
@@ -158,7 +198,10 @@ function isPublicRequest(request) {
     && config.corsOrigins.includes(String(request.headers.origin || ""))
     && Boolean(request.headers["access-control-request-method"]);
   const publicUi = (request.method === "GET" || request.method === "HEAD") && PUBLIC_UI_PATHS.has(path);
-  return preflight || publicUi || path === "/health" || (request.method === "POST" && path === "/auth/login");
+  return preflight
+    || publicUi
+    || path === "/health"
+    || (request.method === "POST" && (path === "/auth/login" || path === "/demo/access"));
 }
 
 function isMutation(method) {
@@ -260,6 +303,81 @@ app.post("/auth/login", async (request, reply) => {
     expiresAt: result.expiresAt.toISOString(),
     idleExpiresAt: result.idleExpiresAt.toISOString()
   };
+});
+
+app.post("/demo/access", async (request, reply) => {
+  if (!requireDemoDirectAccess(reply)) return reply;
+
+  const role = String(request.body?.role || "admin").trim().toLowerCase();
+  if (!DEMO_ROLES.has(role)) {
+    return reply.code(400).send({
+      code: "invalid_demo_role",
+      error: "Perfil demo invalido."
+    });
+  }
+
+  try {
+    let demoPrepared = "skipped";
+    if (request.body?.prepare !== false) {
+      try {
+        await runSeedDemo(db, {
+          authenticated: true,
+          environment: config.appEnvironment,
+          enabled: config.demoSeedEnabled,
+          expectedTarget: config.demoSeedTarget,
+          confirmedTarget: config.demoSeedTarget,
+          onDecision({ decision, target, blockers }) {
+            app.log.info({
+              event: "demo_access_seed",
+              decision,
+              role,
+              target,
+              blockers
+            });
+          }
+        });
+        demoPrepared = "seeded";
+      } catch (error) {
+        if (error.code === "preflight_conflict") demoPrepared = "preserved";
+        else throw error;
+      }
+    }
+
+    const demoUsers = await ensureDemoUsers();
+    const result = await login(db, {
+      username: demoUsers[role]?.username,
+      password: config.adminBootstrapPassword,
+      ip: request.ip
+    });
+    if (!result.ok) {
+      const error = new Error("Credenciais demo indisponiveis.");
+      error.code = result.rateLimited ? "demo_login_rate_limited" : "demo_login_failed";
+      error.statusCode = result.rateLimited ? 429 : 503;
+      throw error;
+    }
+
+    setSessionCookies(reply, result.token, result.csrfToken);
+    return {
+      user: result.user,
+      csrfToken: result.csrfToken,
+      expiresAt: result.expiresAt.toISOString(),
+      idleExpiresAt: result.idleExpiresAt.toISOString(),
+      demoPrepared
+    };
+  } catch (error) {
+    const statusCode = Number(error.statusCode) || 500;
+    app.log[statusCode === 500 ? "error" : "warn"]({
+      event: "demo_access",
+      role,
+      code: error.code || "internal_error",
+      target: error.details?.target || null,
+      blockers: error.details?.blockers || null
+    }, error.message);
+    return reply.code(statusCode).send({
+      code: error.code || "demo_access_failed",
+      error: error.message
+    });
+  }
 });
 
 app.get("/auth/me", async (request) => ({

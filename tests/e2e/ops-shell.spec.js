@@ -13,9 +13,14 @@ async function loginLegacyIfNeeded(page) {
   const dialog = page.locator("#login-dialog[open]");
   if (!(await dialog.isVisible())) return;
 
-  await page.locator('#login-form input[name="username"]').fill("admin");
-  await page.locator('#login-form input[name="password"]').fill(adminPassword());
-  await page.locator('#login-form button[type="submit"]').click();
+  const demoButton = page.getByRole("button", { name: "Entrar como admin demo" });
+  if (await demoButton.isVisible().catch(() => false)) {
+    await demoButton.click();
+  } else {
+    await page.locator('#login-form input[name="username"]').fill("admin");
+    await page.locator('#login-form input[name="password"]').fill(adminPassword());
+    await page.locator('#login-form button[type="submit"]').click();
+  }
   await expect(page.locator("#btn-logout")).toBeVisible();
 }
 

@@ -867,30 +867,63 @@ function showLoginDialog() {
   if (dialog && !dialog.open) dialog.showModal();
 }
 
+function setLoginError(message = "") {
+  const errorNode = $("#login-error");
+  if (!errorNode) return;
+  errorNode.textContent = message;
+  errorNode.hidden = !message;
+}
+
+function setLoginBusy(form, busy) {
+  form?.querySelectorAll("button").forEach((button) => {
+    button.disabled = busy;
+  });
+}
+
+async function applyAuthenticatedSession(result, form) {
+  state.csrfToken = result.csrfToken;
+  state.currentUser = result.user;
+  $("#btn-logout").hidden = false;
+  form?.reset();
+  $("#login-dialog").close();
+  wireSse();
+  await refreshSafe();
+}
+
 function wireLogin() {
   const form = $("#login-form");
+  async function submitLogin(run) {
+    setLoginError();
+    setLoginBusy(form, true);
+    try {
+      await applyAuthenticatedSession(await run(), form);
+    } catch (error) {
+      setLoginError(error.message);
+    } finally {
+      setLoginBusy(form, false);
+    }
+  }
+
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const errorNode = $("#login-error");
-    errorNode.hidden = true;
-    try {
-      const body = new FormData(form);
-      const result = await api("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ username: body.get("username"), password: body.get("password") })
-      });
-      state.csrfToken = result.csrfToken;
-      state.currentUser = result.user;
-      $("#btn-logout").hidden = false;
-      form.reset();
-      $("#login-dialog").close();
-      wireSse();
-      await refreshSafe();
-    } catch (error) {
-      errorNode.textContent = error.message;
-      errorNode.hidden = false;
-    }
+    const body = new FormData(form);
+    await submitLogin(() => api("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username: body.get("username"), password: body.get("password") })
+    }));
   });
+
+  form?.querySelectorAll("[data-demo-login]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const role = button.dataset.demoLogin;
+      if (!role) return;
+      await submitLogin(() => api("/demo/access", {
+        method: "POST",
+        body: JSON.stringify({ role, prepare: true })
+      }));
+    });
+  });
+
   $("#btn-logout")?.addEventListener("click", async () => {
     try {
       await api("/auth/logout", { method: "POST", body: JSON.stringify({}) });
