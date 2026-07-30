@@ -71,13 +71,12 @@ async function observeOrderEvents() {
 const web = await fetch(webBase);
 assert.equal(web.status, 200);
 const webHtml = await web.text();
-assert.match(webHtml, /id="root"/);
-assert.match(webHtml, /\/app\/assets\/index-[^"]+\.js/);
-assert.match(webHtml, /\/app\/assets\/index-[^"]+\.css/);
+assert.match(webHtml, /Pedidos, cozinha e financeiro/);
+assert.doesNotMatch(webHtml, /id="root"|\/app\/assets\/index-/);
 
-const legacyWeb = await fetch(`${apiBase}/app/legacy/`);
-assert.equal(legacyWeb.status, 200);
-assert.match(await legacyWeb.text(), /Pedidos, cozinha e financeiro/);
+const legacyWeb = await fetch(`${apiBase}/app/legacy/`, { redirect: "manual" });
+assert.equal(legacyWeb.status, 302);
+assert.equal(legacyWeb.headers.get("location"), "/app/");
 
 // M-02: Garantir que GET e HEAD na raiz redirecionam sem auth
 const rootGet = await fetch(apiBase + "/", { redirect: "manual" });

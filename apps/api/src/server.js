@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
-import fastifyStatic from "@fastify/static";
 import { toMoney } from "@camoburguer/shared-types";
 import {
   ADD_ONS,
@@ -39,7 +38,6 @@ import {
   changePassword,
   ensureBootstrapAdmin,
   hasPermission,
-  issueSession,
   login,
   permissionForRequest,
   revokeSession,
@@ -87,11 +85,8 @@ const sse = createSseHub();
 const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_paid"];
 const STOCK_CATEGORIES = ["xis", "dog", "hamburguer"];
 const PREPARATION_MODES = ["kitchen", "direct_handoff"];
-const OPS_WEB_DIR = fileURLToPath(new URL("../../ops-web/dist/", import.meta.url));
-const OPS_WEB_LEGACY_DIR = fileURLToPath(new URL("../../ops-web-legacy/", import.meta.url));
-const PUBLIC_UI_PATHS = new Set(["/", "/app", "/app/"]);
-const DEMO_ROLES = new Set(["admin", "operator", "kitchen"]);
-const COOKIE_SAMESITE = `${config.authCookieSameSite[0].toUpperCase()}${config.authCookieSameSite.slice(1)}`;
+const OPS_WEB_DIR = fileURLToPath(new URL("../../ops-web-legacy/", import.meta.url));
+const PUBLIC_UI_PATHS = new Set(["/", "/app", "/app/", "/app/main.js", "/app/styles.css", "/app/legacy", "/app/legacy/"]);
 
 await app.register(helmet, {
   contentSecurityPolicy: false,
@@ -118,45 +113,6 @@ function requireDemoAdmin(request, reply) {
   return false;
 }
 
-function requireDemoDirectAccess(reply) {
-  if (config.appEnvironment === "demo" && config.demoDirectAccessEnabled) return true;
-  reply.code(403).send({
-    code: "demo_access_disabled",
-    error: "Acesso rapido disponivel somente no ambiente demo configurado para demonstracao."
-  });
-  return false;
-}
-
-async function ensureDemoUsers() {
-  return db.transaction(async (client) => {
-    const adminResult = await client.query(
-      "SELECT id, username, role, password_hash FROM users WHERE username = 'admin' LIMIT 1"
-    );
-    const admin = adminResult.rows[0];
-    if (!admin) {
-      const error = new Error("Administrador bootstrap ausente.");
-      error.code = "bootstrap_admin_missing";
-      error.statusCode = 503;
-      throw error;
-    }
-
-    for (const role of ["operator", "kitchen"]) {
-      await client.query(
-        `INSERT INTO users (id, username, role, password_hash)
-         VALUES ($1, $2, $2, $3)
-         ON CONFLICT (username) DO UPDATE
-         SET role = EXCLUDED.role, password_hash = EXCLUDED.password_hash, credential_changed_at = NOW()`,
-        [randomUUID(), role, admin.password_hash]
-      );
-    }
-
-    const { rows } = await client.query(
-      "SELECT id, username, role FROM users WHERE username IN ('admin', 'operator', 'kitchen')"
-    );
-    return Object.fromEntries(rows.map((row) => [row.role, row]));
-  });
-}
-
 function sendIdempotencyConflict(reply, code) {
   return reply.code(409).send({
     code,
@@ -181,7 +137,7 @@ function readCookie(request, name) {
 }
 
 function setSessionCookies(reply, token, csrfToken) {
-  const base = `Path=/; SameSite=${COOKIE_SAMESITE}${config.authCookieSecure ? "; Secure" : ""}`;
+  const base = `Path=/; SameSite=Strict${config.authCookieSecure ? "; Secure" : ""}`;
   reply.header("set-cookie", [
     `camoburguer_session=${encodeURIComponent(token)}; ${base}; HttpOnly`,
     `camoburguer_csrf=${encodeURIComponent(csrfToken)}; ${base}`
@@ -191,8 +147,8 @@ function setSessionCookies(reply, token, csrfToken) {
 function clearSessionCookies(reply) {
   const secure = config.authCookieSecure ? "; Secure" : "";
   reply.header("set-cookie", [
-    `camoburguer_session=; Path=/; SameSite=${COOKIE_SAMESITE}${secure}; HttpOnly; Max-Age=0`,
-    `camoburguer_csrf=; Path=/; SameSite=${COOKIE_SAMESITE}${secure}; Max-Age=0`
+    `camoburguer_session=; Path=/; SameSite=Strict${secure}; HttpOnly; Max-Age=0`,
+    `camoburguer_csrf=; Path=/; SameSite=Strict${secure}; Max-Age=0`
   ]);
 }
 
@@ -201,11 +157,8 @@ function isPublicRequest(request) {
   const preflight = request.method === "OPTIONS"
     && config.corsOrigins.includes(String(request.headers.origin || ""))
     && Boolean(request.headers["access-control-request-method"]);
-  const publicUi = (request.method === "GET" || request.method === "HEAD") && (PUBLIC_UI_PATHS.has(path) || path.startsWith("/app/"));
-  return preflight
-    || publicUi
-    || path === "/health"
-    || (request.method === "POST" && (path === "/auth/login" || path === "/demo/access"));
+  const publicUi = (request.method === "GET" || request.method === "HEAD") && PUBLIC_UI_PATHS.has(path);
+  return preflight || publicUi || path === "/health" || (request.method === "POST" && path === "/auth/login");
 }
 
 function isMutation(method) {
@@ -335,96 +288,21 @@ app.post("/auth/password", async (request, reply) => {
   return reply.code(204).send();
 });
 
-app.post("/demo/access", async (request, reply) => {
-  if (!requireDemoDirectAccess(reply)) return reply;
-
-  const role = String(request.body?.role || "admin").trim().toLowerCase();
-  if (!DEMO_ROLES.has(role)) {
-    return reply.code(400).send({
-      code: "invalid_demo_role",
-      error: "Perfil demo invalido."
-    });
-  }
-
-  try {
-    let demoPrepared = "skipped";
-    if (request.body?.prepare !== false) {
-      try {
-        await runSeedDemo(db, {
-          authenticated: true,
-          environment: config.appEnvironment,
-          enabled: config.demoSeedEnabled,
-          expectedTarget: config.demoSeedTarget,
-          confirmedTarget: config.demoSeedTarget,
-          onDecision({ decision, target, blockers }) {
-            app.log.info({
-              event: "demo_access_seed",
-              decision,
-              role,
-              target,
-              blockers
-            });
-          }
-        });
-        demoPrepared = "seeded";
-      } catch (error) {
-        if (error.code === "preflight_conflict") {
-          demoPrepared = "preserved";
-        } else {
-          throw error;
-        }
-      }
-    }
-
-    const demoUsers = await ensureDemoUsers();
-    const session = await issueSession(db, demoUsers[role]);
-    setSessionCookies(reply, session.token, session.csrfToken);
-    return {
-      user: session.user,
-      csrfToken: session.csrfToken,
-      expiresAt: session.expiresAt.toISOString(),
-      idleExpiresAt: session.idleExpiresAt.toISOString(),
-      demoPrepared
-    };
-  } catch (error) {
-    const statusCode = Number(error.statusCode) || 500;
-    app.log[statusCode === 500 ? "error" : "warn"]({
-      event: "demo_access",
-      role,
-      code: error.code || "internal_error",
-      target: error.details?.target || null,
-      blockers: error.details?.blockers || []
-    });
-    return reply.code(statusCode).send({
-      code: statusCode === 500 ? "internal_error" : (error.code || "internal_error"),
-      error: statusCode === 500 ? "Falha interna ao abrir o acesso demo." : error.message,
-      ...(error.details?.blockers ? { blockers: error.details.blockers } : {}),
-      ...(error.details?.target ? { target: error.details.target } : {})
-    });
-  }
-});
-
 app.get("/app", async (_request, reply) => reply.redirect("/app/"));
-app.get("/app/legacy", async (_request, reply) => reply.redirect("/app/legacy/"));
-app.register(fastifyStatic, {
-  root: OPS_WEB_LEGACY_DIR,
-  prefix: "/app/legacy/",
-  decorateReply: false,
+app.get("/app/", async (_request, reply) => {
+  reply.type("text/html; charset=utf-8");
+  return readFile(`${OPS_WEB_DIR}/index.html`);
 });
-app.register(fastifyStatic, {
-  root: OPS_WEB_DIR,
-  prefix: "/app/",
+app.get("/app/main.js", async (_request, reply) => {
+  reply.type("text/javascript; charset=utf-8");
+  return readFile(`${OPS_WEB_DIR}/main.js`);
 });
-
-app.setNotFoundHandler((request, reply) => {
-  if (request.url.startsWith("/app/legacy/")) {
-    return reply.code(404).send({ error: "Not Found" });
-  }
-  if (request.url.startsWith("/app/")) {
-    return reply.sendFile("index.html");
-  }
-  reply.code(404).send({ error: "Not Found" });
+app.get("/app/styles.css", async (_request, reply) => {
+  reply.type("text/css; charset=utf-8");
+  return readFile(`${OPS_WEB_DIR}/styles.css`);
 });
+app.get("/app/legacy", async (_request, reply) => reply.redirect("/app/"));
+app.get("/app/legacy/", async (_request, reply) => reply.redirect("/app/"));
 
 function normalizeCatalogItem(input, current = null) {
   for (const field of ["allowsAddons", "available"]) {

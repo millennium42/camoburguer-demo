@@ -5,7 +5,6 @@ import {
   canRoleTransitionOrderStatus,
   hasPermission,
   hashPassword,
-  issueSession,
   login,
   permissionForRequest,
   revokeSession,
@@ -70,24 +69,6 @@ test("CSRF emitido no login fica vinculado a sessao", async () => {
   assert.equal(result.ok, true);
   assert.equal(validateCsrf({ csrfHash: insertValues[2] }, result.csrfToken), true);
   assert.equal(validateCsrf({ csrfHash: insertValues[2] }, "csrf-de-outra-sessao"), false);
-});
-
-test("issueSession reutiliza a emissao de sessao para atalhos demo", async () => {
-  let insertValues;
-  const db = {
-    async query(_sql, values) {
-      insertValues = values;
-      return { rows: [] };
-    }
-  };
-  const result = await issueSession(db, {
-    id: "u-demo",
-    username: "operator",
-    role: "operator"
-  }, new Date("2026-07-30T10:00:00Z"));
-  assert.equal(result.user.username, "operator");
-  assert.equal(result.user.role, "operator");
-  assert.equal(validateCsrf({ csrfHash: insertValues[2] }, result.csrfToken), true);
 });
 
 test("login limita cinco falhas por IP e identificador em 15 minutos", async () => {

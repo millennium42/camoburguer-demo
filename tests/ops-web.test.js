@@ -6,61 +6,50 @@ async function source(path) {
   return readFile(new URL(path, import.meta.url), "utf8");
 }
 
-test("shell React restaura sessao via /auth/me e nao usa /health como identidade", async () => {
-  const app = await source("../apps/ops-web/src/App.tsx");
-  assert.match(app, /api<SessionPayload>\("\/auth\/me"\)/);
-  assert.doesNotMatch(app, /api\("\/health"\)/);
-  assert.match(app, /Console operacional completo/);
-});
-
-test("cliente HTTP usa credenciais include e CSRF somente em memoria", async () => {
-  const apiClient = await source("../apps/ops-web/src/lib/api.ts");
-  assert.match(apiClient, /import\.meta\.env\.VITE_API_BASE/);
-  assert.match(apiClient, /let csrfToken = ""/);
-  assert.match(apiClient, /credentials: "include"/);
-  assert.match(apiClient, /export function apiUrl\(path: string\)/);
-  assert.match(apiClient, /headers\.set\("x-csrf-token", csrfToken\)/);
-  assert.doesNotMatch(apiClient, /meta\[name="csrf-token"\]|document\.querySelector|localStorage|sessionStorage/);
-});
-
-test("API publica /auth/me e o console legado em /app/legacy/", async () => {
+test("API publica apenas o console legado em /app/", async () => {
   const server = await source("../apps/api/src/server.js");
-  assert.match(server, /OPS_WEB_LEGACY_DIR/);
-  assert.match(server, /app\.get\("\/auth\/me"/);
-  assert.match(server, /app\.get\("\/app\/legacy"/);
-  assert.match(server, /prefix: "\/app\/legacy\/"/);
-  assert.match(server, /app\.post\("\/demo\/access"/);
-  assert.match(server, /path === "\/demo\/access"/);
+  assert.match(server, /const OPS_WEB_DIR = fileURLToPath\(new URL\("\.\.\/\.\.\/ops-web-legacy\/", import\.meta\.url\)\)/);
+  assert.match(server, /const PUBLIC_UI_PATHS = new Set\(\["\/", "\/app", "\/app\/", "\/app\/main\.js", "\/app\/styles\.css", "\/app\/legacy", "\/app\/legacy\/"\]\)/);
+  assert.match(server, /app\.get\("\/app\/", async \(_request, reply\) => \{/);
+  assert.match(server, /readFile\(`\$\{OPS_WEB_DIR\}\/index\.html`\)/);
+  assert.match(server, /app\.get\("\/app\/main\.js"/);
+  assert.match(server, /app\.get\("\/app\/styles\.css"/);
+  assert.match(server, /app\.get\("\/app\/legacy", async \(_request, reply\) => reply\.redirect\("\/app\/"\)\)/);
+  assert.match(server, /app\.get\("\/app\/legacy\/", async \(_request, reply\) => reply\.redirect\("\/app\/"\)\)/);
+  assert.doesNotMatch(server, /fastifyStatic|ops-web\/dist|reply\.sendFile|app\.post\("\/demo\/access"/);
 });
 
-test("RBAC classifica a rota de sessao e leitura de auditoria", async () => {
-  const auth = await source("../apps/api/src/auth.js");
-  assert.match(auth, /operator: \["session"/);
-  assert.match(auth, /kitchen: \["session"/);
-  assert.match(auth, /if \(path === "\/auth\/me" && method === "GET"\) return "session"/);
-  assert.match(auth, /if \(path === "\/audit"\) return "admin"/);
-});
-
-test("frontend novo nao expoe placeholder de construcao e embute o iframe operacional", async () => {
-  const [app, styles] = await Promise.all([
-    source("../apps/ops-web/src/App.tsx"),
-    source("../apps/ops-web/src/App.css")
-  ]);
-  assert.doesNotMatch(app, /Sistema em constru/);
-  assert.match(app, /new EventSource\(apiUrl\("\/events\/orders"\)/);
-  assert.match(app, /src=\{apiUrl\("\/app\/legacy\/"\)\}/);
-  assert.match(app, /VITE_DEMO_MODE/);
-  assert.match(app, /Entrar como admin demo/);
-  assert.match(app, /Visao geral|Visão geral/);
-  assert.match(styles, /\.embedded-console/);
-  assert.match(styles, /\.demo-access__/);
-});
-
-test("build do ops-web permite base configuravel para static site", async () => {
-  const [viteConfig, renderYaml] = await Promise.all([
-    source("../apps/ops-web/vite.config.ts"),
+test("Docker, scripts, pacote API e Render nao dependem mais do static site React", async () => {
+  const [dockerfile, apiPackageJson, packageJson, renderYaml] = await Promise.all([
+    source("../apps/api/Dockerfile"),
+    source("../apps/api/package.json"),
+    source("../package.json"),
     source("../render.yaml")
   ]);
-  assert.match(viteConfig, /base:\s*process\.env\.VITE_PUBLIC_BASE\s*\|\|\s*"\/app\/"/);
-  assert.match(renderYaml, /- key: VITE_PUBLIC_BASE\s+value: \//);
+
+  assert.doesNotMatch(dockerfile, /ops_web_builder|ops-web\/dist|COPY apps\/ops-web\/package\.json|COPY apps\/ops-web \.\//);
+  assert.doesNotMatch(apiPackageJson, /@fastify\/static/);
+  assert.doesNotMatch(packageJson, /check:frontend|build:frontend|npm --prefix apps\/ops-web/);
+  assert.match(packageJson, /"build": "npm run check"/);
+  assert.doesNotMatch(renderYaml, /camoburguer-ops-web|VITE_PUBLIC_BASE|VITE_API_BASE|VITE_DEMO_MODE|AUTH_COOKIE_SAMESITE|DEMO_DIRECT_ACCESS/);
+  assert.match(renderYaml, /buildCommand: npm ci/);
+  await assert.rejects(source("../apps/ops-web/package.json"));
+  await assert.rejects(source("../apps/ops-web-legacy/Dockerfile"));
+});
+
+test("Smoke e E2E apontam para /app legado como superficie unica", async () => {
+  const [smoke, e2e] = await Promise.all([
+    source("./smoke.mjs"),
+    source("./e2e/ops-shell.spec.js")
+  ]);
+
+  assert.match(smoke, /const webBase = process\.env\.WEB_BASE_URL \|\| `\$\{apiBase\}\/app\/`/);
+  assert.match(smoke, /assert\.match\(webHtml, \/Pedidos, cozinha e financeiro\//);
+  assert.match(smoke, /assert\.doesNotMatch\(webHtml,/);
+  assert.match(smoke, /id="root"/);
+  assert.match(smoke, /fetch\(`\$\{apiBase\}\/app\/legacy\/`, \{ redirect: "manual" \}\)/);
+  assert.doesNotMatch(e2e, /Entrar como admin demo|Centro operacional com sess/);
+  assert.match(e2e, /page\.goto\("\/app\/"\)/);
+  assert.match(e2e, /Gest\.\*Operacional/);
+  assert.doesNotMatch(e2e, /page\.goto\("\/app\/legacy\/"\)/);
 });

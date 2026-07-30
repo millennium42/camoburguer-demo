@@ -19,12 +19,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm --prefix apps/ops-web ci
       - run: npx playwright install --with-deps chromium
       - run: npm run check
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run build
       - run: npm test
       - run: npm audit --omit=dev
       - run: git diff --check

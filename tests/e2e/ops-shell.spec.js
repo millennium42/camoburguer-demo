@@ -4,34 +4,9 @@ import AxeBuilder from "@axe-core/playwright";
 function adminPassword() {
   const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD || process.env.ADMIN_BOOTSTRAP_PASSWORD || "";
   if (!password) {
-    throw new Error("PLAYWRIGHT_ADMIN_PASSWORD ou ADMIN_BOOTSTRAP_PASSWORD é obrigatório para o E2E autenticado.");
+    throw new Error("PLAYWRIGHT_ADMIN_PASSWORD ou ADMIN_BOOTSTRAP_PASSWORD e obrigatorio para o E2E autenticado.");
   }
   return password;
-}
-
-async function login(page) {
-  await page.goto("/app/");
-  await expect(page.getByRole("heading", { name: "Entrar na superfície operacional" })).toBeVisible();
-  const demoButton = page.getByRole("button", { name: "Entrar como admin demo" });
-  if (await demoButton.isVisible().catch(() => false)) {
-    await demoButton.click();
-  } else {
-    await page.getByLabel("Usuário").fill("admin");
-    await page.getByLabel("Senha").fill(adminPassword());
-    await page.getByRole("button", { name: /^Entrar$/ }).click();
-  }
-  await expect(page.getByRole("heading", { name: /Centro operacional com sessão real/i })).toBeVisible();
-}
-
-async function expectNoSeriousA11y(page, label) {
-  const results = await new AxeBuilder({ page }).analyze();
-  const blocking = results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact || ""));
-  expect(
-    blocking,
-    `${label} apresentou violações axe sérias/críticas:\n${blocking
-      .map((violation) => `- ${violation.id}: ${violation.help}`)
-      .join("\n")}`
-  ).toEqual([]);
 }
 
 async function loginLegacyIfNeeded(page) {
@@ -44,25 +19,39 @@ async function loginLegacyIfNeeded(page) {
   await expect(page.locator("#btn-logout")).toBeVisible();
 }
 
-test("shell React preserva acessibilidade mínima no login e após autenticação @a11y", async ({ page }) => {
+async function login(page) {
   await page.goto("/app/");
-  await expect(page.getByRole("heading", { name: "Entrar na superfície operacional" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Gest.*Operacional/i })).toBeVisible();
+  await loginLegacyIfNeeded(page);
+  await expect(page.locator("#btn-logout")).toBeVisible();
+}
+
+async function expectNoSeriousA11y(page, label) {
+  const results = await new AxeBuilder({ page }).analyze();
+  const blocking = results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact || ""));
+  expect(
+    blocking,
+    `${label} apresentou violacoes axe serias/criticas:\n${blocking
+      .map((violation) => `- ${violation.id}: ${violation.help}`)
+      .join("\n")}`
+  ).toEqual([]);
+}
+
+test("console legado preserva acessibilidade minima no login e apos autenticacao @a11y", async ({ page }) => {
+  await page.goto("/app/");
+  await expect(page.getByRole("heading", { name: /Gest.*Operacional/i })).toBeVisible();
   await expectNoSeriousA11y(page, "Tela de login");
 
   await login(page);
-  await expectNoSeriousA11y(page, "Shell autenticado");
-  await expect(page.getByRole("navigation", { name: "Áreas operacionais" })).toBeVisible();
+  await expectNoSeriousA11y(page, "Console autenticado");
+  await expect(page.locator(".tab-bar")).toBeVisible();
 });
 
-test("funil primário publicado fecha o ciclo login -> catálogo -> pedido -> shell", async ({ page }) => {
+test("funil primario publicado fecha o ciclo login -> catalogo -> pedido no console legado", async ({ page }) => {
   const runId = Date.now();
   const customerName = `Playwright ${runId}`;
 
   await login(page);
-
-  await page.goto("/app/legacy/");
-  await expect(page.getByRole("heading", { name: "Gestão Operacional" })).toBeVisible();
-  await loginLegacyIfNeeded(page);
 
   await page.locator("#btn-quick-new-order").click();
   await expect(page.locator("#order-modal")).toBeVisible();
@@ -75,9 +64,5 @@ test("funil primário publicado fecha o ciclo login -> catálogo -> pedido -> sh
   await page.locator('#order-form button[type="submit"]').click();
 
   await expect(page.locator("#feedback")).toContainText("Pedido finalizado e enviado para a cozinha.");
-
-  await page.goto("/app/");
-  await expect(page.getByRole("heading", { name: /Centro operacional com sessão real/i })).toBeVisible();
-  await page.getByRole("button", { name: "Ver pedidos" }).click();
   await expect(page.getByText(customerName)).toBeVisible();
 });

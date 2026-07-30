@@ -1,47 +1,40 @@
 # Camoburguer Demo
 
-O Camoburguer Demo é um projeto focado no desenvolvimento de um sistema resiliente de gestão de pedidos, cozinhas (KDS), caixas e integrações (Delivery Much / iFood) operado por inteligência artificial autônoma sob as diretrizes do programa **M1ND-10**.
+Camoburguer Demo e um sistema de operacao para pedidos, cozinha, caixa e integracoes, com a documentacao consolidada em um ponto central.
 
-Todo o acervo de conhecimento deste software, incluindo arquitetura, fluxos financeiros, padronização de integrações e relatórios técnicos, foi unificado e consolidado para servir como fonte única de verdade ao longo da evolução contínua da base de código.
+## Indice da documentacao central
 
----
+Toda a documentacao principal reside em [docs/CAMOBURGUER_DOCS.md](docs/CAMOBURGUER_DOCS.md).
 
-## Índice da Documentação Central
-
-Toda a documentação agora reside no documento estruturado em:
-👉 **[docs/CAMOBURGUER_DOCS.md](docs/CAMOBURGUER_DOCS.md)**
-
-Abaixo estão os acessos diretos para as seções dentro do documento:
-
-### 1. Visão Geral e Arquitetura
+### 1. Visao geral e arquitetura
 * [Contexto Operacional](docs/CAMOBURGUER_DOCS.md#contexto-operacional) - Escopo e atores envolvidos.
-* [Arquitetura do Sistema](docs/CAMOBURGUER_DOCS.md#arquitetura-do-sistema) - Módulos, tabelas e fronteiras (Eventos vs HTTP).
-* [Guia de Desenvolvimento](docs/CAMOBURGUER_DOCS.md#guia-de-desenvolvimento) - Contratos rígidos, boas práticas para IA, estilo e fluxos de commit.
-* [Design](docs/DESIGN.md) - Tokens, tipografia, ergonomia e a fronteira atual entre shell React e console legado.
+* [Arquitetura do Sistema](docs/CAMOBURGUER_DOCS.md#arquitetura-do-sistema) - Modulos, tabelas e fronteiras.
+* [Guia de Desenvolvimento](docs/CAMOBURGUER_DOCS.md#guia-de-desenvolvimento) - Contratos, estilo e fluxo de entrega.
+* [Design](docs/DESIGN.md) - Contrato visual e ergonomico do console legado publicado em `/app/`.
 
-### 2. Operação e Regras de Negócio
-* [Ciclo do Pedido](docs/CAMOBURGUER_DOCS.md#ciclo-do-pedido) - Estados de roteamento (Caixa → Cozinha → Despacho).
+### 2. Operacao e regras de negocio
+* [Ciclo do Pedido](docs/CAMOBURGUER_DOCS.md#ciclo-do-pedido) - Estados de roteamento do pedido.
 * [Ciclo Financeiro e Caixa](docs/CAMOBURGUER_DOCS.md#ciclo-financeiro) - Fluxo de abertura e fechamento de `cash_shifts`.
-* [Pagamentos e Comandas](docs/CAMOBURGUER_DOCS.md#pagamentos-comandas) - Vinculação de tabs, rodadas e reconciliação.
-* [Estoque](docs/CAMOBURGUER_DOCS.md#estoque) - Fluxo FIFO, snapshot no momento do pedido.
-* [Padrão de Ticket da Cozinha](docs/CAMOBURGUER_DOCS.md#padrao-ticket-cozinha) - Modelo rígido de integração com impressoras (Print Bridge).
+* [Pagamentos e Comandas](docs/CAMOBURGUER_DOCS.md#pagamentos-comandas) - Vinculacao de tabs, rodadas e reconciliacao.
+* [Estoque](docs/CAMOBURGUER_DOCS.md#estoque) - Fluxo FIFO e snapshot no momento do pedido.
+* [Padrao de Ticket da Cozinha](docs/CAMOBURGUER_DOCS.md#padrao-ticket-cozinha) - Contrato de impressao com a Print Bridge.
 
-### 3. Integrações Externas e Automações
-* [Canais e Captura](docs/CAMOBURGUER_DOCS.md#canais-e-captura) - Adapter de mapeamento, iFood e DM.
-* [Automações por Cenário](docs/CAMOBURGUER_DOCS.md#automacoes-por-cenario) - Reconciliações automáticas baseadas em status de delivery (Ex: `cancel_to_local`).
+### 3. Integracoes externas e automacoes
+* [Canais e Captura](docs/CAMOBURGUER_DOCS.md#canais-e-captura) - Mapeamento de canais e adaptadores.
+* [Automacoes por Cenario](docs/CAMOBURGUER_DOCS.md#automacoes-por-cenario) - Reconciliacoes automaticas por status.
 
-### 4. Apêndice Histórico e Técnico
-* [Deploy no Render](docs/CAMOBURGUER_DOCS.md#render_deploy) - Configurações e variáveis de ambiente.
-* [Auditorias e Validações Anteriores](docs/CAMOBURGUER_DOCS.md#auditoria-tecnica-2026-07-21) - Relatórios consolidados da Fase 1.
-* [Evolução Histórica (5W2H)](docs/CAMOBURGUER_DOCS.md#5w2h-evolucao) - Decisões estruturais e justificativas pré-modernização.
+### 4. Apendice historico e tecnico
+* [Deploy no Render](docs/CAMOBURGUER_DOCS.md#render_deploy) - Configuracoes e variaveis de ambiente.
+* [Auditorias e Validacoes Anteriores](docs/CAMOBURGUER_DOCS.md#auditoria-tecnica-2026-07-21) - Evidencias historicas.
+* [Evolucao Historica (5W2H)](docs/CAMOBURGUER_DOCS.md#5w2h-evolucao) - Decisoes estruturais anteriores.
 
-## Gates Locais Antes de Publicar
+## Gates locais antes de publicar
 
-Para reproduzir os gates usados na CI remota em um checkout limpo:
+Para reproduzir os gates locais em um checkout limpo:
 
 1. `npm ci`
-2. `npm --prefix apps/ops-web ci`
-3. `npm run check && npm run lint && npm run typecheck && npm run build && npm test`
-4. Suba somente `db` para `npm run test:db`; depois suba `api` e `print-bridge`, execute o seed explícito e então rode `npm run smoke` e `npm run test:e2e`
+2. `npm run check && npm test`
+3. Suba somente `db` para `npm run test:db`
+4. Suba `api` e `print-bridge`, execute o seed explicito e rode `npm run smoke`, `npm run test:a11y` e `npm run test:e2e`
 
-O E2E usa Playwright contra `http://127.0.0.1:3001`, autentica pelo `/app/`, verifica acessibilidade com axe no shell React e fecha o funil publicado pelo console legado em `/app/legacy/`.
+O produto publicado usa apenas o console legado servido em `/app/`. O caminho `/app/legacy/` existe apenas como redirecionamento de compatibilidade para `/app/`.

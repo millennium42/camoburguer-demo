@@ -151,7 +151,7 @@ export async function login(db, { username, password, ip, now = new Date() }) {
   return { ok: true, ...(await issueSession(db, user, now)) };
 }
 
-export async function issueSession(db, user, now = new Date()) {
+async function issueSession(db, user, now = new Date()) {
   const token = randomBytes(32).toString("base64url");
   const csrfToken = createCsrfToken();
   const createdAt = now;

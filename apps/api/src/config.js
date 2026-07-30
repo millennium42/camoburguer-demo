@@ -18,12 +18,6 @@ function positiveNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function sameSite(value) {
-  const normalized = String(value || "strict").trim().toLowerCase();
-  if (["strict", "lax", "none"].includes(normalized)) return normalized;
-  throw new Error(`AUTH_COOKIE_SAMESITE invalido: ${normalized}`);
-}
-
 export function validateTimeZone(value) {
   const normalized = String(value || "America/Sao_Paulo").trim();
   try {
@@ -45,12 +39,8 @@ export function assertSafeAutoSeed(value) {
 
 const appEnvironment = String(process.env.APP_ENV || "").trim();
 const authCookieSecure = process.env.AUTH_COOKIE_SECURE !== "false";
-const authCookieSameSite = sameSite(process.env.AUTH_COOKIE_SAMESITE);
 if (!authCookieSecure && !["development", "test"].includes(appEnvironment)) {
   throw new Error("AUTH_COOKIE_SECURE=false so e permitido em development/test local");
-}
-if (authCookieSameSite === "none" && !authCookieSecure) {
-  throw new Error("AUTH_COOKIE_SAMESITE=none exige AUTH_COOKIE_SECURE=true");
 }
 
 export const config = {
@@ -62,9 +52,7 @@ export const config = {
   adminBootstrapPassword: String(process.env.ADMIN_BOOTSTRAP_PASSWORD || ""),
   appEnvironment,
   authCookieSecure,
-  authCookieSameSite,
   businessTimeZone: validateTimeZone(process.env.BUSINESS_TIME_ZONE),
-  demoDirectAccessEnabled: process.env.DEMO_DIRECT_ACCESS === "true",
   demoSeedEnabled: process.env.DEMO_SEED_ENABLED === "true",
   demoSeedTarget: String(process.env.DEMO_SEED_TARGET || "").trim(),
   corsOrigins: csv(process.env.CORS_ORIGINS, [

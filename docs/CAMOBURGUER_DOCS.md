@@ -431,7 +431,7 @@ O commit de configuração `f3191d3` deve permanecer aplicado em qualquer rollba
 #### Apps
 
 - `apps/api`: núcleo HTTP, domínio, persistência, SSE e automações
-- `apps/ops-web`: interface operacional leve
+- `apps/ops-web-legacy`: interface operacional publicada em `/app/`
 - `apps/print-bridge`: bridge de impressão com spool em arquivo
 - `apps/event-simulator`: cenário HTTP autenticado e restrito a ambiente local/efêmero
 
@@ -483,7 +483,7 @@ flowchart LR
   CHANNELS["iFood / Delivery Much"] --> ADAPTERS["Adapters com polling"]
   ADAPTERS --> EVENTS[("channel_events")]
   EVENTS --> API
-  UI["ops-web: rascunho local"] -->|"POST /tabs/:id/rounds + Idempotency-Key"| API
+  UI["console legado em /app/"] -->|"POST /tabs/:id/rounds + Idempotency-Key"| API
   API --> DOMAIN["Domínio: catálogo, adicionais, descontos e totais"]
   API --> TX["Transação da rodada"]
   TX --> STOCK[("stock_balances + movements")]
@@ -528,7 +528,7 @@ flowchart LR
 
 #### Fronteiras e seams
 
-- `apps/ops-web`: mantém somente estado efêmero de formulário/carrinho e apresenta estados vindos da API.
+- `apps/ops-web-legacy`: mantém o estado efêmero da interface operacional publicada e apresenta estados vindos da API.
 - `apps/api`: controla idempotência, transações, estado do caixa, confirmação e emissão de eventos.
 - `packages/domain`: valida estados e invariantes puras de pedido e caixa.
 - `packages/finance-core`: deriva lançamentos de eventos confirmados, sem depender da interface.
@@ -706,7 +706,7 @@ Data da revisão: 2026-07-21. Universo: `git log --all`, 82 commits; 77 alcanç�
 
 O repositório está novamente executável e coerente como **demo local**, mas ainda não deve receber pedidos reais de iFood ou Delivery Much. As correções desta auditoria eliminam falhas de boot, seed, SSE, impressão e parte importante da integração, porém autenticação do painel/API, homologação com credenciais reais, impressão física e observabilidade de produção continuam como gates obrigatórios.
 
-O deploy público observado em `https://camoburguer-ops-web.onrender.com/` corresponde ao código anterior a esta auditoria. As correções locais só chegam ao ar depois de revisão, commit, push e novo deploy.
+O deploy público observado durante essa auditoria correspondia ao código anterior a esta revisão. As correções locais só chegam ao ar depois de revisão, commit, push e novo deploy.
 
 #### Escopo e método
 
@@ -2084,11 +2084,11 @@ URLs esperadas:
 - `https://camoburguer-api.onrender.com/app/`
 - `https://camoburguer-api.onrender.com`
 - `https://camoburguer-bridge.onrender.com`
-- `https://camoburguer-ops-web.onrender.com` redireciona para `/app/` como URL pÃºblica de compatibilidade
+- a interface operacional pÃºblica Ã© servida pela API em `/app/`
 
 #### O que o Blueprint protege
 
-- build da API usa `npm ci && npm --prefix apps/ops-web ci && npm run build:frontend` para instalar o lockfile raiz, instalar o lockfile do `ops-web` e gerar o `apps/ops-web/dist/`;
+- build da API usa apenas `npm ci`, e o console legado Ã© servido a partir de `apps/ops-web-legacy/`;
 
 - health checks explícitos da API e bridge;
 - painel e API na mesma origem, compatíveis com `SameSite=Strict`;
@@ -2110,7 +2110,7 @@ O Render recomenda segredos gerados ou fornecidos fora do repositório e permite
 6. Confirmar que o frontend servido contém o commit esperado.
 
 Não presuma que editar `render.yaml` altera serviços existentes imediatamente. Em Blueprint já criado, revisar o diff de sincronização e as variáveis no Dashboard.
-Se existir um serviço legado ainda não sincronizado com o Blueprint atualizado, mantenha o `apps/ops-web/dist/` alinhado ao commit publicado para que `/app/` continue funcional até a sincronização completa.
+Se existir um serviço legado ainda não sincronizado com o Blueprint atualizado, mantenha o deploy público apontando para a API que serve `/app/` e revise o diff de sincronização antes de qualquer novo provisionamento.
 
 #### Variáveis da API
 
@@ -2305,9 +2305,9 @@ O bridge em nuvem apenas grava spool remoto. Para cozinha:
 
 #### Gate 6 — release operacional
 
-- CI verde com `check`, lint, typecheck, build, unitários, PostgreSQL efêmero, smoke autenticado, Playwright e axe;
+- CI verde com `check`, unitários, PostgreSQL efêmero, smoke autenticado, Playwright e axe;
 - teste visual desktop/390 px;
-- validação explícita da fronteira publicada entre shell React (`/app/`) e console legado (`/app/legacy/`);
+- validação explícita do console legado publicado em `/app/` e do redirect de compatibilidade de `/app/legacy/`;
 - sandbox dos dois parceiros aprovado ou flags desligadas;
 - carga representativa do pico de jantar;
 - dashboards/alertas e plantão definido;
