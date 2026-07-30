@@ -41,7 +41,7 @@ test("RBAC classifica a rota de sessao e leitura de auditoria", async () => {
   assert.match(auth, /if \(path === "\/audit"\) return "admin"/);
 });
 
-test("frontend novo nao expõe placeholder de construçao e embute o iframe operacional", async () => {
+test("frontend novo nao expoe placeholder de construcao e embute o iframe operacional", async () => {
   const [app, styles] = await Promise.all([
     source("../apps/ops-web/src/App.tsx"),
     source("../apps/ops-web/src/App.css")
@@ -51,7 +51,16 @@ test("frontend novo nao expõe placeholder de construçao e embute o iframe oper
   assert.match(app, /src=\{apiUrl\("\/app\/legacy\/"\)\}/);
   assert.match(app, /VITE_DEMO_MODE/);
   assert.match(app, /Entrar como admin demo/);
-  assert.match(app, /Visão geral|Visao geral/);
+  assert.match(app, /Visao geral|Visão geral/);
   assert.match(styles, /\.embedded-console/);
   assert.match(styles, /\.demo-access__/);
+});
+
+test("build do ops-web permite base configuravel para static site", async () => {
+  const [viteConfig, renderYaml] = await Promise.all([
+    source("../apps/ops-web/vite.config.ts"),
+    source("../render.yaml")
+  ]);
+  assert.match(viteConfig, /base:\s*process\.env\.VITE_PUBLIC_BASE\s*\|\|\s*"\/app\/"/);
+  assert.match(renderYaml, /- key: VITE_PUBLIC_BASE\s+value: \//);
 });

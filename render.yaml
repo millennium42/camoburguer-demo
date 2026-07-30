@@ -82,6 +82,8 @@ services:
     buildCommand: npm --prefix apps/ops-web ci --include=dev && npm --prefix apps/ops-web run build
     staticPublishPath: apps/ops-web/dist
     envVars:
+      - key: VITE_PUBLIC_BASE
+        value: /
       - key: VITE_API_BASE
         sync: false
       - key: VITE_DEMO_MODE
