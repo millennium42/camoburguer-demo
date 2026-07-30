@@ -2088,7 +2088,7 @@ URLs esperadas:
 
 #### O que o Blueprint protege
 
-- build da API inclui a geraÃ§Ã£o do `apps/ops-web/dist/` quando o serviÃ§o for sincronizado pelo Blueprint atualizado;
+- build da API usa `npm ci && npm --prefix apps/ops-web ci && npm run build:frontend` para instalar o lockfile raiz, instalar o lockfile do `ops-web` e gerar o `apps/ops-web/dist/`;
 
 - health checks explícitos da API e bridge;
 - painel e API na mesma origem, compatíveis com `SameSite=Strict`;
@@ -2110,7 +2110,7 @@ O Render recomenda segredos gerados ou fornecidos fora do repositório e permite
 6. Confirmar que o frontend servido contém o commit esperado.
 
 Não presuma que editar `render.yaml` altera serviços existentes imediatamente. Em Blueprint já criado, revisar o diff de sincronização e as variáveis no Dashboard.
-Enquanto o serviço legado ainda estiver com `buildCommand=npm install`, mantenha o `apps/ops-web/dist/` alinhado ao commit publicado para que `/app/` continue funcional no auto-deploy atual.
+Se existir um serviço legado ainda não sincronizado com o Blueprint atualizado, mantenha o `apps/ops-web/dist/` alinhado ao commit publicado para que `/app/` continue funcional até a sincronização completa.
 
 #### Variáveis da API
 
