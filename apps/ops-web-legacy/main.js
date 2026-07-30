@@ -1071,37 +1071,43 @@ function requestCatalogArchive(sku, opener) {
 async function refreshAll() {
   const financeParams = new URLSearchParams(Object.entries(state.financeFilters).filter(([, value]) => value));
   const financeQuery = financeParams.size ? `?${financeParams}` : "";
-  const [catalog, inventory, tabs, orders, kitchen, summary, entries, shifts] = await Promise.all([
-    api("/catalog"),
-    api("/inventory"),
-    api("/tabs?status=open"),
-    api("/orders"),
-    api("/kitchen/queue"),
-    api(`/finance/summary${financeQuery}`),
-    api(`/finance/entries${financeQuery}`),
-    api("/cash-shifts")
-  ]);
+  const role = state.currentUser?.role || "operator";
+  const isKitchen = role === "kitchen";
 
-  state.orderItems = reconcileCartItems(state.orderItems, catalog.items);
-  state.catalog = catalog.items;
-  state.addOns = catalog.addOns || [];
-  state.inventory = inventory;
-  state.tabs = tabs.items;
-  state.orders = orders.items;
-  state.kitchen = kitchen.items;
-  state.financeSummary = summary;
-  state.financeEntries = entries.items;
-  state.shifts = shifts.items;
+  const fetchPromises = [
+    api("/orders").then(r => { state.orders = r.items; }),
+    api("/kitchen/queue").then(r => { state.kitchen = r.items; })
+  ];
 
-  renderCatalog();
-  renderInventory();
-  renderTabs();
-  renderOrderItems();
+  if (!isKitchen) {
+    fetchPromises.push(
+      api("/catalog").then(r => { 
+        state.catalog = r.items;
+        state.addOns = r.addOns || [];
+        state.orderItems = reconcileCartItems(state.orderItems, r.items);
+      }),
+      api("/inventory").then(r => { state.inventory = r; }),
+      api("/tabs?status=open").then(r => { state.tabs = r.items; }),
+      api(`/finance/summary${financeQuery}`).then(r => { state.financeSummary = r; }),
+      api(`/finance/entries${financeQuery}`).then(r => { state.financeEntries = r.items; }),
+      api("/cash-shifts").then(r => { state.shifts = r.items; })
+    );
+  }
+
+  await Promise.all(fetchPromises);
+
+  if (!isKitchen) {
+    renderCatalog();
+    renderInventory();
+    renderTabs();
+    renderOrderItems();
+    renderFinanceSummary();
+    renderEntries();
+    renderShifts();
+  }
+  
   renderOrders();
   renderKitchen();
-  renderFinanceSummary();
-  renderEntries();
-  renderShifts();
   $("#api-status").textContent = "API conectada";
   syncStamp(new Date().toLocaleTimeString("pt-BR"));
 }
