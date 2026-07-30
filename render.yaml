@@ -12,7 +12,7 @@ services:
     env: node
     plan: free
     healthCheckPath: /health
-    buildCommand: npm install
+    buildCommand: npm install && npm run build:frontend
     startCommand: node apps/api/src/server.js
     envVars:
       - key: DATABASE_URL

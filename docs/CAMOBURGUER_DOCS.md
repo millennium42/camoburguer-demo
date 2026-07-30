@@ -2084,8 +2084,11 @@ URLs esperadas:
 - `https://camoburguer-api.onrender.com/app/`
 - `https://camoburguer-api.onrender.com`
 - `https://camoburguer-bridge.onrender.com`
+- `https://camoburguer-ops-web.onrender.com` redireciona para `/app/` como URL pÃºblica de compatibilidade
 
 #### O que o Blueprint protege
+
+- build da API inclui a geraÃ§Ã£o do `apps/ops-web/dist/` quando o serviÃ§o for sincronizado pelo Blueprint atualizado;
 
 - health checks explícitos da API e bridge;
 - painel e API na mesma origem, compatíveis com `SameSite=Strict`;
@@ -2107,6 +2110,7 @@ O Render recomenda segredos gerados ou fornecidos fora do repositório e permite
 6. Confirmar que o frontend servido contém o commit esperado.
 
 Não presuma que editar `render.yaml` altera serviços existentes imediatamente. Em Blueprint já criado, revisar o diff de sincronização e as variáveis no Dashboard.
+Enquanto o serviço legado ainda estiver com `buildCommand=npm install`, mantenha o `apps/ops-web/dist/` alinhado ao commit publicado para que `/app/` continue funcional no auto-deploy atual.
 
 #### Variáveis da API
 
