@@ -148,6 +148,10 @@ export async function login(db, { username, password, ip, now = new Date() }) {
     return { ok: false, body: LOGIN_FAILURE };
   }
   loginAttempts.delete(key);
+  return { ok: true, ...(await issueSession(db, user, now)) };
+}
+
+export async function issueSession(db, user, now = new Date()) {
   const token = randomBytes(32).toString("base64url");
   const csrfToken = createCsrfToken();
   const createdAt = now;
@@ -158,7 +162,13 @@ export async function login(db, { username, password, ip, now = new Date() }) {
      VALUES ($1, $2, $3, $4, $5, $5, $6, $7)`,
     [randomBytes(16).toString("hex"), hashToken(token), hashToken(csrfToken), user.id, createdAt, idleExpiresAt, expiresAt]
   );
-  return { ok: true, token, csrfToken, user: { id: user.id, username: user.username, role: user.role }, expiresAt };
+  return {
+    token,
+    csrfToken,
+    user: { id: user.id, username: user.username, role: user.role },
+    expiresAt,
+    idleExpiresAt
+  };
 }
 
 export async function authenticate(db, token, now = new Date()) {

@@ -1,7 +1,7 @@
 databases:
   # 1. Banco de Dados PostgreSQL Gerenciado pelo Render
   - name: camoburguer-db
-    databaseName: camoburguer
+    databaseName: camoburguer_demo
     user: camoburguer_user
     plan: free
 
@@ -23,6 +23,10 @@ services:
         value: 3001
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_INCLUDE
+        value: dev
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
       - key: DEFAULT_PRINTER
         value: cozinha-principal
       - key: PRINT_BRIDGE_URL
@@ -36,19 +40,25 @@ services:
           name: camoburguer-bridge
           envVarKey: PRINT_BRIDGE_TOKEN
       - key: CORS_ORIGINS
-        value: https://camoburguer-api.onrender.com
+        sync: false
       - key: ADMIN_BOOTSTRAP_PASSWORD
         generateValue: true
       - key: AUTO_SEED
         value: "false"
       - key: APP_ENV
         value: demo
+      - key: AUTH_COOKIE_SAMESITE
+        value: none
       - key: BUSINESS_TIME_ZONE
         value: America/Sao_Paulo
       - key: DEMO_SEED_ENABLED
-        value: "false"
+        value: "true"
+      - key: DEMO_DIRECT_ACCESS
+        value: "true"
       - key: DEMO_SEED_TARGET
-        value: ""
+        sync: false
+      - key: VITE_DEMO_MODE
+        value: "true"
 
   # 3. Print Bridge Service (Fastify)
   - type: web
@@ -56,7 +66,7 @@ services:
     env: node
     plan: free
     healthCheckPath: /health
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: node apps/print-bridge/src/server.js
     envVars:
       - key: PORT
@@ -65,3 +75,14 @@ services:
         value: production
       - key: PRINT_BRIDGE_TOKEN
         generateValue: true
+
+  # 4. Frontend React publicado como site estatico
+  - type: static
+    name: camoburguer-ops-web
+    buildCommand: npm --prefix apps/ops-web ci --include=dev && npm --prefix apps/ops-web run build
+    staticPublishPath: apps/ops-web/dist
+    envVars:
+      - key: VITE_API_BASE
+        sync: false
+      - key: VITE_DEMO_MODE
+        value: "true"

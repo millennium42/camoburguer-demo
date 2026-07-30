@@ -5,7 +5,7 @@ import {
   useState
 } from "react";
 import "./App.css";
-import { ApiError, api, clearCsrfToken } from "./lib/api";
+import { ApiError, api, apiUrl, clearCsrfToken } from "./lib/api";
 import { toast } from "sonner";
 import { Button } from "./components/ui/button";
 import { Input } from "./components/ui/input";
@@ -29,6 +29,10 @@ type SessionPayload = {
   csrfToken: string;
   expiresAt: string;
   idleExpiresAt: string;
+};
+
+type DemoAccessPayload = SessionPayload & {
+  demoPrepared?: "seeded" | "preserved" | "skipped";
 };
 
 type Order = {
@@ -173,6 +177,7 @@ const DEFAULT_PAYMENT = { paymentMethod: "pix", amount: "" };
 const DEFAULT_INVENTORY = { category: "xis", delta: "", reason: "" };
 const DEFAULT_SHIFT_ADJUSTMENT = { kind: "reinforcement", amount: "", reason: "" };
 const DEFAULT_NEW_TAB = { kind: "tab", label: "", customerName: "" };
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
 async function loadSnapshot(role: User["role"]): Promise<Snapshot> {
   const operatorSurface = role !== "kitchen";
@@ -367,8 +372,8 @@ function App() {
     }, 20_000);
 
     const sources = [
-      new EventSource("/events/orders", { withCredentials: true }),
-      ...(session.role === "kitchen" ? [] : [new EventSource("/events/finance", { withCredentials: true })])
+      new EventSource(apiUrl("/events/orders"), { withCredentials: true }),
+      ...(session.role === "kitchen" ? [] : [new EventSource(apiUrl("/events/finance"), { withCredentials: true })])
     ];
 
     for (const source of sources) {
@@ -411,6 +416,27 @@ function App() {
       });
       setSession(payload.user);
       toast.success(`Sessão aberta para ${payload.user.username}.`);
+    } catch (error) {
+      handleApiError(error);
+    } finally {
+      setBusyAction(null);
+      setInitializing(false);
+    }
+  }
+
+  async function handleDemoAccess(role: User["role"]) {
+    setBusyAction(`demo:${role}`);
+    try {
+      const payload = await api<DemoAccessPayload>("/demo/access", {
+        method: "POST",
+        body: JSON.stringify({ role, prepare: true })
+      });
+      setSession(payload.user);
+      toast.success(
+        payload.demoPrepared === "seeded"
+          ? `Demo preparada e acesso liberado para ${payload.user.username}.`
+          : `Acesso demo liberado para ${payload.user.username}.`
+      );
     } catch (error) {
       handleApiError(error);
     } finally {
@@ -568,7 +594,15 @@ function App() {
   }
 
   if (!session) {
-    return <LoginScreen busy={busyAction === "login"} onLogin={handleLogin} />;
+    return (
+      <LoginScreen
+        busy={Boolean(busyAction)}
+        busyAction={busyAction}
+        demoMode={DEMO_MODE}
+        onDemoAccess={handleDemoAccess}
+        onLogin={handleLogin}
+      />
+    );
   }
 
   const overviewMetrics = [
@@ -1173,7 +1207,7 @@ function App() {
           </Card>
           <iframe
             className="embedded-console"
-            src="/app/legacy/"
+            src={apiUrl("/app/legacy/")}
             title="Console operacional legado"
           />
         </section>
@@ -1182,7 +1216,19 @@ function App() {
   );
 }
 
-function LoginScreen({ busy, onLogin }: { busy: boolean; onLogin: (username: string, password: string) => Promise<void> }) {
+function LoginScreen({
+  busy,
+  busyAction,
+  demoMode,
+  onDemoAccess,
+  onLogin
+}: {
+  busy: boolean;
+  busyAction: string | null;
+  demoMode: boolean;
+  onDemoAccess: (role: User["role"]) => Promise<void>;
+  onLogin: (username: string, password: string) => Promise<void>;
+}) {
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("");
 
@@ -1206,8 +1252,26 @@ function LoginScreen({ busy, onLogin }: { busy: boolean; onLogin: (username: str
             <Input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
           </div>
           <Button onClick={() => void onLogin(username, password)} disabled={busy}>
-            {busy ? "Autenticando..." : "Entrar"}
+            {busyAction === "login" ? "Autenticando..." : "Entrar"}
           </Button>
+          {demoMode && (
+            <div className="demo-access">
+              <p className="demo-access__hint">
+                Os atalhos abaixo preparam a base demo automaticamente no primeiro acesso.
+              </p>
+              <div className="demo-access__grid">
+                <Button onClick={() => void onDemoAccess("admin")} disabled={busy}>
+                  {busyAction === "demo:admin" ? "Abrindo..." : "Entrar como admin demo"}
+                </Button>
+                <Button onClick={() => void onDemoAccess("operator")} disabled={busy}>
+                  {busyAction === "demo:operator" ? "Abrindo..." : "Entrar como atendimento demo"}
+                </Button>
+                <Button onClick={() => void onDemoAccess("kitchen")} disabled={busy}>
+                  {busyAction === "demo:kitchen" ? "Abrindo..." : "Entrar como cozinha demo"}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

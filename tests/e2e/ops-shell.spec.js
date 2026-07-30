@@ -12,9 +12,14 @@ function adminPassword() {
 async function login(page) {
   await page.goto("/app/");
   await expect(page.getByRole("heading", { name: "Entrar na superfície operacional" })).toBeVisible();
-  await page.getByLabel("Usuário").fill("admin");
-  await page.getByLabel("Senha").fill(adminPassword());
-  await page.getByRole("button", { name: /^Entrar$/ }).click();
+  const demoButton = page.getByRole("button", { name: "Entrar como admin demo" });
+  if (await demoButton.isVisible().catch(() => false)) {
+    await demoButton.click();
+  } else {
+    await page.getByLabel("Usuário").fill("admin");
+    await page.getByLabel("Senha").fill(adminPassword());
+    await page.getByRole("button", { name: /^Entrar$/ }).click();
+  }
   await expect(page.getByRole("heading", { name: /Centro operacional com sessão real/i })).toBeVisible();
 }
 

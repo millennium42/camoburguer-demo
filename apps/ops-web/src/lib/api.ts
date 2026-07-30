@@ -22,6 +22,10 @@ export function clearCsrfToken() {
   csrfToken = "";
 }
 
+export function apiUrl(path: string) {
+  return `${API_BASE}${path}`;
+}
+
 function isMutation(method: string) {
   return !["GET", "HEAD", "OPTIONS"].includes(method);
 }
@@ -51,7 +55,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     headers.set("x-csrf-token", csrfToken);
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     method,
     credentials: "include",

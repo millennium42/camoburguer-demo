@@ -18,6 +18,7 @@ test("cliente HTTP usa credenciais include e CSRF somente em memoria", async () 
   assert.match(apiClient, /import\.meta\.env\.VITE_API_BASE/);
   assert.match(apiClient, /let csrfToken = ""/);
   assert.match(apiClient, /credentials: "include"/);
+  assert.match(apiClient, /export function apiUrl\(path: string\)/);
   assert.match(apiClient, /headers\.set\("x-csrf-token", csrfToken\)/);
   assert.doesNotMatch(apiClient, /meta\[name="csrf-token"\]|document\.querySelector|localStorage|sessionStorage/);
 });
@@ -28,6 +29,8 @@ test("API publica /auth/me e o console legado em /app/legacy/", async () => {
   assert.match(server, /app\.get\("\/auth\/me"/);
   assert.match(server, /app\.get\("\/app\/legacy"/);
   assert.match(server, /prefix: "\/app\/legacy\/"/);
+  assert.match(server, /app\.post\("\/demo\/access"/);
+  assert.match(server, /path === "\/demo\/access"/);
 });
 
 test("RBAC classifica a rota de sessao e leitura de auditoria", async () => {
@@ -44,7 +47,11 @@ test("frontend novo nao expõe placeholder de construçao e embute o iframe oper
     source("../apps/ops-web/src/App.css")
   ]);
   assert.doesNotMatch(app, /Sistema em constru/);
-  assert.match(app, /src="\/app\/legacy\/"/);
+  assert.match(app, /new EventSource\(apiUrl\("\/events\/orders"\)/);
+  assert.match(app, /src=\{apiUrl\("\/app\/legacy\/"\)\}/);
+  assert.match(app, /VITE_DEMO_MODE/);
+  assert.match(app, /Entrar como admin demo/);
   assert.match(app, /Visão geral|Visao geral/);
   assert.match(styles, /\.embedded-console/);
+  assert.match(styles, /\.demo-access__/);
 });
