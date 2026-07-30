@@ -1,4 +1,4 @@
-export const API_BASE = "";
+export const API_BASE = String(import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
 
 let csrfToken = "";
 

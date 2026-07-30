@@ -15,6 +15,7 @@ test("shell React restaura sessao via /auth/me e nao usa /health como identidade
 
 test("cliente HTTP usa credenciais include e CSRF somente em memoria", async () => {
   const apiClient = await source("../apps/ops-web/src/lib/api.ts");
+  assert.match(apiClient, /import\.meta\.env\.VITE_API_BASE/);
   assert.match(apiClient, /let csrfToken = ""/);
   assert.match(apiClient, /credentials: "include"/);
   assert.match(apiClient, /headers\.set\("x-csrf-token", csrfToken\)/);
