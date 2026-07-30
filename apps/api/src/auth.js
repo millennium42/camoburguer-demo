@@ -109,15 +109,32 @@ export function canRoleTransitionOrderStatus(role, previousStatus, nextStatus) {
   return false;
 }
 
-export async function ensureBootstrapAdmin(db, bootstrapPassword) {
+export async function ensureBootstrapAdmin(db, bootstrapPassword, options = {}) {
   if (!bootstrapPassword) return;
+  const resetExisting = options.resetExisting === true;
   await db.transaction(async (client) => {
     await client.query("LOCK TABLE users IN EXCLUSIVE MODE");
-    const existing = await client.query("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1");
-    if (existing.rowCount) return;
+    const passwordHash = await hashPassword(bootstrapPassword);
+    const existingAdmin = await client.query(
+      "SELECT id FROM users WHERE username = 'admin' LIMIT 1"
+    );
+    if (existingAdmin.rowCount) {
+      if (!resetExisting) return;
+      await client.query(
+        "UPDATE users SET role = 'admin', password_hash = $2, credential_changed_at = NOW() WHERE id = $1",
+        [existingAdmin.rows[0].id, passwordHash]
+      );
+      await client.query(
+        "UPDATE auth_sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
+        [existingAdmin.rows[0].id]
+      );
+      return;
+    }
+    const existingRoleAdmin = await client.query("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1");
+    if (existingRoleAdmin.rowCount && !resetExisting) return;
     await client.query(
       "INSERT INTO users (id, username, role, password_hash) VALUES ($1, 'admin', 'admin', $2)",
-      [randomBytes(16).toString("hex"), await hashPassword(bootstrapPassword)]
+      [randomBytes(16).toString("hex"), passwordHash]
     );
   });
 }

@@ -2327,7 +2327,9 @@ app.post("/demo/seed", async (request, reply) => {
 await app.register(integrationRoutes, { db, sse, config });
 
 await db.init();
-await ensureBootstrapAdmin(db, config.adminBootstrapPassword);
+await ensureBootstrapAdmin(db, config.adminBootstrapPassword, {
+  resetExisting: config.appEnvironment === "demo"
+});
 await recoverPrintJobs();
 setInterval(() => recoverPrintJobs().catch((error) => app.log.error(error)), 15_000).unref();
 

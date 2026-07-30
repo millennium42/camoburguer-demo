@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   authenticate,
   canRoleTransitionOrderStatus,
+  ensureBootstrapAdmin,
   hasPermission,
   hashPassword,
   login,
@@ -151,7 +152,7 @@ test("falha de persistencia ao revogar fecha a sessao no processo", async () => 
   assert.equal(await authenticate(db, token), null);
 });
 
-test("transicoes de status para cozinha são restritas a preparo e pronto", () => {
+test("transicoes de status para cozinha sao restritas a preparo e pronto", () => {
   assert.equal(canRoleTransitionOrderStatus("kitchen", "confirmed", "in_preparation"), true);
   assert.equal(canRoleTransitionOrderStatus("kitchen", "in_preparation", "ready"), true);
   assert.equal(canRoleTransitionOrderStatus("kitchen", "in_preparation", "in_preparation"), true);
@@ -161,4 +162,53 @@ test("transicoes de status para cozinha são restritas a preparo e pronto", () =
   assert.equal(canRoleTransitionOrderStatus("kitchen", "in_preparation", "completed"), false);
   assert.equal(canRoleTransitionOrderStatus("operator", "confirmed", "completed"), true);
   assert.equal(canRoleTransitionOrderStatus("admin", "confirmed", "cancelled"), true);
+});
+
+test("bootstrap demo reseta a senha do usuario admin existente e revoga sessoes", async () => {
+  const calls = [];
+  const db = {
+    async transaction(callback) {
+      return callback({
+        async query(sql, values = []) {
+          calls.push({ sql, values });
+          if (sql === "SELECT id FROM users WHERE username = 'admin' LIMIT 1") {
+            return { rowCount: 1, rows: [{ id: "u-admin" }] };
+          }
+          return { rowCount: 0, rows: [] };
+        }
+      });
+    }
+  };
+
+  await ensureBootstrapAdmin(db, "CamoburguerDemo!2026", { resetExisting: true });
+
+  const updateUser = calls.find((call) => call.sql.startsWith("UPDATE users SET role = 'admin'"));
+  const revokeSessions = calls.find((call) => call.sql.startsWith("UPDATE auth_sessions SET revoked_at"));
+  assert.ok(updateUser);
+  assert.equal(updateUser.values[0], "u-admin");
+  assert.match(updateUser.values[1], /^scrypt-v1\$/);
+  assert.ok(revokeSessions);
+  assert.deepEqual(revokeSessions.values, ["u-admin"]);
+});
+
+test("bootstrap padrao preserva admin existente sem resetar senha", async () => {
+  const calls = [];
+  const db = {
+    async transaction(callback) {
+      return callback({
+        async query(sql, values = []) {
+          calls.push({ sql, values });
+          if (sql === "SELECT id FROM users WHERE username = 'admin' LIMIT 1") {
+            return { rowCount: 1, rows: [{ id: "u-admin" }] };
+          }
+          return { rowCount: 0, rows: [] };
+        }
+      });
+    }
+  };
+
+  await ensureBootstrapAdmin(db, "CamoburguerDemo!2026");
+
+  assert.equal(calls.some((call) => call.sql.startsWith("UPDATE users SET role = 'admin'")), false);
+  assert.equal(calls.some((call) => call.sql.startsWith("UPDATE auth_sessions SET revoked_at")), false);
 });
