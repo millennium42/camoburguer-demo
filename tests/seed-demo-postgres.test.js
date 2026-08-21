@@ -816,7 +816,7 @@ if (!connectionString) {
              id, tab_id, round_number, source, status, customer_name,
              fulfillment_mode, total, items
            ) VALUES (
-             'p15-rollback-order', 'p15-rollback-tab', 1, 'counter', 'confirmed',
+             'p15-rollback-order', 'p15-rollback-tab', 1, 'counter', 'ready',
              'Rollback', 'local', 0, '[]'::jsonb
            );
            CREATE OR REPLACE FUNCTION p15_fail_close() RETURNS trigger AS $$
