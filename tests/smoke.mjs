@@ -648,8 +648,10 @@ assert.equal(
   initialXis + 5,
 );
 
-await api(`/orders/${tabRound.id}/status`, { method: "PATCH", body: { status: "completed" } });
-await api(`/orders/${cancellation.id}/status`, { method: "PATCH", body: { status: "completed" } });
+await api(`/orders/${tabRound.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+await api(`/orders/${tabRound.id}/status`, { method: "PATCH", body: { status: "ready" } });
+await api(`/orders/${cancellation.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+await api(`/orders/${cancellation.id}/status`, { method: "PATCH", body: { status: "ready" } });
 
 await api(`/tabs/${tab.id}/close`, { method: "POST", body: {} });
 
@@ -716,8 +718,10 @@ await api("/inventory/xis/adjustments", {
   body: { delta: 1, reason: "Reposição do smoke" },
   expected: [201],
 });
-await api(`/orders/${preparedRound.id}/status`, { method: "PATCH", body: { status: "completed" } });
-await api(`/orders/${preparedCancellation.id}/status`, { method: "PATCH", body: { status: "completed" } });
+await api(`/orders/${preparedRound.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+await api(`/orders/${preparedRound.id}/status`, { method: "PATCH", body: { status: "ready" } });
+await api(`/orders/${preparedCancellation.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+await api(`/orders/${preparedCancellation.id}/status`, { method: "PATCH", body: { status: "ready" } });
 
 await api(`/tabs/${preparedTab.id}/close`, { method: "POST", body: {} });
 
@@ -771,8 +775,10 @@ assert.equal(
   (await api("/inventory")).balances.find((item) => item.category === "dog").quantity,
   1,
 );
-await api(`/orders/${concurrentWinner.id}/status`, { method: "PATCH", body: { status: "completed" } });
-await api(`/orders/${concurrentCancellation.id}/status`, { method: "PATCH", body: { status: "completed" } });
+await api(`/orders/${concurrentWinner.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+await api(`/orders/${concurrentWinner.id}/status`, { method: "PATCH", body: { status: "ready" } });
+await api(`/orders/${concurrentCancellation.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+await api(`/orders/${concurrentCancellation.id}/status`, { method: "PATCH", body: { status: "ready" } });
 
 await Promise.all(
   concurrentTabs.map((candidate) =>
@@ -893,8 +899,10 @@ const noShiftCancellation = await api(`/tabs/${noShiftTab.id}/rounds/${noShiftRo
   },
   expected: [201],
 });
-await api(`/orders/${noShiftRound.id}/status`, { method: "PATCH", body: { status: "completed" } });
-await api(`/orders/${noShiftCancellation.id}/status`, { method: "PATCH", body: { status: "completed" } });
+await api(`/orders/${noShiftRound.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+await api(`/orders/${noShiftRound.id}/status`, { method: "PATCH", body: { status: "ready" } });
+await api(`/orders/${noShiftCancellation.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+await api(`/orders/${noShiftCancellation.id}/status`, { method: "PATCH", body: { status: "ready" } });
 await api(`/tabs/${noShiftTab.id}/close`, { method: "POST", body: {} });
 
 const historicalShift = await api("/cash-shifts/open", {
