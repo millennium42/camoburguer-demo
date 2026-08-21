@@ -13,13 +13,17 @@
     "check": "node scripts/check-syntax.mjs",
     "check:backend": "npm run check",
     "build": "npm run check",
+    "lint": "biome ci .",
+    "fix": "biome check --write .",
     "test": "npm run test:unit",
-    "test:unit": "node --test tests/*.test.js",
+    "test:unit": "node --env-file-if-exists=.env.test --test-concurrency=1 --test tests/*.test.js",
+    "test:cov": "node --env-file-if-exists=.env.test --test-concurrency=1 --experimental-test-coverage --test tests/*.test.js",
     "test:frontend": "node --test tests/ops-web.test.js",
     "test:db": "node --test tests/seed-demo-postgres.test.js",
     "test:e2e": "playwright test",
     "test:a11y": "playwright test --grep @a11y",
     "smoke": "node tests/smoke.mjs",
+    "verify": "npm run lint && npm run test:cov && npm run build && npm run smoke",
     "start:api": "npm run start --workspace @camoburguer/api",
     "start:print": "npm run start --workspace @camoburguer/print-bridge",
     "start:sim": "npm run start --workspace @camoburguer/event-simulator",
@@ -33,6 +37,9 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
-    "@playwright/test": "^1.55.0"
+    "@biomejs/biome": "^2.5.9",
+    "@playwright/test": "^1.55.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "vitest": "^4.1.11"
   }
 }

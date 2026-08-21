@@ -1,5 +1,5 @@
-import { readdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const roots = ["apps", "packages", "scripts", "tests"];

@@ -1,29 +1,31 @@
-import { randomUUID } from "crypto";
-import {
-  findChannelCommand,
-  getOrderWithMapping,
-  insertChannelCommand,
-  updateChannelMapping
-} from "./integration-repository.js";
-
 import { confirmOrder, requiresKitchenPreparation, transitionOrder } from "@camoburguer/domain";
+import { randomUUID } from "crypto";
 import {
   claimIdempotency,
   completeIdempotency,
   fingerprint,
-  integrationActionFingerprintPayload
+  integrationActionFingerprintPayload,
 } from "../idempotency.js";
+import {
+  findChannelCommand,
+  getOrderWithMapping,
+  insertChannelCommand,
+  updateChannelMapping,
+} from "./integration-repository.js";
 
 const ACTION_RULES = {
   accept: { status: "received", syncStatus: "accept_pending" },
-  cancel: { statuses: ["received", "confirmed", "in_preparation", "ready"], syncStatus: "cancel_pending" },
+  cancel: {
+    statuses: ["received", "confirmed", "in_preparation", "ready"],
+    syncStatus: "cancel_pending",
+  },
   startPreparation: { status: "confirmed", syncStatus: "preparation_pending" },
-  ready: { status: "in_preparation", syncStatus: "ready_pending" }
+  ready: { status: "in_preparation", syncStatus: "ready_pending" },
 };
 
 const CHANNEL_ACTIONS = {
   ifood: new Set(["accept", "cancel", "startPreparation", "ready"]),
-  deliverymuch: new Set(["accept", "cancel", "ready"])
+  deliverymuch: new Set(["accept", "cancel", "ready"]),
 };
 
 export async function createOrderAction(orderId, action, payload, idempotencyKey, db) {
@@ -55,33 +57,38 @@ export async function createOrderAction(orderId, action, payload, idempotencyKey
     }
 
     const commandPayload = { ...(payload || {}), externalOrderId: order.mapping.externalId };
-    const requestFingerprint = fingerprint(integrationActionFingerprintPayload({
-      orderId: order.id,
-      channel: order.mapping.channel,
-      action,
-      payload: commandPayload
-    }));
+    const requestFingerprint = fingerprint(
+      integrationActionFingerprintPayload({
+        orderId: order.id,
+        channel: order.mapping.channel,
+        action,
+        payload: commandPayload,
+      }),
+    );
     const claim = await claimIdempotency(client, {
       key,
       operation: `integration:${action}`,
       resource: `order:${order.id}`,
-      requestFingerprint
+      requestFingerprint,
     });
     if (claim.conflict) {
       const error = new Error(
         claim.conflict === "legacy_idempotency_unverifiable"
           ? "legacy_idempotency_unverifiable"
-          : "Idempotency-Key já usada por outra ação de integração"
+          : "Idempotency-Key já usada por outra ação de integração",
       );
       error.statusCode = 409;
       error.code = claim.conflict;
       throw error;
     }
     if (claim.repeated) {
-      const existing = await findChannelCommand({
-        channel: order.mapping.channel,
-        idempotencyKey: key
-      }, client);
+      const existing = await findChannelCommand(
+        {
+          channel: order.mapping.channel,
+          idempotencyKey: key,
+        },
+        client,
+      );
       if (!existing || existing.id !== claim.resultId) {
         const error = new Error("Resultado idempotente de integração ausente");
         error.statusCode = 409;
@@ -98,15 +105,18 @@ export async function createOrderAction(orderId, action, payload, idempotencyKey
       throw err;
     }
 
-    const command = await insertChannelCommand({
-      id: randomUUID(),
-      orderId: order.id,
-      channel: order.mapping.channel,
-      action,
-      idempotencyKey: key,
-      payload: commandPayload,
-      status: "pending"
-    }, client);
+    const command = await insertChannelCommand(
+      {
+        id: randomUUID(),
+        orderId: order.id,
+        channel: order.mapping.channel,
+        action,
+        idempotencyKey: key,
+        payload: commandPayload,
+        status: "pending",
+      },
+      client,
+    );
 
     if (!command) throw new Error("Falha ao persistir comando idempotente");
 
@@ -115,7 +125,7 @@ export async function createOrderAction(orderId, action, payload, idempotencyKey
     await completeIdempotency(client, key, {
       resultType: "channel_command",
       resultId: command.id,
-      responseStatus: 202
+      responseStatus: 202,
     });
 
     return { command, syncStatus, order, repeated: false };
@@ -129,7 +139,10 @@ export async function activateAcceptedOrder(orderId, db, executor = null) {
       throw new Error("Pedido não encontrado");
     }
 
-    if (order.status === "confirmed" || (order.status === "ready" && !requiresKitchenPreparation(order.items))) {
+    if (
+      order.status === "confirmed" ||
+      (order.status === "ready" && !requiresKitchenPreparation(order.items))
+    ) {
       return { saved: order, repeated: true, printJob: null };
     }
 
@@ -160,9 +173,9 @@ export async function applyIntegratedTransition(orderId, nextStatus, db, executo
     if (!order?.mapping) throw new Error("Pedido de integração não encontrado");
     if (order.status === nextStatus) return { saved: order, repeated: true };
     if (
-      order.status === "ready"
-      && !requiresKitchenPreparation(order.items)
-      && ["in_preparation", "ready"].includes(nextStatus)
+      order.status === "ready" &&
+      !requiresKitchenPreparation(order.items) &&
+      ["in_preparation", "ready"].includes(nextStatus)
     ) {
       return { saved: order, repeated: true };
     }
@@ -174,7 +187,10 @@ export async function applyIntegratedTransition(orderId, nextStatus, db, executo
       error.statusCode = 409;
       throw error;
     }
-    if (nextStatus === "cancelled" && ["confirmed", "in_preparation", "ready"].includes(order.status)) {
+    if (
+      nextStatus === "cancelled" &&
+      ["confirmed", "in_preparation", "ready"].includes(order.status)
+    ) {
       await db.changeStock(saved, 1, "cancellation", client, saved.id);
     }
     return { saved, repeated: false };

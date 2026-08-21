@@ -18,7 +18,7 @@ export const ADD_ONS = [
   ["frango", "Frango", 9],
   ["coracao", "Coração", 10],
   ["alcatra", "Alcatra", 15],
-  ["salsichao", "Salsichão", 4]
+  ["salsichao", "Salsichão", 4],
 ].map(([sku, name, price]) => ({ sku, name, price }));
 
 const products = [
@@ -33,7 +33,13 @@ const products = [
   ["09-camoburger-doritos", "09 CAMOBURGER DORITOS + BATATA FRITA", "Lanches", 34, "hamburguer"],
   ["10-camoburger-monster", "10 CAMOBURGER MONSTER + BATATA FRITA", "Lanches", 46, "hamburguer"],
   ["11-camoburger-frango", "11 CAMOBURGER FRANGO + BATATA FRITA", "Lanches", 34, "hamburguer"],
-  ["12-camoburger-vegetariano", "12 CAMOBURGER VEGETARIANO + BATATA FRITA", "Lanches", 34, "hamburguer"],
+  [
+    "12-camoburger-vegetariano",
+    "12 CAMOBURGER VEGETARIANO + BATATA FRITA",
+    "Lanches",
+    34,
+    "hamburguer",
+  ],
   ["13-camobuger-sausage", "13 CAMOBUGER SAUSAGE + BATATA FRITA", "Lanches", 33, "hamburguer"],
   ["x-simples", "X-SIMPLES", "Xis tradicionais", 24, "xis"],
   ["x-completo", "X-COMPLETO", "Xis tradicionais", 27, "xis"],
@@ -72,7 +78,7 @@ const products = [
   ["agua-sem-gas", "Água sem gás", "Bebidas", 4],
   ["batata-p", "Batata frita P 200g", "Batatas fritas", 15],
   ["batata-m", "Batata frita M 400g", "Batatas fritas", 21],
-  ["batata-g", "Batata frita G 600g", "Batatas fritas", 28]
+  ["batata-g", "Batata frita G 600g", "Batatas fritas", 28],
 ];
 
 const addonCategories = new Set(["Lanches", "Xis tradicionais", "Xis especiais", "Dogs"]);
@@ -88,6 +94,6 @@ export const CATALOG = products.map(
     stockCategory,
     allowsAddons: addonCategories.has(category),
     preparationMode: directHandoffCategories.has(category) ? "direct_handoff" : "kitchen",
-    available
-  })
+    available,
+  }),
 );

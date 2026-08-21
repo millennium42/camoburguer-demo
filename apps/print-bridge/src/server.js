@@ -12,7 +12,9 @@ const bridgeToken = String(process.env.PRINT_BRIDGE_TOKEN || "").trim();
 const insecureLocal = process.env.PRINT_BRIDGE_INSECURE_LOCAL === "true";
 
 if (!bridgeToken && !insecureLocal) {
-  throw new Error("PRINT_BRIDGE_TOKEN é obrigatório por padrão. Use PRINT_BRIDGE_INSECURE_LOCAL=true apenas para desenvolvimento local.");
+  throw new Error(
+    "PRINT_BRIDGE_TOKEN é obrigatório por padrão. Use PRINT_BRIDGE_INSECURE_LOCAL=true apenas para desenvolvimento local.",
+  );
 }
 
 await mkdir(spoolDir, { recursive: true });
@@ -43,7 +45,7 @@ app.get("/print-jobs/:orderId/:jobId", async (request, reply) => {
     return {
       id: jobId,
       status: "already_printed",
-      receipt: createHash("sha256").update(content).digest("hex")
+      receipt: createHash("sha256").update(content).digest("hex"),
     };
   } catch (error) {
     if (error.code === "ENOENT") return reply.code(404).send({ error: "Recibo não encontrado" });
@@ -83,8 +85,8 @@ app.post("/print-jobs", async (request, reply) => {
     repeated,
     metadata: {
       spooled: true,
-      reason: String(body.reason || "confirmed").slice(0, 64)
-    }
+      reason: String(body.reason || "confirmed").slice(0, 64),
+    },
   });
 });
 
@@ -106,7 +108,7 @@ app.post("/privacy/anonymize", async (request, reply) => {
   return { ok: true, sanitized };
 });
 
-const host = (insecureLocal && !bridgeToken) ? "127.0.0.1" : "0.0.0.0";
+const host = insecureLocal && !bridgeToken ? "127.0.0.1" : "0.0.0.0";
 if (insecureLocal && !bridgeToken) {
   app.log.warn("ATENÇÃO: print-bridge operando em modo INSEGURO no localhost.");
 }

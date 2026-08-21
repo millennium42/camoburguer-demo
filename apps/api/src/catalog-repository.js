@@ -15,26 +15,28 @@ export function mapCatalogItem(row) {
     sourceVersion: row.source_version,
     archivedAt: row.archived_at ? new Date(row.archived_at).toISOString() : null,
     createdAt: new Date(row.created_at).toISOString(),
-    updatedAt: new Date(row.updated_at).toISOString()
+    updatedAt: new Date(row.updated_at).toISOString(),
   };
 }
 
 export async function listCatalogItems(executor, { includeArchived = false } = {}) {
   const { rows } = await executor.query(
     `SELECT * FROM catalog_items${includeArchived ? "" : " WHERE archived_at IS NULL"}
-     ORDER BY category, name, sku`
+     ORDER BY category, name, sku`,
   );
   return rows.map(mapCatalogItem);
 }
 
 export async function lockCatalogItems(items, executor, { includeArchived = false } = {}) {
-  const skus = [...new Set((items || []).map((item) => String(item.sku || "").trim()).filter(Boolean))].sort();
+  const skus = [
+    ...new Set((items || []).map((item) => String(item.sku || "").trim()).filter(Boolean)),
+  ].sort();
   if (!skus.length) return [];
   const { rows } = await executor.query(
     `SELECT * FROM catalog_items
      WHERE sku = ANY($1::text[])${includeArchived ? "" : " AND archived_at IS NULL"}
      ORDER BY sku FOR SHARE`,
-    [skus]
+    [skus],
   );
   return rows.map(mapCatalogItem);
 }
@@ -42,7 +44,7 @@ export async function lockCatalogItems(items, executor, { includeArchived = fals
 export async function getCatalogItem(sku, executor, { forUpdate = false } = {}) {
   const { rows } = await executor.query(
     `SELECT * FROM catalog_items WHERE sku = $1${forUpdate ? " FOR UPDATE" : ""}`,
-    [sku]
+    [sku],
   );
   return rows[0] ? mapCatalogItem(rows[0]) : null;
 }
@@ -63,8 +65,8 @@ export async function insertCatalogItem(item, executor) {
       item.stockCategory,
       item.allowsAddons,
       item.preparationMode,
-      item.available
-    ]
+      item.available,
+    ],
   );
   return mapCatalogItem(rows[0]);
 }
@@ -85,8 +87,8 @@ export async function updateCatalogItem(sku, item, executor) {
       item.stockCategory,
       item.allowsAddons,
       item.preparationMode,
-      item.available
-    ]
+      item.available,
+    ],
   );
   return rows[0] ? mapCatalogItem(rows[0]) : null;
 }
@@ -98,7 +100,7 @@ export async function archiveCatalogItem(sku, executor) {
          archived_at=COALESCE(archived_at, clock_timestamp()),
          updated_at=GREATEST(clock_timestamp(), updated_at + INTERVAL '1 millisecond')
      WHERE sku=$1 RETURNING *`,
-    [sku]
+    [sku],
   );
   return rows[0] ? mapCatalogItem(rows[0]) : null;
 }

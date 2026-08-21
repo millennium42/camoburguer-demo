@@ -1,5 +1,5 @@
-import { createOrderAction } from "./order-actions.js";
 import { getOrderWithMapping } from "./integration-repository.js";
+import { createOrderAction } from "./order-actions.js";
 import { fetchIFoodCancellationReasons } from "./providers/ifood.js";
 
 export default async function integrationRoutes(fastify, { db, sse, config }) {
@@ -13,7 +13,7 @@ export default async function integrationRoutes(fastify, { db, sse, config }) {
     sse.publish("orders", {
       type: "order.sync.status.changed",
       payload: { orderId, syncStatus },
-      at: new Date().toISOString()
+      at: new Date().toISOString(),
     });
   }
 
@@ -23,11 +23,12 @@ export default async function integrationRoutes(fastify, { db, sse, config }) {
 
     try {
       const current = await getOrderWithMapping(id, db);
-      if (!current?.mapping) return reply.code(404).send({ error: "Pedido de integração não encontrado" });
+      if (!current?.mapping)
+        return reply.code(404).send({ error: "Pedido de integração não encontrado" });
       if (!adapterEnabled(current.mapping.channel)) {
         return reply.code(503).send({
           code: "ADAPTER_DISABLED",
-          error: `Adapter ${current.mapping.channel} está desligado`
+          error: `Adapter ${current.mapping.channel} está desligado`,
         });
       }
       const result = await createOrderAction(id, action, payload, idempotencyKey, db);
@@ -37,7 +38,7 @@ export default async function integrationRoutes(fastify, { db, sse, config }) {
         action,
         syncStatus: result.syncStatus,
         repeated: result.repeated,
-        message
+        message,
       });
     } catch (error) {
       return reply.code(error.statusCode || 500).send({ code: error.code, error: error.message });
@@ -49,7 +50,7 @@ export default async function integrationRoutes(fastify, { db, sse, config }) {
       `SELECT channel, COUNT(*)::int AS non_terminal
        FROM channel_commands
        WHERE status IN ('pending', 'processing', 'ambiguous', 'awaiting_event')
-       GROUP BY channel`
+       GROUP BY channel`,
     );
     const counts = Object.fromEntries(rows.map((row) => [row.channel, Number(row.non_terminal)]));
     return {
@@ -57,10 +58,10 @@ export default async function integrationRoutes(fastify, { db, sse, config }) {
         ifood: { enabled: config.ifood.enabled, nonTerminalCommands: counts.ifood || 0 },
         deliverymuch: {
           enabled: config.deliveryMuch.enabled,
-          nonTerminalCommands: counts.deliverymuch || 0
-        }
+          nonTerminalCommands: counts.deliverymuch || 0,
+        },
       },
-      simulation: false
+      simulation: false,
     };
   });
 
@@ -72,12 +73,13 @@ export default async function integrationRoutes(fastify, { db, sse, config }) {
            lease_owner = NULL, lease_expires_at = NULL
        WHERE id = $1 AND status = 'dead_letter'
        RETURNING id, channel, status, correlation_id`,
-      [request.params.id]
+      [request.params.id],
     );
-    if (!rows[0]) return reply.code(409).send({
-      code: "COMMAND_NOT_DEAD_LETTER",
-      error: "Somente comando em dead-letter pode ser reprocessado"
-    });
+    if (!rows[0])
+      return reply.code(409).send({
+        code: "COMMAND_NOT_DEAD_LETTER",
+        error: "Somente comando em dead-letter pode ser reprocessado",
+      });
     return { command: rows[0], mode: "reconcile_only" };
   });
 
@@ -90,52 +92,49 @@ export default async function integrationRoutes(fastify, { db, sse, config }) {
     if (!adapterEnabled(order.mapping.channel)) {
       return reply.code(503).send({
         code: "ADAPTER_DISABLED",
-        error: `Adapter ${order.mapping.channel} está desligado`
+        error: `Adapter ${order.mapping.channel} está desligado`,
       });
     }
 
     if (order.mapping.channel === "ifood") {
       const reasons = await fetchIFoodCancellationReasons(config.ifood, order.mapping.externalId);
-      if (!reasons.length) return reply.code(409).send({ error: "Canal não ofereceu motivo de cancelamento" });
+      if (!reasons.length)
+        return reply.code(409).send({ error: "Canal não ofereceu motivo de cancelamento" });
       return reply.send({ reasons, demo: false });
     }
 
     if (order.mapping.channel === "deliverymuch") {
       return reply.code(501).send({
-        error: "Cancelamento Delivery Much bloqueado até homologar os códigos do parceiro"
+        error: "Cancelamento Delivery Much bloqueado até homologar os códigos do parceiro",
       });
     }
 
-    return reply.code(503).send({ code: "ADAPTER_DISABLED", error: "Adapter desconhecido ou desligado" });
+    return reply
+      .code(503)
+      .send({ code: "ADAPTER_DISABLED", error: "Adapter desconhecido ou desligado" });
   });
 
-  fastify.post("/orders/:id/accept", (request, reply) => enqueueAction(
-    request,
-    reply,
-    "accept",
-    {},
-    "Aceitação enviada à plataforma"
-  ));
+  fastify.post("/orders/:id/accept", (request, reply) =>
+    enqueueAction(request, reply, "accept", {}, "Aceitação enviada à plataforma"),
+  );
 
   fastify.post("/orders/:id/cancel", (request, reply) => {
     const { reasonId } = request.body || {};
     if (!reasonId) return reply.code(400).send({ error: "reasonId é obrigatório" });
-    return enqueueAction(request, reply, "cancel", { reasonId }, "Cancelamento enviado à plataforma");
+    return enqueueAction(
+      request,
+      reply,
+      "cancel",
+      { reasonId },
+      "Cancelamento enviado à plataforma",
+    );
   });
 
-  fastify.post("/orders/:id/start-preparation", (request, reply) => enqueueAction(
-    request,
-    reply,
-    "startPreparation",
-    {},
-    "Início de preparo enviado à plataforma"
-  ));
+  fastify.post("/orders/:id/start-preparation", (request, reply) =>
+    enqueueAction(request, reply, "startPreparation", {}, "Início de preparo enviado à plataforma"),
+  );
 
-  fastify.post("/orders/:id/ready", (request, reply) => enqueueAction(
-    request,
-    reply,
-    "ready",
-    {},
-    "Pronto enviado à plataforma"
-  ));
+  fastify.post("/orders/:id/ready", (request, reply) =>
+    enqueueAction(request, reply, "ready", {}, "Pronto enviado à plataforma"),
+  );
 }

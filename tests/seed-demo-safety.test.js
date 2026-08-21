@@ -9,12 +9,12 @@ import {
   DemoSeedRefusal,
   PROTECTED_TABLES,
   requestDemoSeed,
-  runSeedDemo
+  runSeedDemo,
 } from "../scripts/seed-demo.mjs";
 
 const TARGET = "127.0.0.1:5432/camoburguer_seed_test";
 const OPERATIONAL_TABLES = PROTECTED_TABLES.filter(
-  (table) => table !== "catalog_items" && table !== "stock_balances"
+  (table) => table !== "catalog_items" && table !== "stock_balances",
 );
 
 function catalogRows() {
@@ -30,7 +30,7 @@ function catalogRows() {
     available: item.available,
     origin: "olaclick_snapshot",
     source_version: CATALOG_CAPTURED_AT,
-    archived_at: null
+    archived_at: null,
   }));
 }
 
@@ -42,24 +42,25 @@ function fakeDb({ blocker = null } = {}) {
       queries.push(sql);
       if (sql.includes("current_database()")) {
         return {
-          rows: [{ database: "camoburguer_seed_test", address: "127.0.0.1", port: 5432 }]
+          rows: [{ database: "camoburguer_seed_test", address: "127.0.0.1", port: 5432 }],
         };
       }
       const exists = sql.match(/SELECT 1 FROM ([a-z_]+)/);
       if (exists) return { rows: [{ present: blocker === exists[1] }] };
       if (sql.includes("FROM stock_balances ORDER BY category")) {
         return {
-          rows: blocker === "stock_balances"
-            ? [
-                { category: "dog", quantity: 1 },
-                { category: "hamburguer", quantity: 0 },
-                { category: "xis", quantity: 0 }
-              ]
-            : [
-                { category: "dog", quantity: 0 },
-                { category: "hamburguer", quantity: 0 },
-                { category: "xis", quantity: 0 }
-              ]
+          rows:
+            blocker === "stock_balances"
+              ? [
+                  { category: "dog", quantity: 1 },
+                  { category: "hamburguer", quantity: 0 },
+                  { category: "xis", quantity: 0 },
+                ]
+              : [
+                  { category: "dog", quantity: 0 },
+                  { category: "hamburguer", quantity: 0 },
+                  { category: "xis", quantity: 0 },
+                ],
         };
       }
       if (sql.includes("FROM catalog_items") && sql.includes("ORDER BY sku")) {
@@ -68,13 +69,13 @@ function fakeDb({ blocker = null } = {}) {
         return { rows };
       }
       return { rows: [], rowCount: 0 };
-    }
+    },
   };
   return {
     queries,
     async transaction(work) {
       return work(client);
-    }
+    },
   };
 }
 
@@ -85,7 +86,7 @@ function validOptions(overrides = {}) {
     enabled: true,
     expectedTarget: TARGET,
     confirmedTarget: TARGET,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -103,7 +104,7 @@ test("gates recusam antes de abrir transação", async () => {
     [{ environment: "production" }, "environment_not_demo"],
     [{ enabled: false }, "seed_disabled"],
     [{ expectedTarget: "" }, "expected_target_missing"],
-    [{ expectedTarget: "postgres://user:secret@127.0.0.1:5432/test" }, "expected_target_invalid"]
+    [{ expectedTarget: "postgres://user:secret@127.0.0.1:5432/test" }, "expected_target_invalid"],
   ];
   for (const [override, code] of cases) {
     const db = fakeDb();
@@ -118,12 +119,18 @@ test("gates recusam antes de abrir transação", async () => {
 test("alvo e confirmação divergentes recusam antes do lock e de mutações", async () => {
   for (const override of [
     { expectedTarget: "127.0.0.1:5432/outro" },
-    { confirmedTarget: "127.0.0.1:5432/outro" }
+    { confirmedTarget: "127.0.0.1:5432/outro" },
   ]) {
     const db = fakeDb();
     await assert.rejects(runSeedDemo(db, validOptions(override)), DemoSeedRefusal);
-    assert.equal(db.queries.some((sql) => sql.startsWith("LOCK TABLE")), false);
-    assert.equal(db.queries.some((sql) => /\b(TRUNCATE|INSERT|UPDATE|DELETE)\b/.test(sql)), false);
+    assert.equal(
+      db.queries.some((sql) => sql.startsWith("LOCK TABLE")),
+      false,
+    );
+    assert.equal(
+      db.queries.some((sql) => /\b(TRUNCATE|INSERT|UPDATE|DELETE)\b/.test(sql)),
+      false,
+    );
   }
 });
 
@@ -138,7 +145,7 @@ test("preflight cobre as 14 tabelas e recusa cada classe sem mutação", async (
     assert.equal(
       db.queries.some((sql) => /\b(TRUNCATE|INSERT|UPDATE|DELETE)\b/.test(sql)),
       false,
-      blocker
+      blocker,
     );
   }
   assert.equal(OPERATIONAL_TABLES.length, 12);
@@ -148,12 +155,14 @@ test("baseline permitido bloqueia as 14 tabelas em ordem antes da primeira muta�
   const db = fakeDb();
   await runSeedDemo(db, validOptions());
   const lockIndex = db.queries.findIndex((sql) => sql.startsWith("LOCK TABLE"));
-  const mutationIndex = db.queries.findIndex((sql) => /\b(TRUNCATE|INSERT|UPDATE|DELETE)\b/.test(sql));
+  const mutationIndex = db.queries.findIndex((sql) =>
+    /\b(TRUNCATE|INSERT|UPDATE|DELETE)\b/.test(sql),
+  );
   assert.ok(lockIndex >= 0);
   assert.ok(mutationIndex > lockIndex);
   assert.equal(
     db.queries[lockIndex],
-    `LOCK TABLE ${PROTECTED_TABLES.join(", ")} IN ACCESS EXCLUSIVE MODE`
+    `LOCK TABLE ${PROTECTED_TABLES.join(", ")} IN ACCESS EXCLUSIVE MODE`,
   );
 });
 
@@ -169,13 +178,16 @@ test("falha injetada após a primeira mutação propaga para rollback da transa�
         rolledBack = true;
         throw error;
       }
-    }
+    },
   };
   await assert.rejects(
     runSeedDemo(db, validOptions({ injectFailureAfterFirstMutation: true })),
-    /Falha de teste injetada/
+    /Falha de teste injetada/,
   );
-  assert.equal(db.queries.some((sql) => sql.includes("TRUNCATE TABLE")), true);
+  assert.equal(
+    db.queries.some((sql) => sql.includes("TRUNCATE TABLE")),
+    true,
+  );
   assert.equal(rolledBack, true);
 });
 
@@ -186,7 +198,7 @@ test("CLI direto é somente cliente HTTP e autentica sem enviar segredo ao seed"
   assert.match(
     source,
     /from "\.\.\/packages\/domain\/index\.js"/,
-    "o módulo copiado para /app/scripts deve resolver o domínio sem depender do node_modules da API"
+    "o módulo copiado para /app/scripts deve resolver o domínio sem depender do node_modules da API",
   );
   assert.doesNotMatch(workflow, /-Atc \\"select host\(inet_server_addr\(\)\)/);
   assert.match(workflow, /-Atc "select host\(inet_server_addr\(\)\).*current_database\(\)"\)"/);
@@ -196,12 +208,14 @@ test("CLI direto é somente cliente HTTP e autentica sem enviar segredo ao seed"
   const server = http.createServer((request, response) => {
     if (request.url === "/auth/login") {
       let body = "";
-      request.on("data", (chunk) => { body += chunk; });
+      request.on("data", (chunk) => {
+        body += chunk;
+      });
       request.on("end", () => {
         loginBody = JSON.parse(body);
         response.setHeader("set-cookie", [
           "camoburguer_session=sessao; Path=/; HttpOnly",
-          "camoburguer_csrf=csrf; Path=/"
+          "camoburguer_csrf=csrf; Path=/",
         ]);
         response.writeHead(200, { "content-type": "application/json" });
         response.end(JSON.stringify({ csrfToken: "csrf" }));
@@ -214,21 +228,20 @@ test("CLI direto é somente cliente HTTP e autentica sem enviar segredo ao seed"
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
-  const child = spawn(process.execPath, [
-    "scripts/seed-demo.mjs",
-    `--confirm-target=${TARGET}`
-  ], {
+  const child = spawn(process.execPath, ["scripts/seed-demo.mjs", `--confirm-target=${TARGET}`], {
     cwd: process.cwd(),
     env: {
       ...process.env,
       DEMO_API_URL: `http://127.0.0.1:${address.port}`,
       ADMIN_PASSWORD: "arbitrario-um",
-      DATABASE_URL: "postgres://nao-deve-ser-usada"
+      DATABASE_URL: "postgres://nao-deve-ser-usada",
     },
-    stdio: ["ignore", "pipe", "pipe"]
+    stdio: ["ignore", "pipe", "pipe"],
   });
   let stderr = "";
-  child.stderr.on("data", (chunk) => { stderr += chunk; });
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+  });
   const exitCode = await new Promise((resolve) => child.once("exit", resolve));
   await new Promise((resolve) => server.close(resolve));
   assert.equal(exitCode, 1, stderr);
@@ -239,26 +252,28 @@ test("CLI direto é somente cliente HTTP e autentica sem enviar segredo ao seed"
   assert.match(stderr, /admin_auth_invalid/);
 
   let call = 0;
-  await assert.rejects(requestDemoSeed({
-    apiBase: "http://127.0.0.1:1",
-    password: "qualquer",
-    confirmedTarget: TARGET,
-    fetchImpl: async () => {
-      call += 1;
-      if (call === 1) {
-        return new Response(JSON.stringify({ csrfToken: "csrf" }), {
-          status: 200,
-          headers: [
-            ["content-type", "application/json"],
-            ["set-cookie", "camoburguer_session=sessao; Path=/; HttpOnly"],
-            ["set-cookie", "camoburguer_csrf=csrf; Path=/"]
-          ]
+  await assert.rejects(
+    requestDemoSeed({
+      apiBase: "http://127.0.0.1:1",
+      password: "qualquer",
+      confirmedTarget: TARGET,
+      fetchImpl: async () => {
+        call += 1;
+        if (call === 1) {
+          return new Response(JSON.stringify({ csrfToken: "csrf" }), {
+            status: 200,
+            headers: [
+              ["content-type", "application/json"],
+              ["set-cookie", "camoburguer_session=sessao; Path=/; HttpOnly"],
+              ["set-cookie", "camoburguer_csrf=csrf; Path=/"],
+            ],
+          });
+        }
+        return new Response(JSON.stringify({ code: "admin_auth_invalid", error: "Inválido" }), {
+          status: 403,
         });
-      }
-      return new Response(
-        JSON.stringify({ code: "admin_auth_invalid", error: "Inválido" }),
-        { status: 403 }
-      );
-    }
-  }), (error) => error.statusCode === 403 && error.code === "admin_auth_invalid");
+      },
+    }),
+    (error) => error.statusCode === 403 && error.code === "admin_auth_invalid",
+  );
 });

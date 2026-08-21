@@ -2,8 +2,16 @@ import { randomUUID } from "node:crypto";
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "::1", "localhost", "api", "host.docker.internal"]);
 const STEP_NAMES = [
-  "health", "login", "catalog", "inventory", "cash_shift", "order", "transitions",
-  "adjustment", "verify_order", "verify_finance"
+  "health",
+  "login",
+  "catalog",
+  "inventory",
+  "cash_shift",
+  "order",
+  "transitions",
+  "adjustment",
+  "verify_order",
+  "verify_finance",
 ];
 
 export function assertSafeSimulationBaseUrl(value) {
@@ -21,7 +29,10 @@ export function assertSafeSimulationBaseUrl(value) {
 
 function parseCookie(response) {
   const values = response.headers.getSetCookie?.() || [response.headers.get("set-cookie") || ""];
-  return values.map((value) => value.split(";")[0]).filter(Boolean).join("; ");
+  return values
+    .map((value) => value.split(";")[0])
+    .filter(Boolean)
+    .join("; ");
 }
 
 function validatePath(path) {
@@ -33,7 +44,7 @@ export function createSimulationClient({
   username,
   password,
   timeoutMs = 5_000,
-  fetchImpl = fetch
+  fetchImpl = fetch,
 }) {
   const base = assertSafeSimulationBaseUrl(baseUrl);
   let cookie = "";
@@ -52,10 +63,10 @@ export function createSimulationClient({
           ...(auth && method !== "GET" && method !== "HEAD" && csrfToken
             ? { "x-csrf-token": csrfToken }
             : {}),
-          ...headers
+          ...headers,
         },
         body: body === undefined ? undefined : JSON.stringify(body),
-        signal: AbortSignal.timeout(timeoutMs)
+        signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (cause) {
       throw new Error(`${stage}: falha de rede ou timeout em ${method} ${path}`, { cause });
@@ -77,11 +88,12 @@ export function createSimulationClient({
   }
 
   async function login() {
-    if (!username || !password) throw new Error("Credenciais demo são obrigatórias por configuração");
+    if (!username || !password)
+      throw new Error("Credenciais demo são obrigatórias por configuração");
     const { response, payload } = await request("login", "/auth/login", {
       method: "POST",
       auth: false,
-      body: { username, password }
+      body: { username, password },
     });
     cookie = parseCookie(response);
     csrfToken = String(payload?.csrfToken || "");
@@ -99,7 +111,7 @@ function mark(summary, name, status, detail = null) {
 export async function runSimulation(options = {}) {
   const summary = {
     ok: false,
-    steps: Object.fromEntries(STEP_NAMES.map((name) => [name, { status: "pending" }]))
+    steps: Object.fromEntries(STEP_NAMES.map((name) => [name, { status: "pending" }])),
   };
   const client = createSimulationClient(options);
   const execute = async (name, work) => {
@@ -112,7 +124,8 @@ export async function runSimulation(options = {}) {
       let blocked = false;
       for (const step of STEP_NAMES) {
         if (step === name) blocked = true;
-        else if (blocked && summary.steps[step].status === "pending") mark(summary, step, "skipped");
+        else if (blocked && summary.steps[step].status === "pending")
+          mark(summary, step, "skipped");
       }
       error.summary = summary;
       throw error;
@@ -133,12 +146,13 @@ export async function runSimulation(options = {}) {
   const catalog = await execute("inventory", async () => {
     const { payload } = await client.request("inventory", "/inventory");
     const quantities = Object.fromEntries(
-      (payload?.balances || []).map((balance) => [balance.category, Number(balance.quantity)])
+      (payload?.balances || []).map((balance) => [balance.category, Number(balance.quantity)]),
     );
-    const selected = catalogItems.find((item) =>
-      item.available !== false
-      && item.archivedAt == null
-      && (!item.stockCategory || quantities[item.stockCategory] > 0)
+    const selected = catalogItems.find(
+      (item) =>
+        item.available !== false &&
+        item.archivedAt == null &&
+        (!item.stockCategory || quantities[item.stockCategory] > 0),
     );
     if (!selected?.sku || !Number.isFinite(Number(selected.price))) {
       throw new Error("inventory: nenhum SKU disponível com estoque");
@@ -152,7 +166,7 @@ export async function runSimulation(options = {}) {
     try {
       const opened = await client.request("cash_shift", "/cash-shifts/open", {
         method: "POST",
-        body: { openingAmount: 120 }
+        body: { openingAmount: 120 },
       });
       if (!opened.payload?.id) throw new Error("cash_shift: resposta sem id");
       return opened.payload;
@@ -174,29 +188,31 @@ export async function runSimulation(options = {}) {
         customerName: "Cliente Demo",
         fulfillmentMode: "pickup",
         paymentMethod: "pix",
-        items: [{ sku: catalog.sku, quantity: 1 }]
-      }
+        items: [{ sku: catalog.sku, quantity: 1 }],
+      },
     });
     if (!payload?.id || !payload?.status) throw new Error("order: resposta sem id/status");
     return payload;
   });
   await execute("transitions", async () => {
-    const transitions = order.status === "confirmed"
-      ? ["in_preparation", "ready", "completed"]
-      : order.status === "in_preparation"
-      ? ["ready", "completed"]
-      : order.status === "ready"
-      ? ["completed"]
-      : [];
+    const transitions =
+      order.status === "confirmed"
+        ? ["in_preparation", "ready", "completed"]
+        : order.status === "in_preparation"
+          ? ["ready", "completed"]
+          : order.status === "ready"
+            ? ["completed"]
+            : [];
     if (!transitions.length && order.status !== "completed") {
       throw new Error(`transitions: status inicial não suportado (${order.status})`);
     }
     for (const status of transitions) {
       const result = await client.request("transitions", `/orders/${order.id}/status`, {
         method: "PATCH",
-        body: { status }
+        body: { status },
       });
-      if (result.payload?.status !== status) throw new Error(`transitions: status ${status} não confirmado`);
+      if (result.payload?.status !== status)
+        throw new Error(`transitions: status ${status} não confirmado`);
       order = result.payload;
     }
   });
@@ -205,9 +221,10 @@ export async function runSimulation(options = {}) {
     const { payload } = await client.request("adjustment", `/cash-shifts/${shift.id}/adjustments`, {
       method: "POST",
       headers: { "Idempotency-Key": adjustmentKey },
-      body: { kind: "withdrawal", amount: 1, reason: "Sangria demo simulada" }
+      body: { kind: "withdrawal", amount: 1, reason: "Sangria demo simulada" },
     });
-    if (payload?.entry?.type !== "cash_withdrawal") throw new Error("adjustment: efeito não confirmado");
+    if (payload?.entry?.type !== "cash_withdrawal")
+      throw new Error("adjustment: efeito não confirmado");
   });
   await execute("verify_order", async () => {
     const { payload } = await client.request("verify_order", "/orders");
@@ -215,7 +232,10 @@ export async function runSimulation(options = {}) {
     if (saved?.status !== "completed") throw new Error("verify_order: pedido não concluído");
   });
   await execute("verify_finance", async () => {
-    const { payload } = await client.request("verify_finance", `/finance/entries?shiftId=${encodeURIComponent(shift.id)}`);
+    const { payload } = await client.request(
+      "verify_finance",
+      `/finance/entries?shiftId=${encodeURIComponent(shift.id)}`,
+    );
     const entries = Array.isArray(payload?.items) ? payload.items : [];
     if (!entries.some((entry) => entry.type === "cash_withdrawal")) {
       throw new Error("verify_finance: sangria não encontrada");

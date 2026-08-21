@@ -4,13 +4,13 @@ import {
   authenticate,
   canRoleTransitionOrderStatus,
   ensureBootstrapAdmin,
-  hasPermission,
   hashPassword,
+  hasPermission,
   login,
   permissionForRequest,
   revokeSession,
   validateCsrf,
-  verifyPassword
+  verifyPassword,
 } from "../apps/api/src/auth.js";
 
 test("senha scrypt e verificavel sem aceitar senha diferente", async () => {
@@ -55,17 +55,19 @@ test("CSRF emitido no login fica vinculado a sessao", async () => {
   const db = {
     async query(sql, values) {
       if (sql.startsWith("SELECT id")) {
-        return { rows: [{ id: "u1", username: "admin", role: "admin", password_hash: passwordHash }] };
+        return {
+          rows: [{ id: "u1", username: "admin", role: "admin", password_hash: passwordHash }],
+        };
       }
       insertValues = values;
       return { rows: [] };
-    }
+    },
   };
   const result = await login(db, {
     username: "admin",
     password: "senha-de-teste-segura",
     ip: "127.0.0.1",
-    now: new Date("2026-07-28T12:00:00Z")
+    now: new Date("2026-07-28T12:00:00Z"),
   });
   assert.equal(result.ok, true);
   assert.equal(validateCsrf({ csrfHash: insertValues[2] }, result.csrfToken), true);
@@ -80,7 +82,7 @@ test("login limita cinco falhas por IP e identificador em 15 minutos", async () 
       username: "ausente-rate-test",
       password: "incorreta",
       ip: "127.0.0.77",
-      now
+      now,
     });
     assert.equal(result.ok, false);
     assert.equal(result.rateLimited, undefined);
@@ -89,7 +91,7 @@ test("login limita cinco falhas por IP e identificador em 15 minutos", async () 
     username: "ausente-rate-test",
     password: "incorreta",
     ip: "127.0.0.77",
-    now
+    now,
   });
   assert.equal(limited.rateLimited, true);
   assert.deepEqual(limited.body, { error: "Credenciais invalidas" });
@@ -99,16 +101,18 @@ test("sessao expirada por inatividade ou limite absoluto e recusada", async () =
   const now = new Date("2026-07-28T14:00:00Z");
   const db = {
     query: async () => ({
-      rows: [{
-        id: "s1",
-        user_id: "u1",
-        csrf_hash: "hash",
-        username: "admin",
-        role: "admin",
-        idle_expires_at: new Date(now.getTime() - 1),
-        expires_at: new Date(now.getTime() + 60_000)
-      }]
-    })
+      rows: [
+        {
+          id: "s1",
+          user_id: "u1",
+          csrf_hash: "hash",
+          username: "admin",
+          role: "admin",
+          idle_expires_at: new Date(now.getTime() - 1),
+          expires_at: new Date(now.getTime() + 60_000),
+        },
+      ],
+    }),
   };
   assert.equal(await authenticate(db, "token", now), null);
 });
@@ -117,16 +121,18 @@ test("limite absoluto expirado e recusado mesmo com inatividade valida", async (
   const now = new Date("2026-07-28T14:00:00Z");
   const db = {
     query: async () => ({
-      rows: [{
-        id: "s-absolute",
-        user_id: "u1",
-        csrf_hash: "hash",
-        username: "admin",
-        role: "admin",
-        idle_expires_at: new Date(now.getTime() + 60_000),
-        expires_at: new Date(now.getTime() - 1)
-      }]
-    })
+      rows: [
+        {
+          id: "s-absolute",
+          user_id: "u1",
+          csrf_hash: "hash",
+          username: "admin",
+          role: "admin",
+          idle_expires_at: new Date(now.getTime() + 60_000),
+          expires_at: new Date(now.getTime() - 1),
+        },
+      ],
+    }),
   };
   assert.equal(await authenticate(db, "absolute-token", now), null);
 });
@@ -140,13 +146,13 @@ test("falha de persistencia ao revogar fecha a sessao no processo", async () => 
     username: "admin",
     role: "admin",
     idle_expires_at: new Date(Date.now() + 60_000),
-    expires_at: new Date(Date.now() + 120_000)
+    expires_at: new Date(Date.now() + 120_000),
   };
   const db = {
     async query(sql) {
       if (sql.startsWith("UPDATE auth_sessions SET revoked_at")) throw new Error("db write failed");
       return { rows: [validSession] };
-    }
+    },
   };
   await assert.rejects(revokeSession(db, token), /db write failed/);
   assert.equal(await authenticate(db, token), null);
@@ -175,15 +181,17 @@ test("bootstrap demo reseta a senha do usuario admin existente e revoga sessoes"
             return { rowCount: 1, rows: [{ id: "u-admin" }] };
           }
           return { rowCount: 0, rows: [] };
-        }
+        },
       });
-    }
+    },
   };
 
   await ensureBootstrapAdmin(db, "CamoburguerDemo!2026", { resetExisting: true });
 
   const updateUser = calls.find((call) => call.sql.startsWith("UPDATE users SET role = 'admin'"));
-  const revokeSessions = calls.find((call) => call.sql.startsWith("UPDATE auth_sessions SET revoked_at"));
+  const revokeSessions = calls.find((call) =>
+    call.sql.startsWith("UPDATE auth_sessions SET revoked_at"),
+  );
   assert.ok(updateUser);
   assert.equal(updateUser.values[0], "u-admin");
   assert.match(updateUser.values[1], /^scrypt-v1\$/);
@@ -202,13 +210,19 @@ test("bootstrap padrao preserva admin existente sem resetar senha", async () => 
             return { rowCount: 1, rows: [{ id: "u-admin" }] };
           }
           return { rowCount: 0, rows: [] };
-        }
+        },
       });
-    }
+    },
   };
 
   await ensureBootstrapAdmin(db, "CamoburguerDemo!2026");
 
-  assert.equal(calls.some((call) => call.sql.startsWith("UPDATE users SET role = 'admin'")), false);
-  assert.equal(calls.some((call) => call.sql.startsWith("UPDATE auth_sessions SET revoked_at")), false);
+  assert.equal(
+    calls.some((call) => call.sql.startsWith("UPDATE users SET role = 'admin'")),
+    false,
+  );
+  assert.equal(
+    calls.some((call) => call.sql.startsWith("UPDATE auth_sessions SET revoked_at")),
+    false,
+  );
 });

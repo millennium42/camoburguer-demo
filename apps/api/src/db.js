@@ -1,6 +1,6 @@
-import pg from "pg";
-import { toMoney } from "@camoburguer/shared-types";
 import { CATALOG, CATALOG_CAPTURED_AT } from "@camoburguer/domain";
+import { toMoney } from "@camoburguer/shared-types";
+import pg from "pg";
 
 const { Pool, types } = pg;
 
@@ -9,12 +9,28 @@ types.setTypeParser(1700, (value) => Number(value));
 const schemaSql = `
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
   username TEXT NOT NULL UNIQUE,
   role TEXT NOT NULL CHECK (role IN ('admin', 'operator', 'kitchen')),
   password_hash TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   credential_changed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT NULL;
+UPDATE users SET name = username WHERE name IS NULL;
+UPDATE users SET email = username || '@camoburguer.local' WHERE email IS NULL;
+ALTER TABLE users ALTER COLUMN name SET NOT NULL;
+ALTER TABLE users ALTER COLUMN email SET NOT NULL;
+
+DO $migration$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_email_unique') THEN
+    ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
+  END IF;
+END $migration$;
 
 CREATE TABLE IF NOT EXISTS auth_sessions (
   id TEXT PRIMARY KEY,
@@ -484,24 +500,30 @@ export function createDb(connectionString) {
     async init() {
       // Check for duplicate channel mappings (M-03)
       const { rows: tableCheck } = await pool.query(
-        "SELECT 1 FROM information_schema.tables WHERE table_name = 'channel_mappings'"
+        "SELECT 1 FROM information_schema.tables WHERE table_name = 'channel_mappings'",
       );
       if (tableCheck.length > 0) {
         const { rows: duplicates } = await pool.query(
-          "SELECT order_id FROM channel_mappings GROUP BY order_id HAVING COUNT(*) > 1 LIMIT 1"
+          "SELECT order_id FROM channel_mappings GROUP BY order_id HAVING COUNT(*) > 1 LIMIT 1",
         );
         if (duplicates.length > 0) {
-          throw new Error(`Invariante quebrado: Existem multiplos mapeamentos para o mesmo pedido em channel_mappings (ex: order_id=${duplicates[0].order_id}). Remova a duplicata manualmente antes de migrar.`);
+          throw new Error(
+            `Invariante quebrado: Existem multiplos mapeamentos para o mesmo pedido em channel_mappings (ex: order_id=${duplicates[0].order_id}). Remova a duplicata manualmente antes de migrar.`,
+          );
         }
       }
 
       // Check for multiple open cash shifts (M-05)
       try {
-        const { rows } = await pool.query("SELECT id, opened_at FROM cash_shifts WHERE status = 'open'");
+        const { rows } = await pool.query(
+          "SELECT id, opened_at FROM cash_shifts WHERE status = 'open'",
+        );
         if (rows.length > 1) {
-          const ids = rows.map(r => r.id).join(', ');
-          const times = rows.map(r => new Date(r.opened_at).toISOString()).join(', ');
-          console.error(`[FATAL] Detectados múltiplos caixas abertos: IDs (${ids}) abertos em (${times}). Falha de segurança. Reconciliação manual obrigatória. Consulte o runbook em docs/operacao/runbook-duplicatas.md`);
+          const ids = rows.map((r) => r.id).join(", ");
+          const times = rows.map((r) => new Date(r.opened_at).toISOString()).join(", ");
+          console.error(
+            `[FATAL] Detectados múltiplos caixas abertos: IDs (${ids}) abertos em (${times}). Falha de segurança. Reconciliação manual obrigatória. Consulte o runbook em docs/operacao/runbook-duplicatas.md`,
+          );
           process.exit(1);
         }
       } catch (e) {
@@ -520,17 +542,22 @@ export function createDb(connectionString) {
           stock_category text, allows_addons boolean, preparation_mode text, available boolean
         )
         ON CONFLICT (sku) DO NOTHING`,
-        [JSON.stringify(CATALOG.map((item) => ({
-          sku: item.sku,
-          name: item.name,
-          category: item.category,
-          price: item.price,
-          description: item.description,
-          stock_category: item.stockCategory,
-          allows_addons: item.allowsAddons,
-          preparation_mode: item.preparationMode,
-          available: item.available
-        }))), CATALOG_CAPTURED_AT]
+        [
+          JSON.stringify(
+            CATALOG.map((item) => ({
+              sku: item.sku,
+              name: item.name,
+              category: item.category,
+              price: item.price,
+              description: item.description,
+              stock_category: item.stockCategory,
+              allows_addons: item.allowsAddons,
+              preparation_mode: item.preparationMode,
+              available: item.available,
+            })),
+          ),
+          CATALOG_CAPTURED_AT,
+        ],
       );
     },
     async query(text, values = []) {
@@ -556,17 +583,21 @@ export function createDb(connectionString) {
       const redactJson = (value) => {
         if (Array.isArray(value)) return value.map(redactJson);
         if (value && typeof value === "object") {
-          return Object.fromEntries(Object.entries(value).map(([key, nested]) => [key, redactJson(nested)]));
+          return Object.fromEntries(
+            Object.entries(value).map(([key, nested]) => [key, redactJson(nested)]),
+          );
         }
         return typeof value === "string" ? anonymizedText : value;
       };
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`privacy:${idempotencyKey}`]);
+        await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+          `privacy:${idempotencyKey}`,
+        ]);
         const existing = await client.query(
           "SELECT * FROM privacy_requests WHERE idempotency_key = $1 FOR UPDATE",
-          [idempotencyKey]
+          [idempotencyKey],
         );
         if (existing.rows[0]) {
           if (existing.rows[0].fingerprint !== requestFingerprint) {
@@ -580,13 +611,13 @@ export function createDb(connectionString) {
             requestId: existing.rows[0].id,
             status: existing.rows[0].status,
             ...existing.rows[0].result,
-            repeated: true
+            repeated: true,
           };
         }
         await client.query(
           `INSERT INTO privacy_requests (id, idempotency_key, fingerprint, status)
            VALUES ($1,$2,$3,'processing')`,
-          [requestId, idempotencyKey, requestFingerprint]
+          [requestId, idempotencyKey, requestFingerprint],
         );
 
         const { rows: orders } = await client.query(
@@ -596,7 +627,7 @@ export function createDb(connectionString) {
              || items::text || ' ' || metadata::text
            )) > 0
            FOR UPDATE`,
-          [term]
+          [term],
         );
         const orderIds = orders.map((row) => row.id);
         const tabIds = [...new Set(orders.map((row) => row.tab_id).filter(Boolean))];
@@ -607,7 +638,12 @@ export function createDb(connectionString) {
                  delivery_address = CASE WHEN fulfillment_mode = 'delivery' THEN $2 ELSE NULL END,
                  notes = $2, items = $3::jsonb, metadata = $4::jsonb, updated_at = NOW()
              WHERE id = $1`,
-            [row.id, anonymizedText, JSON.stringify(redactJson(row.items)), JSON.stringify(redactJson(row.metadata))]
+            [
+              row.id,
+              anonymizedText,
+              JSON.stringify(redactJson(row.items)),
+              JSON.stringify(redactJson(row.metadata)),
+            ],
           );
         }
 
@@ -616,10 +652,13 @@ export function createDb(connectionString) {
            WHERE id = ANY($2::text[])
               OR POSITION(LOWER($1) IN LOWER(COALESCE(customer_name, ''))) > 0
            FOR UPDATE`,
-          [term, tabIds]
+          [term, tabIds],
         );
         for (const row of tabs) {
-          await client.query("UPDATE service_tabs SET customer_name = $2 WHERE id = $1", [row.id, anonymizedText]);
+          await client.query("UPDATE service_tabs SET customer_name = $2 WHERE id = $1", [
+            row.id,
+            anonymizedText,
+          ]);
         }
         const allTabIds = [...new Set([...tabIds, ...tabs.map((row) => row.id)])];
 
@@ -628,12 +667,12 @@ export function createDb(connectionString) {
            WHERE order_id = ANY($2::text[])
               OR POSITION(LOWER($1) IN LOWER(metadata::text || ' ' || label)) > 0
            FOR UPDATE`,
-          [term, orderIds]
+          [term, orderIds],
         );
         for (const row of finance) {
           await client.query(
             "UPDATE finance_entries SET label = $2, metadata = $3::jsonb WHERE id = $1",
-            [row.id, anonymizedText, JSON.stringify(redactJson(row.metadata))]
+            [row.id, anonymizedText, JSON.stringify(redactJson(row.metadata))],
           );
         }
 
@@ -645,7 +684,7 @@ export function createDb(connectionString) {
                    IN LOWER(metadata::text || ' ' || merchant_id || ' ' || external_id)
                  ) > 0
            FOR UPDATE`,
-          [term, orderIds]
+          [term, orderIds],
         );
         const externalIds = mappings.map((row) => row.external_id);
         for (const row of mappings) {
@@ -658,8 +697,8 @@ export function createDb(connectionString) {
               row.id,
               `anon-merchant:${row.id}`,
               `anon-order:${row.id}`,
-              JSON.stringify(redactJson(row.metadata))
-            ]
+              JSON.stringify(redactJson(row.metadata)),
+            ],
           );
         }
 
@@ -676,7 +715,7 @@ export function createDb(connectionString) {
                    )
                  ) > 0
            FOR UPDATE`,
-          [term, externalIds]
+          [term, externalIds],
         );
         for (const row of events) {
           await client.query(
@@ -691,8 +730,8 @@ export function createDb(connectionString) {
               `anon-event:${row.id}`,
               `anon-merchant:${row.id}`,
               `anon-order:${row.id}`,
-              JSON.stringify(redactJson(row.payload))
-            ]
+              JSON.stringify(redactJson(row.payload)),
+            ],
           );
         }
 
@@ -700,7 +739,7 @@ export function createDb(connectionString) {
           ["channel_commands", "payload", "order_id", orderIds],
           ["order_tab_assignments", "normalized_payload", "order_id", orderIds],
           ["tab_payments", "metadata", "tab_id", allTabIds],
-          ["stock_movements", "metadata", "order_id", orderIds]
+          ["stock_movements", "metadata", "order_id", orderIds],
         ];
         const jsonCounts = {};
         for (const [table, column, relation, ids] of jsonTables) {
@@ -709,7 +748,7 @@ export function createDb(connectionString) {
              WHERE ${relation} = ANY($2::text[])
                 OR POSITION(LOWER($1) IN LOWER(${column}::text)) > 0
              FOR UPDATE`,
-            [term, ids]
+            [term, ids],
           );
           for (const row of rows) {
             await client.query(
@@ -720,7 +759,7 @@ export function createDb(connectionString) {
                WHERE id = $1`,
               table === "stock_movements"
                 ? [row.id, JSON.stringify(redactJson(row.payload)), anonymizedText]
-                : [row.id, JSON.stringify(redactJson(row.payload))]
+                : [row.id, JSON.stringify(redactJson(row.payload))],
             );
           }
           jsonCounts[table] = rows.length;
@@ -729,7 +768,7 @@ export function createDb(connectionString) {
           `UPDATE cash_shifts SET notes = $2
            WHERE POSITION(LOWER($1) IN LOWER(notes)) > 0
            RETURNING id`,
-          [term, anonymizedText]
+          [term, anonymizedText],
         );
         const { rows: printJobs } = await client.query(
           `UPDATE print_jobs
@@ -738,7 +777,7 @@ export function createDb(connectionString) {
            WHERE order_id = ANY($3::text[])
               OR POSITION(LOWER($1) IN LOWER(content)) > 0
            RETURNING id, order_id`,
-          [term, requestId, orderIds]
+          [term, requestId, orderIds],
         );
 
         const result = {
@@ -751,20 +790,20 @@ export function createDb(connectionString) {
           anonymizedCashShifts: shifts.length,
           anonymizedJsonRecords: jsonCounts,
           printArtifacts: printJobs.map((row) => ({ jobId: row.id, orderId: row.order_id })),
-          backupPolicy: "provider_retention_not_modified"
+          backupPolicy: "provider_retention_not_modified",
         };
         await client.query(
           `UPDATE privacy_requests
            SET status = 'db_completed', result = $2::jsonb, updated_at = NOW()
            WHERE id = $1`,
-          [requestId, JSON.stringify(result)]
+          [requestId, JSON.stringify(result)],
         );
         await client.query("COMMIT");
         return {
           requestId,
           status: "db_completed",
           ...result,
-          repeated: false
+          repeated: false,
         };
       } catch (error) {
         await client.query("ROLLBACK");
@@ -778,13 +817,13 @@ export function createDb(connectionString) {
         `UPDATE privacy_requests
          SET status = $2, result = $3::jsonb, updated_at = NOW()
          WHERE id = $1 RETURNING *`,
-        [requestId, status, JSON.stringify(result)]
+        [requestId, status, JSON.stringify(result)],
       );
       return rows[0];
     },
     async close() {
       await pool.end();
-    }
+    },
   };
 }
 
@@ -810,7 +849,7 @@ export function mapOrder(row) {
     metadata: row.metadata || {},
     hasChannelMapping: Boolean(row.has_channel_mapping),
     createdAt: new Date(row.created_at).toISOString(),
-    updatedAt: new Date(row.updated_at).toISOString()
+    updatedAt: new Date(row.updated_at).toISOString(),
   };
 }
 
@@ -823,7 +862,7 @@ export function mapTab(row) {
     status: row.status,
     finalTotal: row.final_total == null ? null : toMoney(row.final_total),
     openedAt: new Date(row.opened_at).toISOString(),
-    closedAt: row.closed_at ? new Date(row.closed_at).toISOString() : null
+    closedAt: row.closed_at ? new Date(row.closed_at).toISOString() : null,
   };
 }
 
@@ -839,7 +878,7 @@ export function mapTabPayment(row) {
     amount: toMoney(Number(row.amount_cents) / 100),
     idempotencyKey: row.idempotency_key,
     metadata: row.metadata || {},
-    createdAt: new Date(row.created_at).toISOString()
+    createdAt: new Date(row.created_at).toISOString(),
   };
 }
 
@@ -856,7 +895,7 @@ export function mapFinanceEntry(row) {
     source: row.source,
     label: row.label,
     metadata: row.metadata || {},
-    occurredAt: new Date(row.occurred_at).toISOString()
+    occurredAt: new Date(row.occurred_at).toISOString(),
   };
 }
 
@@ -870,7 +909,7 @@ export function mapShift(row) {
     differenceAmount: row.difference_amount == null ? null : toMoney(row.difference_amount),
     notes: row.notes,
     openedAt: new Date(row.opened_at).toISOString(),
-    closedAt: row.closed_at ? new Date(row.closed_at).toISOString() : null
+    closedAt: row.closed_at ? new Date(row.closed_at).toISOString() : null,
   };
 }
 
@@ -886,7 +925,7 @@ export function mapChannelMapping(row) {
     syncError: row.sync_error,
     metadata: row.metadata || {},
     createdAt: new Date(row.created_at).toISOString(),
-    updatedAt: new Date(row.updated_at).toISOString()
+    updatedAt: new Date(row.updated_at).toISOString(),
   };
 }
 
@@ -903,7 +942,7 @@ export function mapChannelEvent(row) {
     error: row.error,
     occurredAt: row.occurred_at ? new Date(row.occurred_at).toISOString() : null,
     receivedAt: new Date(row.received_at).toISOString(),
-    processedAt: row.processed_at ? new Date(row.processed_at).toISOString() : null
+    processedAt: row.processed_at ? new Date(row.processed_at).toISOString() : null,
   };
 }
 
@@ -930,6 +969,6 @@ export function mapChannelCommand(row) {
     eventDeadlineAt: row.event_deadline_at ? new Date(row.event_deadline_at).toISOString() : null,
     deadLetteredAt: row.dead_lettered_at ? new Date(row.dead_lettered_at).toISOString() : null,
     createdAt: new Date(row.created_at).toISOString(),
-    completedAt: row.completed_at ? new Date(row.completed_at).toISOString() : null
+    completedAt: row.completed_at ? new Date(row.completed_at).toISOString() : null,
   };
 }

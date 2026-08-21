@@ -6,7 +6,7 @@ export const ORDER_STATUSES = [
   "in_preparation",
   "ready",
   "completed",
-  "cancelled"
+  "cancelled",
 ];
 export const PAYMENT_METHODS = [
   "cash",
@@ -15,7 +15,7 @@ export const PAYMENT_METHODS = [
   "debit_card",
   "app_paid",
   "mixed",
-  "payment_reconciliation_required"
+  "payment_reconciliation_required",
 ];
 export const FINANCE_ENTRY_TYPES = [
   "sale",
@@ -23,7 +23,7 @@ export const FINANCE_ENTRY_TYPES = [
   "opening",
   "cash_reinforcement",
   "cash_withdrawal",
-  "closing_adjustment"
+  "closing_adjustment",
 ];
 export const SHIFT_STATUSES = ["open", "closed"];
 
@@ -33,16 +33,10 @@ export const SYNC_STATUSES = [
   "preparation_pending",
   "ready_pending",
   "cancel_pending",
-  "sync_failed"
+  "sync_failed",
 ];
 
-export const COMMAND_STATUSES = [
-  "pending",
-  "processing",
-  "awaiting_event",
-  "completed",
-  "failed"
-];
+export const COMMAND_STATUSES = ["pending", "processing", "awaiting_event", "completed", "failed"];
 
 export const INTEGRATION_CHANNELS = ["deliverymuch", "ifood"];
 

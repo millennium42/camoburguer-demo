@@ -4,11 +4,11 @@ import fastify from "fastify";
 import {
   authenticate,
   canRoleTransitionOrderStatus,
-  hasPermission,
   hashPassword,
+  hasPermission,
   login,
   permissionForRequest,
-  validateCsrf
+  validateCsrf,
 } from "../apps/api/src/auth.js";
 
 function createMockDb() {
@@ -37,7 +37,7 @@ function createMockDb() {
           last_seen_at: values[4],
           idle_expires_at: values[5],
           expires_at: values[6],
-          revoked_at: null
+          revoked_at: null,
         });
         return { rows: [] };
       }
@@ -47,15 +47,17 @@ function createMockDb() {
           if (session.token_hash === tokenHash && !session.revoked_at) {
             const user = users.get(session.user_id);
             return {
-              rows: [{
-                id: session.id,
-                user_id: session.user_id,
-                csrf_hash: session.csrf_hash,
-                expires_at: session.expires_at,
-                idle_expires_at: session.idle_expires_at,
-                username: user.username,
-                role: user.role
-              }]
+              rows: [
+                {
+                  id: session.id,
+                  user_id: session.user_id,
+                  csrf_hash: session.csrf_hash,
+                  expires_at: session.expires_at,
+                  idle_expires_at: session.idle_expires_at,
+                  username: user.username,
+                  role: user.role,
+                },
+              ],
             };
           }
         }
@@ -65,7 +67,7 @@ function createMockDb() {
         return { rows: [] };
       }
       return { rows: [] };
-    }
+    },
   };
 }
 
@@ -85,12 +87,19 @@ async function createTestApp(db, ordersStore = {}) {
   app.addHook("preHandler", async (request, reply) => {
     const path = request.url.split("?")[0];
     if (path === "/auth/login") return;
-    const session = await authenticate(db, readCookie(request, "camoburguer_session"), new Date("2026-07-28T14:00:00Z"));
+    const session = await authenticate(
+      db,
+      readCookie(request, "camoburguer_session"),
+      new Date("2026-07-28T14:00:00Z"),
+    );
     if (!session) return reply.code(401).send({ error: "Nao autorizado" });
     request.auth = session;
     if (isMutation(request.method)) {
       const suppliedCsrf = String(request.headers["x-csrf-token"] || "");
-      if (suppliedCsrf !== readCookie(request, "camoburguer_csrf") || !validateCsrf(session, suppliedCsrf)) {
+      if (
+        suppliedCsrf !== readCookie(request, "camoburguer_csrf") ||
+        !validateCsrf(session, suppliedCsrf)
+      ) {
         return reply.code(403).send({ error: "CSRF invalido" });
       }
     }
@@ -106,12 +115,12 @@ async function createTestApp(db, ordersStore = {}) {
       username: request.body.username,
       password: request.body.password,
       ip: "127.0.0.1",
-      now: new Date("2026-07-28T14:00:00Z")
+      now: new Date("2026-07-28T14:00:00Z"),
     });
     if (!res.ok) return reply.code(401).send(res.body);
     reply.header("set-cookie", [
       `camoburguer_session=${res.token}; Path=/; HttpOnly`,
-      `camoburguer_csrf=${res.csrfToken}; Path=/`
+      `camoburguer_csrf=${res.csrfToken}; Path=/`,
     ]);
     return reply.send({ user: res.user, csrfToken: res.csrfToken });
   });
@@ -142,14 +151,29 @@ async function createTestApp(db, ordersStore = {}) {
 test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transições granulares e RBAC", async () => {
   const db = createMockDb();
   const pwdHash = await hashPassword("senha-segura-123");
-  db.users.set("ukitchen", { id: "ukitchen", username: "kitchen", role: "kitchen", password_hash: pwdHash });
-  db.users.set("uoperator", { id: "uoperator", username: "operator", role: "operator", password_hash: pwdHash });
-  db.users.set("uadmin", { id: "uadmin", username: "admin", role: "admin", password_hash: pwdHash });
+  db.users.set("ukitchen", {
+    id: "ukitchen",
+    username: "kitchen",
+    role: "kitchen",
+    password_hash: pwdHash,
+  });
+  db.users.set("uoperator", {
+    id: "uoperator",
+    username: "operator",
+    role: "operator",
+    password_hash: pwdHash,
+  });
+  db.users.set("uadmin", {
+    id: "uadmin",
+    username: "admin",
+    role: "admin",
+    password_hash: pwdHash,
+  });
 
   const ordersStore = {
-    "o1": { id: "o1", status: "confirmed" },
-    "o2": { id: "o2", status: "in_preparation" },
-    "o3": { id: "o3", status: "confirmed" }
+    o1: { id: "o1", status: "confirmed" },
+    o2: { id: "o2", status: "in_preparation" },
+    o3: { id: "o3", status: "confirmed" },
   };
 
   const app = await createTestApp(db, ordersStore);
@@ -158,12 +182,12 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     const res = await app.inject({
       method: "POST",
       url: "/auth/login",
-      payload: { username, password: "senha-segura-123" }
+      payload: { username, password: "senha-segura-123" },
     });
     assert.equal(res.statusCode, 200);
     const setCookies = res.headers["set-cookie"] || [];
     const cookieString = (Array.isArray(setCookies) ? setCookies : [setCookies])
-      .map(c => c.split(";")[0])
+      .map((c) => c.split(";")[0])
       .join("; ");
     const body = JSON.parse(res.payload);
     return { cookie: cookieString, csrfToken: body.csrfToken };
@@ -178,7 +202,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     method: "PATCH",
     url: "/orders/o1/discount",
     headers: { cookie: kitchenAuth.cookie, "x-csrf-token": kitchenAuth.csrfToken },
-    payload: { discountPercent: 20, status: "in_preparation" }
+    payload: { discountPercent: 20, status: "in_preparation" },
   });
   assert.equal(exploitRes.statusCode, 403);
   assert.deepEqual(JSON.parse(exploitRes.payload), { error: "Permissao insuficiente" });
@@ -188,7 +212,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     method: "POST",
     url: "/orders",
     headers: { cookie: kitchenAuth.cookie, "x-csrf-token": kitchenAuth.csrfToken },
-    payload: { sku: "burger", quantity: 1 }
+    payload: { sku: "burger", quantity: 1 },
   });
   assert.equal(createRes.statusCode, 403);
 
@@ -196,7 +220,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     method: "POST",
     url: "/orders/o1/tab-assignment",
     headers: { cookie: kitchenAuth.cookie, "x-csrf-token": kitchenAuth.csrfToken },
-    payload: { tabId: "t1" }
+    payload: { tabId: "t1" },
   });
   assert.equal(tabRes.statusCode, 403);
 
@@ -204,7 +228,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     method: "POST",
     url: "/orders/o1/reprint",
     headers: { cookie: kitchenAuth.cookie, "x-csrf-token": kitchenAuth.csrfToken },
-    payload: {}
+    payload: {},
   });
   assert.equal(reprintRes.statusCode, 403);
 
@@ -213,7 +237,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     method: "PATCH",
     url: "/orders/o1/status",
     headers: { cookie: kitchenAuth.cookie, "x-csrf-token": kitchenAuth.csrfToken },
-    payload: { status: "in_preparation" }
+    payload: { status: "in_preparation" },
   });
   assert.equal(prepRes.statusCode, 200);
   assert.equal(ordersStore.o1.status, "in_preparation");
@@ -222,7 +246,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     method: "PATCH",
     url: "/orders/o2/status",
     headers: { cookie: kitchenAuth.cookie, "x-csrf-token": kitchenAuth.csrfToken },
-    payload: { status: "ready" }
+    payload: { status: "ready" },
   });
   assert.equal(readyRes.statusCode, 200);
   assert.equal(ordersStore.o2.status, "ready");
@@ -232,7 +256,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     method: "PATCH",
     url: "/orders/o3/status",
     headers: { cookie: kitchenAuth.cookie, "x-csrf-token": kitchenAuth.csrfToken },
-    payload: { status: "cancelled" }
+    payload: { status: "cancelled" },
   });
   assert.equal(cancelRes.statusCode, 403);
   assert.equal(ordersStore.o3.status, "confirmed");
@@ -242,7 +266,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     method: "PATCH",
     url: "/orders/o3/discount",
     headers: { cookie: operatorAuth.cookie, "x-csrf-token": operatorAuth.csrfToken },
-    payload: { discountPercent: 10 }
+    payload: { discountPercent: 10 },
   });
   assert.equal(opDiscountRes.statusCode, 200);
 
@@ -250,7 +274,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
     method: "POST",
     url: "/orders/o3/reprint",
     headers: { cookie: adminAuth.cookie, "x-csrf-token": adminAuth.csrfToken },
-    payload: {}
+    payload: {},
   });
   assert.equal(adminReprintRes.statusCode, 200);
 
@@ -258,7 +282,7 @@ test("suíte HTTP de integração valida bloqueio de exploit da cozinha, transi�
   const unclassifiedRes = await app.inject({
     method: "GET",
     url: "/rota-nova-nao-classificada",
-    headers: { cookie: operatorAuth.cookie }
+    headers: { cookie: operatorAuth.cookie },
   });
   assert.equal(unclassifiedRes.statusCode, 401);
   assert.deepEqual(JSON.parse(unclassifiedRes.payload), { error: "Rota nao classificada" });

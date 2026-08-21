@@ -1,10 +1,13 @@
-import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { expect, test } from "@playwright/test";
 
 function adminPassword() {
-  const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD || process.env.ADMIN_BOOTSTRAP_PASSWORD || "";
+  const password =
+    process.env.PLAYWRIGHT_ADMIN_PASSWORD || process.env.ADMIN_BOOTSTRAP_PASSWORD || "";
   if (!password) {
-    throw new Error("PLAYWRIGHT_ADMIN_PASSWORD ou ADMIN_BOOTSTRAP_PASSWORD e obrigatorio para o E2E autenticado.");
+    throw new Error(
+      "PLAYWRIGHT_ADMIN_PASSWORD ou ADMIN_BOOTSTRAP_PASSWORD e obrigatorio para o E2E autenticado.",
+    );
   }
   return password;
 }
@@ -33,16 +36,20 @@ async function login(page) {
 
 async function expectNoSeriousA11y(page, label) {
   const results = await new AxeBuilder({ page }).analyze();
-  const blocking = results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact || ""));
+  const blocking = results.violations.filter((violation) =>
+    ["serious", "critical"].includes(violation.impact || ""),
+  );
   expect(
     blocking,
     `${label} apresentou violacoes axe serias/criticas:\n${blocking
       .map((violation) => `- ${violation.id}: ${violation.help}`)
-      .join("\n")}`
+      .join("\n")}`,
   ).toEqual([]);
 }
 
-test("console legado preserva acessibilidade minima no login e apos autenticacao @a11y", async ({ page }) => {
+test("console legado preserva acessibilidade minima no login e apos autenticacao @a11y", async ({
+  page,
+}) => {
   await page.goto("/app/");
   await expect(page.getByRole("heading", { name: /Gest.*Operacional/i })).toBeVisible();
   await expectNoSeriousA11y(page, "Tela de login");
@@ -52,7 +59,9 @@ test("console legado preserva acessibilidade minima no login e apos autenticacao
   await expect(page.locator(".tab-bar")).toBeVisible();
 });
 
-test("funil primario publicado fecha o ciclo login -> catalogo -> pedido no console legado", async ({ page }) => {
+test("funil primario publicado fecha o ciclo login -> catalogo -> pedido no console legado", async ({
+  page,
+}) => {
   const runId = Date.now();
   const customerName = `Playwright ${runId}`;
 
@@ -68,6 +77,8 @@ test("funil primario publicado fecha o ciclo login -> catalogo -> pedido no cons
   await page.locator("#close-catalog-modal").click();
   await page.locator('#order-form button[type="submit"]').click();
 
-  await expect(page.locator("#feedback")).toContainText("Pedido finalizado e enviado para a cozinha.");
+  await expect(page.locator("#feedback")).toContainText(
+    "Pedido finalizado e enviado para a cozinha.",
+  );
   await expect(page.getByText(customerName)).toBeVisible();
 });

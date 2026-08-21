@@ -6,7 +6,7 @@ import {
   canonicalJson,
   fingerprint,
   moneyCents,
-  orderFingerprintPayload
+  orderFingerprintPayload,
 } from "../apps/api/src/idempotency.js";
 
 test("canonicalizacao ordena objetos, itens e adicionais sem depender da ordem JSON", () => {
@@ -14,17 +14,17 @@ test("canonicalizacao ordena objetos, itens e adicionais sem depender da ordem J
     customerName: "Ana",
     items: [
       { sku: "b", quantity: 1, addons: [{ sku: "z" }, { sku: "a" }] },
-      { sku: "a", quantity: 2 }
+      { sku: "a", quantity: 2 },
     ],
-    metadata: { z: 1, a: 2 }
+    metadata: { z: 1, a: 2 },
   });
   const right = orderFingerprintPayload({
     metadata: { a: 2, z: 1 },
     items: [
       { quantity: 2, sku: "a" },
-      { addons: [{ sku: "a" }, { sku: "z" }], quantity: 1, sku: "b" }
+      { addons: [{ sku: "a" }, { sku: "z" }], quantity: 1, sku: "b" },
     ],
-    customerName: "Ana"
+    customerName: "Ana",
   });
   assert.equal(canonicalJson(left), canonicalJson(right));
   assert.equal(fingerprint(left), fingerprint(right));
@@ -48,17 +48,19 @@ test("campos opcionais equivalentes convergem e mudanca semantica diverge", () =
     paymentMethod: "cash",
     discountPercent: 0,
     notes: "",
-    items: [{ sku: "x", quantity: 1, discountPercent: 0, notes: "", addons: [] }]
+    items: [{ sku: "x", quantity: 1, discountPercent: 0, notes: "", addons: [] }],
   });
   assert.equal(fingerprint(base), fingerprint(explicit));
   assert.notEqual(
     fingerprint(base),
-    fingerprint(orderFingerprintPayload({ items: [{ sku: "x", quantity: 2 }] }))
+    fingerprint(orderFingerprintPayload({ items: [{ sku: "x", quantity: 2 }] })),
   );
-  
+
   assert.notEqual(
     fingerprint(base),
-    fingerprint(orderFingerprintPayload({ items: [{ sku: "x", quantity: 1 }], status: "completed" }))
+    fingerprint(
+      orderFingerprintPayload({ items: [{ sku: "x", quantity: 1 }], status: "completed" }),
+    ),
   );
 });
 
@@ -66,12 +68,17 @@ test("cancelamento inclui motivo, item, quantidade e recurso", () => {
   const base = cancellationFingerprintPayload({
     tabId: "tab-1",
     orderId: "order-1",
-    body: { reason: "erro", items: [{ itemId: "line-1", quantity: 1 }] }
+    body: { reason: "erro", items: [{ itemId: "line-1", quantity: 1 }] },
   });
-  assert.notEqual(fingerprint(base), fingerprint(cancellationFingerprintPayload({
-    tabId: "tab-2",
-    orderId: "order-1",
-    body: { reason: "erro", items: [{ itemId: "line-1", quantity: 1 }] }
-  })));
+  assert.notEqual(
+    fingerprint(base),
+    fingerprint(
+      cancellationFingerprintPayload({
+        tabId: "tab-2",
+        orderId: "order-1",
+        body: { reason: "erro", items: [{ itemId: "line-1", quantity: 1 }] },
+      }),
+    ),
+  );
   assert.notEqual(fingerprint(base), fingerprint({ ...base, reason: "outro" }));
 });

@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  equalSecret,
-  safeId,
-  validPrintContent
-} from "../apps/print-bridge/src/validation.js";
+import { equalSecret, safeId, validPrintContent } from "../apps/print-bridge/src/validation.js";
 
 test("bridge aceita apenas ids que não escapam do spool", () => {
   assert.equal(safeId("order_123-ABC", "orderId"), "order_123-ABC");

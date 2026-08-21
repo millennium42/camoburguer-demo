@@ -1,12 +1,14 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import fastify from "fastify";
 import { createDb } from "../apps/api/src/db.js";
 import { mapPostgresError } from "../apps/api/src/error-mapper.js";
 
 const testDbUrl = process.env.TEST_DATABASE_URL;
 
-test("M-04: PostgreSQL Error Mapper", { skip: !testDbUrl ? "PostgreSQL efêmero requer TEST_DATABASE_URL" : false }, async (t) => {
+test("M-04: PostgreSQL Error Mapper", {
+  skip: !testDbUrl ? "PostgreSQL efêmero requer TEST_DATABASE_URL" : false,
+}, async (t) => {
   const db = createDb(testDbUrl);
   await db.init();
 
@@ -16,7 +18,7 @@ test("M-04: PostgreSQL Error Mapper", { skip: !testDbUrl ? "PostgreSQL efêmero 
   app.setErrorHandler((error, request, reply) => {
     const { statusCode, payload } = mapPostgresError(error, {
       error: () => {},
-      warn: () => {} // Evitar poluir stdout durante o teste
+      warn: () => {}, // Evitar poluir stdout durante o teste
     });
     return reply.code(statusCode).send(payload);
   });
@@ -33,10 +35,17 @@ test("M-04: PostgreSQL Error Mapper", { skip: !testDbUrl ? "PostgreSQL efêmero 
   });
 
   app.get("/23505", async () => {
-    // Unique constraint violation (orders.id)
-    await db.query("INSERT INTO orders (id, status, created_at, updated_at) VALUES ('unique1', 'open', now(), now()) ON CONFLICT DO NOTHING");
-    // This second one should throw 23505 if we remove ON CONFLICT, but orders.id has unique constraint
-    await db.query("INSERT INTO orders (id, status, created_at, updated_at) VALUES ('unique1', 'open', now(), now())");
+    try {
+      await db.query(
+        "INSERT INTO orders (id, status, source, fulfillment_mode, customer_name, created_at, updated_at) VALUES ('unique1', 'open', 'counter', 'local', 'test', now(), now()) ON CONFLICT DO NOTHING",
+      );
+      await db.query(
+        "INSERT INTO orders (id, status, source, fulfillment_mode, customer_name, created_at, updated_at) VALUES ('unique1', 'open', 'counter', 'local', 'test', now(), now())",
+      );
+    } catch (e) {
+      console.log("M04 ERROR:", e);
+      throw e;
+    }
   });
 
   app.get("/generic", async () => {

@@ -3,7 +3,8 @@ import { toMoney } from "../shared-types/index.js";
 
 export function buildEntriesFromOrder({ order, previousStatus, nextStatus, shiftId = null }) {
   const now = new Date().toISOString();
-  const paymentMethod = order.paymentMethod || (["ifood", "deliverymuch"].includes(order.source) ? "app_paid" : "cash");
+  const paymentMethod =
+    order.paymentMethod || (["ifood", "deliverymuch"].includes(order.source) ? "app_paid" : "cash");
   if (previousStatus !== "completed" && nextStatus === "completed") {
     return [
       {
@@ -16,8 +17,11 @@ export function buildEntriesFromOrder({ order, previousStatus, nextStatus, shift
         source: order.source,
         label: `Venda do pedido ${order.id.slice(0, 8)}`,
         occurredAt: now,
-        metadata: { customerName: order.customerName, externalPayments: order.metadata?.externalPayments || [] }
-      }
+        metadata: {
+          customerName: order.customerName,
+          externalPayments: order.metadata?.externalPayments || [],
+        },
+      },
     ];
   }
   if (previousStatus === "completed" && nextStatus === "cancelled") {
@@ -32,8 +36,11 @@ export function buildEntriesFromOrder({ order, previousStatus, nextStatus, shift
         source: order.source,
         label: `Cancelamento do pedido ${order.id.slice(0, 8)}`,
         occurredAt: now,
-        metadata: { customerName: order.customerName, externalPayments: order.metadata?.externalPayments || [] }
-      }
+        metadata: {
+          customerName: order.customerName,
+          externalPayments: order.metadata?.externalPayments || [],
+        },
+      },
     ];
   }
   return [];
@@ -50,7 +57,7 @@ export function buildOpeningEntry(shift) {
     source: "counter",
     label: `Abertura de caixa ${shift.id.slice(0, 8)}`,
     occurredAt: shift.openedAt,
-    metadata: {}
+    metadata: {},
   };
 }
 
@@ -71,7 +78,7 @@ export function buildEntryFromAdjustment({ shift, kind, amount, reason = "" }) {
     source: "counter",
     label: reason || (isWithdrawal ? "Sangria" : "Reforço"),
     occurredAt: new Date().toISOString(),
-    metadata: { reason }
+    metadata: { reason },
   };
 }
 
@@ -89,7 +96,11 @@ export function buildEntryFromTabPayment({ payment, tab }) {
     source: "counter",
     label: `${reversal ? "Estorno" : "Pagamento"} da ${tab.kind === "table" ? "mesa" : "comanda"} ${tab.label}`,
     occurredAt: payment.createdAt,
-    metadata: { tabLabel: tab.label, paymentKind: payment.kind, reversesPaymentId: payment.reversesPaymentId }
+    metadata: {
+      tabLabel: tab.label,
+      paymentKind: payment.kind,
+      reversesPaymentId: payment.reversesPaymentId,
+    },
   };
 }
 
@@ -98,14 +109,19 @@ export const DEFAULT_BUSINESS_TIME_ZONE = "America/Sao_Paulo";
 function zonedParts(value, timeZone) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) throw new Error(`Timestamp financeiro inválido: ${value}`);
-  return Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23"
-  }).formatToParts(date).filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+  return Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(date)
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
 }
 
 export function businessDate(value, timeZone = DEFAULT_BUSINESS_TIME_ZONE) {
@@ -127,9 +143,9 @@ function assertOperationalDate(value, label) {
   const [year, month, day] = value.split("-").map(Number);
   const verified = new Date(Date.UTC(year, month - 1, day));
   if (
-    verified.getUTCFullYear() !== year
-    || verified.getUTCMonth() !== month - 1
-    || verified.getUTCDate() !== day
+    verified.getUTCFullYear() !== year ||
+    verified.getUTCMonth() !== month - 1 ||
+    verified.getUTCDate() !== day
   ) {
     const error = new Error(`${label} contém uma data inexistente`);
     error.statusCode = 400;
@@ -137,7 +153,11 @@ function assertOperationalDate(value, label) {
   }
 }
 
-export function filterEntries(entries, filters = {}, { timeZone = DEFAULT_BUSINESS_TIME_ZONE } = {}) {
+export function filterEntries(
+  entries,
+  filters = {},
+  { timeZone = DEFAULT_BUSINESS_TIME_ZONE } = {},
+) {
   assertOperationalDate(filters.dateFrom, "dateFrom");
   assertOperationalDate(filters.dateTo, "dateTo");
   return entries.filter((entry) => {
@@ -158,7 +178,8 @@ export function summarizeFinance(entries, { timeZone = DEFAULT_BUSINESS_TIME_ZON
   const cancellations = entries
     .filter((entry) => entry.type === "cancellation")
     .reduce((sum, entry) => sum + Math.abs(Number(entry.amount)), 0);
-  const totalOrders = new Set(sales.map((entry) => entry.orderId || entry.tabId).filter(Boolean)).size;
+  const totalOrders = new Set(sales.map((entry) => entry.orderId || entry.tabId).filter(Boolean))
+    .size;
   const ticketAverage = totalOrders ? toMoney(grossSales / totalOrders) : 0;
 
   const salesBySource = {};
@@ -169,7 +190,9 @@ export function summarizeFinance(entries, { timeZone = DEFAULT_BUSINESS_TIME_ZON
   for (const entry of entries) {
     entriesByType[entry.type] = toMoney((entriesByType[entry.type] || 0) + Number(entry.amount));
     if (entry.type === "sale") {
-      salesBySource[entry.source] = toMoney((salesBySource[entry.source] || 0) + Number(entry.amount));
+      salesBySource[entry.source] = toMoney(
+        (salesBySource[entry.source] || 0) + Number(entry.amount),
+      );
       const hourKey = businessHour(entry.occurredAt, timeZone);
       salesByHour[hourKey] = toMoney((salesByHour[hourKey] || 0) + Number(entry.amount));
     }
@@ -177,20 +200,20 @@ export function summarizeFinance(entries, { timeZone = DEFAULT_BUSINESS_TIME_ZON
       if (entry.metadata?.externalPayments?.length > 0) {
         for (const ext of entry.metadata.externalPayments) {
           const amt = entry.type === "sale" ? Number(ext.amount) : -Number(ext.amount);
-          const m = ext.type === "online" ? "app_paid" : (ext.method || "unattributed");
+          const m = ext.type === "online" ? "app_paid" : ext.method || "unattributed";
           paymentsByMethod[m] = toMoney((paymentsByMethod[m] || 0) + amt);
         }
       } else {
         const method = entry.paymentMethod || "unattributed";
-        paymentsByMethod[method] = toMoney(
-          (paymentsByMethod[method] || 0) + Number(entry.amount)
-        );
+        paymentsByMethod[method] = toMoney((paymentsByMethod[method] || 0) + Number(entry.amount));
       }
     }
   }
 
   const netSales = toMoney(grossSales - cancellations);
-  const methodTotal = toMoney(Object.values(paymentsByMethod).reduce((sum, amount) => sum + Number(amount), 0));
+  const methodTotal = toMoney(
+    Object.values(paymentsByMethod).reduce((sum, amount) => sum + Number(amount), 0),
+  );
   return {
     grossSales: toMoney(grossSales),
     cancellations: toMoney(cancellations),
@@ -206,7 +229,7 @@ export function summarizeFinance(entries, { timeZone = DEFAULT_BUSINESS_TIME_ZON
       methodTotal,
       difference: toMoney(methodTotal - netSales),
       balanced: methodTotal === netSales,
-      unattributed: paymentsByMethod.unattributed || 0
-    }
+      unattributed: paymentsByMethod.unattributed || 0,
+    },
   };
 }

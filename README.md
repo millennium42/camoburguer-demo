@@ -1,40 +1,71 @@
 # Camoburguer Demo
 
-Camoburguer Demo e um sistema de operacao para pedidos, cozinha, caixa e integracoes, com a documentacao consolidada em um ponto central.
+> Sistema de operação para pedidos, cozinha, caixa e integrações externas de um
+> restaurante de pequeno porte.
 
-## Indice da documentacao central
+## Pré-requisitos
 
-Toda a documentacao principal reside em [docs/CAMOBURGUER_DOCS.md](docs/CAMOBURGUER_DOCS.md).
+- Node.js 22+
+- npm
+- Git
+- Docker Desktop com integração WSL (se usar Windows)
+- PostgreSQL 16 (via Compose)
 
-### 1. Visao geral e arquitetura
-* [Contexto Operacional](docs/CAMOBURGUER_DOCS.md#contexto-operacional) - Escopo e atores envolvidos.
-* [Arquitetura do Sistema](docs/CAMOBURGUER_DOCS.md#arquitetura-do-sistema) - Modulos, tabelas e fronteiras.
-* [Guia de Desenvolvimento](docs/CAMOBURGUER_DOCS.md#guia-de-desenvolvimento) - Contratos, estilo e fluxo de entrega.
-* [Design](docs/DESIGN.md) - Contrato visual e ergonomico do console legado publicado em `/app/`.
+## Setup técnico
 
-### 2. Operacao e regras de negocio
-* [Ciclo do Pedido](docs/CAMOBURGUER_DOCS.md#ciclo-do-pedido) - Estados de roteamento do pedido.
-* [Ciclo Financeiro e Caixa](docs/CAMOBURGUER_DOCS.md#ciclo-financeiro) - Fluxo de abertura e fechamento de `cash_shifts`.
-* [Pagamentos e Comandas](docs/CAMOBURGUER_DOCS.md#pagamentos-comandas) - Vinculacao de tabs, rodadas e reconciliacao.
-* [Estoque](docs/CAMOBURGUER_DOCS.md#estoque) - Fluxo FIFO e snapshot no momento do pedido.
-* [Padrao de Ticket da Cozinha](docs/CAMOBURGUER_DOCS.md#padrao-ticket-cozinha) - Contrato de impressao com a Print Bridge.
+Siga os passos numerados para configurar o ambiente de desenvolvimento local:
 
-### 3. Integracoes externas e automacoes
-* [Canais e Captura](docs/CAMOBURGUER_DOCS.md#canais-e-captura) - Mapeamento de canais e adaptadores.
-* [Automacoes por Cenario](docs/CAMOBURGUER_DOCS.md#automacoes-por-cenario) - Reconciliacoes automaticas por status.
+1. **Clonar e instalar**
+   ```bash
+   git clone <repo-url> camoburguer-demo
+   cd camoburguer-demo
+   npm ci
+   ```
 
-### 4. Apendice historico e tecnico
-* [Deploy no Render](docs/CAMOBURGUER_DOCS.md#render_deploy) - Configuracoes e variaveis de ambiente.
-* [Auditorias e Validacoes Anteriores](docs/CAMOBURGUER_DOCS.md#auditoria-tecnica-2026-07-21) - Evidencias historicas.
-* [Evolucao Historica (5W2H)](docs/CAMOBURGUER_DOCS.md#5w2h-evolucao) - Decisoes estruturais anteriores.
+2. **Configurar variáveis de ambiente**
+   ```bash
+   cp .env.example .env
+   # Preencha ADMIN_BOOTSTRAP_PASSWORD e PRINT_BRIDGE_TOKEN
+   ```
 
-## Gates locais antes de publicar
+3. **Subir infraestrutura e testar o núcleo**
+   ```bash
+   docker compose up -d db
+   npm run check
+   npm test
+   npm run test:db
+   ```
 
-Para reproduzir os gates locais em um checkout limpo:
+4. **Subir serviços completos**
+   ```bash
+   docker compose up -d
+   ```
 
-1. `npm ci`
-2. `npm run check && npm test`
-3. Suba somente `db` para `npm run test:db`
-4. Suba `api` e `print-bridge`, execute o seed explicito e rode `npm run smoke`, `npm run test:a11y` e `npm run test:e2e`
+5. **Validar a operação (Smoke E2E)**
+   ```bash
+   npm run seed:demo --confirm-target=127.0.0.1:5432/camoburguer
+   npm run smoke
+   ```
 
-O produto publicado usa apenas o console legado servido em `/app/`. O caminho `/app/legacy/` existe apenas como redirecionamento de compatibilidade para `/app/`.
+## Problemas comuns (Troubleshooting)
+
+| Sintoma | Causa provável | Ação de correção |
+|---|---|---|
+| `[FATAL] Detectados múltiplos caixas abertos` | Erro transacional ou instâncias paralelas | Seguir o [Runbook de Duplicatas](docs/operacao/runbook-duplicatas.md) |
+| `UND_ERR_SOCKET` no smoke | API/Containers ainda subindo | Aguardar 15 segundos após o `compose up -d` |
+| Seed recusa criação (`409` ou `503`) | Banco já tem estado operacional ou alvo divergente | Zerar o banco com `compose down -v db` (se em dev) e garantir o `--confirm-target` exato |
+
+## Documentação
+
+Todo o conhecimento de domínio está mapeado em arquivos independentes dentro da pasta `docs/`.
+
+| Arquivo | Conteúdo principal |
+|---|---|
+| [00-mapa-do-projeto.md](00-mapa-do-projeto.md) | **Ponto de entrada.** Índice completo e fluxo operacional. |
+| [contexto-operacional.md](docs/contexto-operacional.md) | Atores, responsabilidades e limites da demo. |
+| [arquitetura-do-sistema.md](docs/arquitetura-do-sistema.md) | Módulos, tabelas, modelo de persistência e fronteiras. |
+| [guia-de-desenvolvimento.md](docs/guia-de-desenvolvimento.md) | Contratos, regras e fluxo de entrega assistido por IA. |
+| [ciclo-do-pedido.md](docs/ciclo-do-pedido.md) | Estados, regras e vinculação de comandas. |
+| [ciclo-financeiro.md](docs/ciclo-financeiro.md) | Caixa, turnos e visões gerenciais. |
+
+Para a lista completa de documentos, consulte o **[Mapa do Projeto](00-mapa-do-projeto.md)**.

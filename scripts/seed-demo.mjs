@@ -15,11 +15,11 @@ export const PROTECTED_TABLES = Object.freeze([
   "finance_entries",
   "channel_mappings",
   "channel_events",
-  "channel_commands"
+  "channel_commands",
 ]);
 
 const OPERATIONAL_TABLES = PROTECTED_TABLES.filter(
-  (table) => table !== "catalog_items" && table !== "stock_balances"
+  (table) => table !== "catalog_items" && table !== "stock_balances",
 );
 
 export class DemoSeedRefusal extends Error {
@@ -46,13 +46,13 @@ function normalizedCatalogItem(item) {
     available: item.available !== false,
     origin: Object.hasOwn(item, "origin") ? item.origin : "olaclick_snapshot",
     sourceVersion: persisted ? item.source_version : CATALOG_CAPTURED_AT,
-    archivedAt: item.archived_at ?? null
+    archivedAt: item.archived_at ?? null,
   };
 }
 
-const CANONICAL_CATALOG = CATALOG
-  .map((item) => normalizedCatalogItem(item))
-  .sort((left, right) => left.sku.localeCompare(right.sku));
+const CANONICAL_CATALOG = CATALOG.map((item) => normalizedCatalogItem(item)).sort((left, right) =>
+  left.sku.localeCompare(right.sku),
+);
 
 function sameCatalog(actual) {
   const normalized = actual
@@ -69,7 +69,7 @@ export function sanitizeTarget({ address, port, database }) {
     throw new DemoSeedRefusal(
       "target_unresolved",
       "Não foi possível resolver a identidade do banco de demonstração.",
-      422
+      422,
     );
   }
   return `${host}:${dbPort}/${dbName}`;
@@ -77,11 +77,13 @@ export function sanitizeTarget({ address, port, database }) {
 
 function isSanitizedTarget(value) {
   const target = String(value || "");
-  return Boolean(target) &&
+  return (
+    Boolean(target) &&
     !target.includes("@") &&
     !target.includes("://") &&
     !/\s/.test(target) &&
-    /^.+:\d{1,5}\/[^/]+$/.test(target);
+    /^.+:\d{1,5}\/[^/]+$/.test(target)
+  );
 }
 
 async function resolveTarget(client) {
@@ -94,9 +96,7 @@ async function resolveTarget(client) {
 }
 
 async function lockProtectedTables(client) {
-  await client.query(
-    `LOCK TABLE ${PROTECTED_TABLES.join(", ")} IN ACCESS EXCLUSIVE MODE`
-  );
+  await client.query(`LOCK TABLE ${PROTECTED_TABLES.join(", ")} IN ACCESS EXCLUSIVE MODE`);
 }
 
 async function runPreflight(client) {
@@ -107,12 +107,13 @@ async function runPreflight(client) {
   }
 
   const stock = await client.query(
-    "SELECT category, quantity FROM stock_balances ORDER BY category"
+    "SELECT category, quantity FROM stock_balances ORDER BY category",
   );
   const stockIsBaseline =
     stock.rows.length === 3 &&
-    ["dog", "hamburguer", "xis"].every((category, index) =>
-      stock.rows[index]?.category === category && Number(stock.rows[index]?.quantity) === 0
+    ["dog", "hamburguer", "xis"].every(
+      (category, index) =>
+        stock.rows[index]?.category === category && Number(stock.rows[index]?.quantity) === 0,
     );
   if (!stockIsBaseline) blockers.push("stock_balances");
 
@@ -139,84 +140,212 @@ async function seedDemoContent(dbClient, { injectFailureAfterFirstMutation = fal
 
   // 1. Abrir um turno
   const shiftId = crypto.randomUUID();
-  await dbClient.query(`
+  await dbClient.query(
+    `
     INSERT INTO cash_shifts (id, opened_at, expected_amount, opening_amount, status, notes)
     VALUES ($1, NOW() - INTERVAL '4 hours', 150.00, 150.00, 'open', 'Seed demonstrativo')
-  `, [shiftId]);
+  `,
+    [shiftId],
+  );
 
   // Abertura do caixa. Valores financeiros são armazenados em reais, não centavos.
-  await dbClient.query(`
+  await dbClient.query(
+    `
     INSERT INTO finance_entries (id, shift_id, type, amount, payment_method, source, label, occurred_at)
     VALUES ($1, $2, 'opening', 150.00, 'cash', 'counter', 'Abertura do caixa', NOW() - INTERVAL '4 hours')
-  `, [crypto.randomUUID(), shiftId]);
+  `,
+    [crypto.randomUUID(), shiftId],
+  );
 
   // 2. Criar comandas e mesas
   const tab1 = crypto.randomUUID();
   const tab2 = crypto.randomUUID();
-  
-  await dbClient.query(`
+
+  await dbClient.query(
+    `
     INSERT INTO service_tabs (id, kind, label, customer_name, status, opened_at)
     VALUES 
       ($1, 'table', 'Mesa 04', 'Pessoa Demo 01', 'open', NOW() - INTERVAL '1 hour'),
       ($2, 'tab', 'Comanda 102', 'Pessoa Demo 02', 'open', NOW() - INTERVAL '30 minutes')
-  `, [tab1, tab2]);
+  `,
+    [tab1, tab2],
+  );
 
   // Pedidos na Mesa 04
   const o1 = crypto.randomUUID();
-  await dbClient.query(`
+  await dbClient.query(
+    `
     INSERT INTO orders (id, tab_id, round_number, source, status, customer_name, fulfillment_mode, total, items)
     VALUES ($1, $2, 1, 'counter', 'ready', 'Pessoa Demo 01', 'local', 78.00, $3::jsonb)
-  `, [o1, tab1, JSON.stringify([
-    { id: crypto.randomUUID(), sku: 'x-bacon', name: 'X-BACON', category: 'Xis tradicionais', stockCategory: 'xis', preparationMode: 'kitchen', quantity: 2, price: 36.00, addons: [] },
-    { id: crypto.randomUUID(), sku: 'refrigerante-lata', name: 'Refrigerante lata', category: 'Refrigerantes', stockCategory: null, preparationMode: 'direct_handoff', quantity: 1, price: 6.00, addons: [] }
-  ])]);
+  `,
+    [
+      o1,
+      tab1,
+      JSON.stringify([
+        {
+          id: crypto.randomUUID(),
+          sku: "x-bacon",
+          name: "X-BACON",
+          category: "Xis tradicionais",
+          stockCategory: "xis",
+          preparationMode: "kitchen",
+          quantity: 2,
+          price: 36.0,
+          addons: [],
+        },
+        {
+          id: crypto.randomUUID(),
+          sku: "refrigerante-lata",
+          name: "Refrigerante lata",
+          category: "Refrigerantes",
+          stockCategory: null,
+          preparationMode: "direct_handoff",
+          quantity: 1,
+          price: 6.0,
+          addons: [],
+        },
+      ]),
+    ],
+  );
 
   // Pedidos na Comanda 102
   const o2 = crypto.randomUUID();
-  await dbClient.query(`
+  await dbClient.query(
+    `
     INSERT INTO orders (id, tab_id, round_number, source, status, customer_name, fulfillment_mode, total, items)
     VALUES ($1, $2, 1, 'counter', 'in_preparation', 'Pessoa Demo 02', 'local', 27.00, $3::jsonb)
-  `, [o2, tab2, JSON.stringify([
-    { id: crypto.randomUUID(), sku: 'dog-frango', name: 'DOG FRANGO', category: 'Dogs', stockCategory: 'dog', preparationMode: 'kitchen', quantity: 1, price: 27.00, addons: [] }
-  ])]);
+  `,
+    [
+      o2,
+      tab2,
+      JSON.stringify([
+        {
+          id: crypto.randomUUID(),
+          sku: "dog-frango",
+          name: "DOG FRANGO",
+          category: "Dogs",
+          stockCategory: "dog",
+          preparationMode: "kitchen",
+          quantity: 1,
+          price: 27.0,
+          addons: [],
+        },
+      ]),
+    ],
+  );
 
   // 3. Pedidos Delivery Externos Aguardando Autorização (iFood / Delivery Much)
   const o3 = crypto.randomUUID();
-  await dbClient.query(`
+  await dbClient.query(
+    `
     INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, delivery_address, items)
     VALUES ($1, 'ifood', 'received', 'Cliente iFood Demo', 'delivery', 'app_paid', 41.00, 'Rua Exemplo, 123', $2::jsonb)
-  `, [o3, JSON.stringify([
-    { id: crypto.randomUUID(), sku: '01-camobuger', name: '01 CAMOBUGER + BATATA FRITA', category: 'Lanches', stockCategory: 'hamburguer', preparationMode: 'kitchen', quantity: 1, price: 35.00, addons: [] },
-    { id: crypto.randomUUID(), sku: 'refrigerante-lata', name: 'Refrigerante lata', category: 'Refrigerantes', stockCategory: null, preparationMode: 'direct_handoff', quantity: 1, price: 6.00, addons: [] }
-  ])]);
+  `,
+    [
+      o3,
+      JSON.stringify([
+        {
+          id: crypto.randomUUID(),
+          sku: "01-camobuger",
+          name: "01 CAMOBUGER + BATATA FRITA",
+          category: "Lanches",
+          stockCategory: "hamburguer",
+          preparationMode: "kitchen",
+          quantity: 1,
+          price: 35.0,
+          addons: [],
+        },
+        {
+          id: crypto.randomUUID(),
+          sku: "refrigerante-lata",
+          name: "Refrigerante lata",
+          category: "Refrigerantes",
+          stockCategory: null,
+          preparationMode: "direct_handoff",
+          quantity: 1,
+          price: 6.0,
+          addons: [],
+        },
+      ]),
+    ],
+  );
 
-  await dbClient.query(`
+  await dbClient.query(
+    `
     INSERT INTO channel_mappings (id, order_id, channel, merchant_id, external_id, sync_status)
     VALUES ($1, $2, 'ifood', 'DEMO_MERCHANT', 'IF-999123', 'synchronized')
-  `, [crypto.randomUUID(), o3]);
+  `,
+    [crypto.randomUUID(), o3],
+  );
 
   const o4 = crypto.randomUUID();
-  await dbClient.query(`
+  await dbClient.query(
+    `
     INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, items)
     VALUES ($1, 'deliverymuch', 'received', 'Cliente Delivery Much Demo', 'pickup', 'app_paid', 24.00, $2::jsonb)
-  `, [o4, JSON.stringify([
-    { id: crypto.randomUUID(), sku: 'x-simples', name: 'X-SIMPLES', category: 'Xis tradicionais', stockCategory: 'xis', preparationMode: 'kitchen', quantity: 1, price: 24.00, addons: [] }
-  ])]);
+  `,
+    [
+      o4,
+      JSON.stringify([
+        {
+          id: crypto.randomUUID(),
+          sku: "x-simples",
+          name: "X-SIMPLES",
+          category: "Xis tradicionais",
+          stockCategory: "xis",
+          preparationMode: "kitchen",
+          quantity: 1,
+          price: 24.0,
+          addons: [],
+        },
+      ]),
+    ],
+  );
 
-  await dbClient.query(`
+  await dbClient.query(
+    `
     INSERT INTO channel_mappings (id, order_id, channel, merchant_id, external_id, sync_status)
     VALUES ($1, $2, 'deliverymuch', 'DEMO_COMPANY', 'DM-444555', 'synchronized')
-  `, [crypto.randomUUID(), o4]);
+  `,
+    [crypto.randomUUID(), o4],
+  );
 
   // 4. Pedidos Delivery Normais
   const o5 = crypto.randomUUID();
-  await dbClient.query(`
+  await dbClient.query(
+    `
     INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, payment_method, total, delivery_address, items)
     VALUES ($1, 'whatsapp', 'in_preparation', 'Cliente WhatsApp Demo', 'delivery', 'pix', 42.00, 'Av. Exemplo, 400', $2::jsonb)
-  `, [o5, JSON.stringify([
-    { id: crypto.randomUUID(), sku: 'x-completo', name: 'X-COMPLETO', category: 'Xis tradicionais', stockCategory: 'xis', preparationMode: 'kitchen', quantity: 1, price: 27.00, addons: [], notes: 'Sem ervilha' },
-    { id: crypto.randomUUID(), sku: 'batata-p', name: 'Batata frita P 200g', category: 'Batatas fritas', stockCategory: null, preparationMode: 'kitchen', quantity: 1, price: 15.00, addons: [] }
-  ])]);
+  `,
+    [
+      o5,
+      JSON.stringify([
+        {
+          id: crypto.randomUUID(),
+          sku: "x-completo",
+          name: "X-COMPLETO",
+          category: "Xis tradicionais",
+          stockCategory: "xis",
+          preparationMode: "kitchen",
+          quantity: 1,
+          price: 27.0,
+          addons: [],
+          notes: "Sem ervilha",
+        },
+        {
+          id: crypto.randomUUID(),
+          sku: "batata-p",
+          name: "Batata frita P 200g",
+          category: "Batatas fritas",
+          stockCategory: null,
+          preparationMode: "kitchen",
+          quantity: 1,
+          price: 15.0,
+          addons: [],
+        },
+      ]),
+    ],
+  );
 
   return true;
 }
@@ -229,14 +358,18 @@ export async function runSeedDemo(db, options = {}) {
     expectedTarget,
     confirmedTarget,
     onDecision = () => {},
-    injectFailureAfterFirstMutation = false
+    injectFailureAfterFirstMutation = false,
   } = options;
 
   if (!authenticated) {
     throw new DemoSeedRefusal("admin_auth_invalid", "Identidade administrativa inválida.", 403);
   }
   if (environment !== "demo") {
-    throw new DemoSeedRefusal("environment_not_demo", "Seed permitido somente em ambiente demo.", 403);
+    throw new DemoSeedRefusal(
+      "environment_not_demo",
+      "Seed permitido somente em ambiente demo.",
+      403,
+    );
   }
   if (enabled !== true) {
     throw new DemoSeedRefusal("seed_disabled", "Seed de demonstração não está habilitado.", 403);
@@ -248,7 +381,7 @@ export async function runSeedDemo(db, options = {}) {
     throw new DemoSeedRefusal(
       "expected_target_invalid",
       "O alvo esperado deve usar o formato sanitizado endereço:porta/banco.",
-      422
+      422,
     );
   }
 
@@ -259,7 +392,7 @@ export async function runSeedDemo(db, options = {}) {
         "target_mismatch",
         "O banco resolvido difere do alvo demo esperado.",
         422,
-        { target }
+        { target },
       );
     }
     if (confirmedTarget !== target) {
@@ -267,7 +400,7 @@ export async function runSeedDemo(db, options = {}) {
         "confirmation_mismatch",
         "A confirmação humana não corresponde ao alvo resolvido.",
         422,
-        { target }
+        { target },
       );
     }
 
@@ -279,7 +412,7 @@ export async function runSeedDemo(db, options = {}) {
         "preflight_conflict",
         "O banco contém estado operacional e não pode receber o seed.",
         409,
-        { target, blockers }
+        { target, blockers },
       );
     }
 
@@ -292,13 +425,13 @@ export async function requestDemoSeed({
   username = "admin",
   password,
   confirmedTarget,
-  fetchImpl = fetch
+  fetchImpl = fetch,
 }) {
   const base = String(apiBase).replace(/\/+$/, "");
   const loginResponse = await fetchImpl(`${base}/auth/login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ username, password: String(password || "") })
+    body: JSON.stringify({ username, password: String(password || "") }),
   });
   const loginText = await loginResponse.text();
   let loginPayload;
@@ -308,21 +441,28 @@ export async function requestDemoSeed({
     loginPayload = { error: loginText };
   }
   if (!loginResponse.ok) {
-    const error = new Error(loginPayload?.error || `Login administrativo recusado com HTTP ${loginResponse.status}.`);
+    const error = new Error(
+      loginPayload?.error || `Login administrativo recusado com HTTP ${loginResponse.status}.`,
+    );
     error.statusCode = loginResponse.status;
     error.code = loginPayload?.code || "auth_error";
     throw error;
   }
-  const setCookies = loginResponse.headers.getSetCookie?.() || [loginResponse.headers.get("set-cookie") || ""];
-  const cookie = setCookies.map((value) => value.split(";")[0]).filter(Boolean).join("; ");
+  const setCookies = loginResponse.headers.getSetCookie?.() || [
+    loginResponse.headers.get("set-cookie") || "",
+  ];
+  const cookie = setCookies
+    .map((value) => value.split(";")[0])
+    .filter(Boolean)
+    .join("; ");
   const response = await fetchImpl(`${base}/demo/seed`, {
     method: "POST",
     headers: {
       cookie,
       "x-csrf-token": loginPayload.csrfToken,
-      "content-type": "application/json"
+      "content-type": "application/json",
     },
-    body: JSON.stringify({ confirmTarget: String(confirmedTarget || "") })
+    body: JSON.stringify({ confirmTarget: String(confirmedTarget || "") }),
   });
   const text = await response.text();
   let payload;
@@ -332,7 +472,9 @@ export async function requestDemoSeed({
     payload = { error: text };
   }
   if (!response.ok) {
-    const error = new Error(payload?.error || `Seed recusado pela API com HTTP ${response.status}.`);
+    const error = new Error(
+      payload?.error || `Seed recusado pela API com HTTP ${response.status}.`,
+    );
     error.statusCode = response.status;
     error.code = payload?.code || "http_error";
     throw error;
@@ -349,11 +491,13 @@ if (process.argv[1] && process.argv[1].endsWith("seed-demo.mjs")) {
     apiBase: process.env.DEMO_API_URL || process.env.API_BASE_URL,
     username: process.env.ADMIN_USERNAME || "admin",
     password: process.env.ADMIN_PASSWORD || process.env.ADMIN_BOOTSTRAP_PASSWORD,
-    confirmedTarget: confirmation
-  }).then((payload) => {
-    console.log(payload?.message || "Banco de dados preenchido com dados de demonstração.");
-  }).catch((err) => {
-    console.error("Seed recusado:", err.code || "internal_error", err.message);
-    process.exitCode = 1;
-  });
+    confirmedTarget: confirmation,
+  })
+    .then((payload) => {
+      console.log(payload?.message || "Banco de dados preenchido com dados de demonstração.");
+    })
+    .catch((err) => {
+      console.error("Seed recusado:", err.code || "internal_error", err.message);
+      process.exitCode = 1;
+    });
 }

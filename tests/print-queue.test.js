@@ -4,9 +4,9 @@ import {
   assertBridgeStatus,
   assertPrintPayloadSize,
   classifyPrintFailure,
+  PRINT_MAX_ATTEMPTS,
   printBackoffMs,
   printPayloadBytes,
-  PRINT_MAX_ATTEMPTS
 } from "../apps/api/src/print-queue.js";
 
 function job(content) {
@@ -15,7 +15,7 @@ function job(content) {
     orderId: "order-1",
     printerName: "cozinha",
     reason: "confirmed",
-    content
+    content,
   };
 }
 
@@ -30,7 +30,7 @@ test("limite de impressão mede a serialização UTF-8 exata e não trunca", () 
   assert.doesNotThrow(() => assertPrintPayloadSize(job("á".repeat(low))));
   assert.throws(
     () => assertPrintPayloadSize(job("á".repeat(low + 1))),
-    (error) => error.code === "PRINT_PAYLOAD_TOO_LARGE" && error.bytes > 64 * 1024
+    (error) => error.code === "PRINT_PAYLOAD_TOO_LARGE" && error.bytes > 64 * 1024,
   );
 });
 
@@ -46,9 +46,15 @@ test("bridge possui allowlist fechada e falhas têm classificação estável", (
 
 test("backoff cresce, é determinístico e respeita teto e máximo de tentativas", () => {
   const delays = Array.from({ length: PRINT_MAX_ATTEMPTS }, (_, index) =>
-    printBackoffMs(index + 1, "job-estavel")
+    printBackoffMs(index + 1, "job-estavel"),
   );
-  assert.deepEqual(delays, [...delays].sort((left, right) => left - right));
-  assert.equal(delays.every((delay) => delay <= 300_000), true);
+  assert.deepEqual(
+    delays,
+    [...delays].sort((left, right) => left - right),
+  );
+  assert.equal(
+    delays.every((delay) => delay <= 300_000),
+    true,
+  );
   assert.equal(printBackoffMs(3, "job-estavel"), printBackoffMs(3, "job-estavel"));
 });

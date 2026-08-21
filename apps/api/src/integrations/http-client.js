@@ -1,16 +1,16 @@
 export async function requestJson(url, options = {}) {
   const signal = AbortSignal.timeout(10000);
-  
+
   // Clone options and securely omit sensitive headers for logging
   const fetchOptions = { ...options, signal };
   const logHeaders = { ...(options.headers || {}) };
-  if (logHeaders.Authorization) logHeaders.Authorization = '***';
+  if (logHeaders.Authorization) logHeaders.Authorization = "***";
 
   // console.log(`[HTTP] ${options.method || 'GET'} ${url}`, logHeaders);
 
   const response = await fetch(url, fetchOptions);
   const text = await response.text();
-  
+
   let payload = null;
   if (text) {
     try {
@@ -35,13 +35,13 @@ export async function requestForm(url, bodyObject, options = {}) {
   for (const [key, value] of Object.entries(bodyObject)) {
     form.append(key, value);
   }
-  
+
   return requestJson(url, {
     ...options,
     body: form,
     headers: {
       ...options.headers,
-      "Content-Type": "application/x-www-form-urlencoded"
-    }
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
   });
 }

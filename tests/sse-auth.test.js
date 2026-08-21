@@ -7,7 +7,9 @@ function fakeReply() {
   const raw = new EventEmitter();
   raw.destroyed = false;
   raw.output = "";
-  raw.write = (chunk) => { raw.output += chunk; };
+  raw.write = (chunk) => {
+    raw.output += chunk;
+  };
   raw.end = () => {
     raw.destroyed = true;
     raw.emit("close");

@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
 import {
+  assertEnum,
   FULFILLMENT_MODES,
   ORDER_SOURCES,
   ORDER_STATUSES,
   PAYMENT_METHODS,
-  assertEnum,
-  toMoney
+  toMoney,
 } from "../shared-types/index.js";
 import { ADD_ONS, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL } from "./catalog.js";
+
 export { ADD_ONS, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL };
 
 export function calculateStockRequirements(items = []) {
@@ -17,7 +18,8 @@ export function calculateStockRequirements(items = []) {
       ? item.stockCategory
       : CATALOG.find((candidate) => candidate.sku === item.sku)?.stockCategory;
     const quantity = Number(item.quantity || 0);
-    if (category && !Number.isInteger(quantity)) throw new Error("Quantidade de item com estoque deve ser inteira");
+    if (category && !Number.isInteger(quantity))
+      throw new Error("Quantidade de item com estoque deve ser inteira");
     if (category) requirements[category] = (requirements[category] || 0) + quantity;
   }
   return requirements;
@@ -29,7 +31,7 @@ const ALLOWED_TRANSITIONS = {
   in_preparation: ["ready", "cancelled"],
   ready: ["completed", "cancelled"],
   completed: ["cancelled"],
-  cancelled: []
+  cancelled: [],
 };
 
 function normalizeDiscountPercent(value, label) {
@@ -45,42 +47,57 @@ export function calculateOrderTotal(items = [], discountPercent = 0) {
     const itemDiscount = normalizeDiscountPercent(item.discountPercent, "Desconto do item");
     const addonTotal = (item.addons || []).reduce(
       (total, addon) => total + Number(addon.quantity || 1) * Number(addon.price || 0),
-      0
+      0,
     );
-    return sum + Number(item.quantity || 0) * (Number(item.price || 0) + addonTotal) * (1 - itemDiscount / 100);
+    return (
+      sum +
+      Number(item.quantity || 0) * (Number(item.price || 0) + addonTotal) * (1 - itemDiscount / 100)
+    );
   }, 0);
   return toMoney(
-    subtotal * (1 - normalizeDiscountPercent(discountPercent, "Desconto do pedido") / 100)
+    subtotal * (1 - normalizeDiscountPercent(discountPercent, "Desconto do pedido") / 100),
   );
 }
 
-export function createOrder(input, {
-  catalog = CATALOG,
-  allowCustomItems = false,
-  preserveItemSnapshots = false,
-  useCatalogCommercialSnapshot = true,
-  validateCatalogAvailability = true
-} = {}) {
+export function createOrder(
+  input,
+  {
+    catalog = CATALOG,
+    allowCustomItems = false,
+    preserveItemSnapshots = false,
+    useCatalogCommercialSnapshot = true,
+    validateCatalogAvailability = true,
+  } = {},
+) {
   const source = assertEnum(input.source || "counter", ORDER_SOURCES, "source");
   const fulfillmentMode = assertEnum(
     input.fulfillmentMode || "local",
     FULFILLMENT_MODES,
-    "fulfillmentMode"
+    "fulfillmentMode",
   );
-  const paymentMethod = input.tabId && input.paymentMethod == null
-    ? null
-    : assertEnum(input.paymentMethod || "cash", PAYMENT_METHODS, "paymentMethod");
+  const paymentMethod =
+    input.tabId && input.paymentMethod == null
+      ? null
+      : assertEnum(input.paymentMethod || "cash", PAYMENT_METHODS, "paymentMethod");
   const items = (input.items || []).map((item) => {
-    const legacyCatalogItem = preserveItemSnapshots && item.sku
-      ? CATALOG.find((candidate) => candidate.sku === item.sku)
-      : null;
+    const legacyCatalogItem =
+      preserveItemSnapshots && item.sku
+        ? CATALOG.find((candidate) => candidate.sku === item.sku)
+        : null;
     const catalogItem = preserveItemSnapshots
       ? item
-      : item.sku ? catalog.find((candidate) => candidate.sku === item.sku) : null;
+      : item.sku
+        ? catalog.find((candidate) => candidate.sku === item.sku)
+        : null;
     if (!catalogItem && !allowCustomItems && !preserveItemSnapshots) {
       throw new Error("Item não encontrado no cardápio");
     }
-    if (!preserveItemSnapshots && validateCatalogAvailability && catalogItem && !catalogItem.available) {
+    if (
+      !preserveItemSnapshots &&
+      validateCatalogAvailability &&
+      catalogItem &&
+      !catalogItem.available
+    ) {
       throw new Error("Item indisponível no cardápio");
     }
     const addonSkus = (item.addons || []).map((addon) => String(addon.sku || ""));
@@ -88,46 +105,56 @@ export function createOrder(input, {
     if (!preserveItemSnapshots && addonSkus.length && catalogItem && !catalogItem.allowsAddons) {
       throw new Error("Item não aceita adicionais");
     }
-    const addons = preserveItemSnapshots ? (item.addons || []).map((addon) => {
-      const name = String(addon.name || "").trim();
-      const price = Number(addon.price || 0);
-      const quantity = Number(addon.quantity || 1);
-      if (!name || !Number.isFinite(price) || price < 0 || !Number.isInteger(quantity) || quantity <= 0) {
-        throw new Error("Adicional inválido");
-      }
-      return { sku: addon.sku || null, name, price: toMoney(price), quantity };
-    }) : addonSkus.map((sku) => {
-      const addon = ADD_ONS.find((candidate) => candidate.sku === sku);
-      if (!addon) throw new Error("Adicional inválido");
-      return { ...addon, quantity: 1 };
-    });
+    const addons = preserveItemSnapshots
+      ? (item.addons || []).map((addon) => {
+          const name = String(addon.name || "").trim();
+          const price = Number(addon.price || 0);
+          const quantity = Number(addon.quantity || 1);
+          if (
+            !name ||
+            !Number.isFinite(price) ||
+            price < 0 ||
+            !Number.isInteger(quantity) ||
+            quantity <= 0
+          ) {
+            throw new Error("Adicional inválido");
+          }
+          return { sku: addon.sku || null, name, price: toMoney(price), quantity };
+        })
+      : addonSkus.map((sku) => {
+          const addon = ADD_ONS.find((candidate) => candidate.sku === sku);
+          if (!addon) throw new Error("Adicional inválido");
+          return { ...addon, quantity: 1 };
+        });
     const quantity = Number(item.quantity ?? 1);
     const price = Number(
       useCatalogCommercialSnapshot && catalogItem
         ? catalogItem.price
-        : item.price ?? catalogItem?.price ?? 0
+        : (item.price ?? catalogItem?.price ?? 0),
     );
     const discountPercent = normalizeDiscountPercent(item.discountPercent, "Desconto do item");
     const name = String(
       useCatalogCommercialSnapshot && catalogItem
         ? catalogItem.name
-        : item.name || catalogItem?.name || ""
+        : item.name || catalogItem?.name || "",
     ).trim();
     if (!name || !Number.isInteger(quantity) || quantity <= 0) {
       throw new Error("Item de pedido inválido");
     }
     if (!Number.isFinite(price) || price < 0) throw new Error("Preço de item inválido");
-    const stockCategory = preserveItemSnapshots && !Object.hasOwn(item, "stockCategory")
-      ? legacyCatalogItem?.stockCategory ?? null
-      : catalogItem
-      ? catalogItem.stockCategory ?? null
-      : item.stockCategory ?? null;
+    const stockCategory =
+      preserveItemSnapshots && !Object.hasOwn(item, "stockCategory")
+        ? (legacyCatalogItem?.stockCategory ?? null)
+        : catalogItem
+          ? (catalogItem.stockCategory ?? null)
+          : (item.stockCategory ?? null);
     if (stockCategory != null && !["xis", "dog", "hamburguer"].includes(stockCategory)) {
       throw new Error("Categoria de estoque inválida");
     }
-    const preparationMode = preserveItemSnapshots && !Object.hasOwn(item, "preparationMode")
-      ? legacyCatalogItem?.preparationMode || "kitchen"
-      : catalogItem?.preparationMode || item.preparationMode || "kitchen";
+    const preparationMode =
+      preserveItemSnapshots && !Object.hasOwn(item, "preparationMode")
+        ? legacyCatalogItem?.preparationMode || "kitchen"
+        : catalogItem?.preparationMode || item.preparationMode || "kitchen";
     if (!["kitchen", "direct_handoff"].includes(preparationMode)) {
       throw new Error("Modo de preparo inválido");
     }
@@ -145,7 +172,7 @@ export function createOrder(input, {
       price: toMoney(price),
       addons,
       discountPercent,
-      notes: item.notes || ""
+      notes: item.notes || "",
     };
   });
   if (!items.length) throw new Error("O pedido deve ter ao menos um item");
@@ -180,18 +207,19 @@ export function createOrder(input, {
     metadata: {
       ...(input.metadata || {}),
       priority: input.priority || "normal",
-      channelLabel: input.channelLabel || source
+      channelLabel: input.channelLabel || source,
     },
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
   };
 }
 
 export function createCancellationOrder(input) {
-  if (!input.tabId || !input.reversesOrderId) throw new Error("Cancelamento exige comanda e rodada original");
+  if (!input.tabId || !input.reversesOrderId)
+    throw new Error("Cancelamento exige comanda e rodada original");
   const order = createOrder(
     { ...input, roundKind: "cancellation" },
-    { allowCustomItems: true, preserveItemSnapshots: true }
+    { allowCustomItems: true, preserveItemSnapshots: true },
   );
   return { ...order, total: toMoney(-Math.abs(order.total)) };
 }
@@ -205,7 +233,7 @@ export function transitionOrder(order, nextStatus) {
   return {
     ...order,
     status: nextStatus,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -219,41 +247,60 @@ export function confirmOrder(order) {
   return {
     ...confirmed,
     status: "ready",
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
 }
 
 export function buildKitchenTicket(order, { timeZone = "America/Sao_Paulo" } = {}) {
   const hasKitchen = requiresKitchenPreparation(order.items);
-  const cancellationHeader = order.roundKind === "cancellation"
-    ? [hasKitchen ? "*** CANCELAMENTO / RETIRAR ***" : "*** CANCELAMENTO / ENTREGA DIRETA ***"]
-    : [];
+  const cancellationHeader =
+    order.roundKind === "cancellation"
+      ? [hasKitchen ? "*** CANCELAMENTO / RETIRAR ***" : "*** CANCELAMENTO / ENTREGA DIRETA ***"]
+      : [];
   const header = [
     ...cancellationHeader,
     `Pedido ${order.id.slice(0, 8).toUpperCase()}`,
-    ...(order.reversesOrderId ? [`Corrige pedido: ${order.reversesOrderId.slice(0, 8).toUpperCase()}`] : []),
-    ...(order.tabId ? [`Comanda: ${order.metadata?.tabLabel || order.tabId}`, `Rodada: ${order.roundNumber}`] : []),
+    ...(order.reversesOrderId
+      ? [`Corrige pedido: ${order.reversesOrderId.slice(0, 8).toUpperCase()}`]
+      : []),
+    ...(order.tabId
+      ? [`Comanda: ${order.metadata?.tabLabel || order.tabId}`, `Rodada: ${order.roundNumber}`]
+      : []),
     `Horário: ${new Date(order.createdAt).toLocaleString("pt-BR", {
       timeZone,
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     })}`,
     `Canal: ${order.source}`,
     `Cliente: ${order.customerName}`,
     `Entrega: ${order.fulfillmentMode}`,
     ...(order.deliveryAddress ? [`Endereço: ${order.deliveryAddress}`] : []),
-    ...(order.paymentMethod ? [`Pagamento: ${order.paymentMethod}`] : [])
+    ...(order.paymentMethod ? [`Pagamento: ${order.paymentMethod}`] : []),
   ];
   const formatItem = (item) => {
     const notes = item.notes ? ` | obs: ${item.notes}` : "";
     const addons = (item.addons || []).map((addon) => `  + ${addon.name}`).join("\n");
     return `${item.quantity}x ${item.name}${notes}${addons ? `\n${addons}` : ""}`;
   };
-  const kitchenItems = order.items.filter((item) => (item.preparationMode || "kitchen") === "kitchen");
+  const kitchenItems = order.items.filter(
+    (item) => (item.preparationMode || "kitchen") === "kitchen",
+  );
   const directItems = order.items.filter((item) => item.preparationMode === "direct_handoff");
   const body = [
-    ...(kitchenItems.length ? [order.roundKind === "cancellation" ? "RETIRAR DA COZINHA" : "PREPARO COZINHA", ...kitchenItems.map(formatItem)] : []),
-    ...(directItems.length ? [order.roundKind === "cancellation" ? "CANCELAR ENTREGA DIRETA — NÃO RETIRAR DA COZINHA" : "ENTREGA DIRETA — NÃO PREPARAR", ...directItems.map(formatItem)] : [])
+    ...(kitchenItems.length
+      ? [
+          order.roundKind === "cancellation" ? "RETIRAR DA COZINHA" : "PREPARO COZINHA",
+          ...kitchenItems.map(formatItem),
+        ]
+      : []),
+    ...(directItems.length
+      ? [
+          order.roundKind === "cancellation"
+            ? "CANCELAR ENTREGA DIRETA — NÃO RETIRAR DA COZINHA"
+            : "ENTREGA DIRETA — NÃO PREPARAR",
+          ...directItems.map(formatItem),
+        ]
+      : []),
   ];
   const footer = order.notes ? [`Observações gerais: ${order.notes}`] : [];
   return [...header, "", ...body, "", ...footer].join("\n");
@@ -274,7 +321,7 @@ export function createCashShift(input) {
     differenceAmount: null,
     notes: input.notes || "",
     openedAt: now,
-    closedAt: null
+    closedAt: null,
   };
 }
 
@@ -288,7 +335,7 @@ export function closeCashShift(shift, declaredAmount) {
     status: "closed",
     declaredAmount: normalizedDeclared,
     differenceAmount: toMoney(normalizedDeclared - Number(shift.expectedAmount || 0)),
-    closedAt: new Date().toISOString()
+    closedAt: new Date().toISOString(),
   };
 }
 
@@ -296,7 +343,7 @@ export const RESERVED_STANDALONE_ORDER_FIELDS = new Set([
   "tabId",
   "roundNumber",
   "roundKind",
-  "reversesOrderId"
+  "reversesOrderId",
 ]);
 
 export const ALLOWED_STANDALONE_ORDER_FIELDS = new Set([
@@ -314,7 +361,7 @@ export const ALLOWED_STANDALONE_ORDER_FIELDS = new Set([
   "metadata",
   "idempotencyKey",
   "id",
-  "createdAt"
+  "createdAt",
 ]);
 
 export function normalizeStandaloneOrderDto(body = {}) {
@@ -326,7 +373,9 @@ export function normalizeStandaloneOrderDto(body = {}) {
   }
   for (const key of Object.keys(body)) {
     if (RESERVED_STANDALONE_ORDER_FIELDS.has(key)) {
-      const error = new Error("Campos estruturais como tabId, roundNumber, roundKind e reversesOrderId não são permitidos na criação avulsa");
+      const error = new Error(
+        "Campos estruturais como tabId, roundNumber, roundKind e reversesOrderId não são permitidos na criação avulsa",
+      );
       error.statusCode = 400;
       error.code = "STRUCTURAL_FIELDS_FORBIDDEN";
       throw error;
@@ -347,7 +396,6 @@ export function normalizeStandaloneOrderDto(body = {}) {
     tabId: null,
     roundNumber: null,
     roundKind: "production",
-    reversesOrderId: null
+    reversesOrderId: null,
   };
 }
-

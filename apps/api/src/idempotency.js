@@ -11,7 +11,7 @@ function decimalUnits(value, scale, label) {
     throw error;
   }
   const fraction = (match[3] || "").padEnd(scale, "0");
-  const units = BigInt(match[2]) * (10n ** BigInt(scale)) + BigInt(fraction || "0");
+  const units = BigInt(match[2]) * 10n ** BigInt(scale) + BigInt(fraction || "0");
   const signed = match[1] ? -units : units;
   const number = Number(signed);
   if (!Number.isSafeInteger(number)) {
@@ -39,7 +39,9 @@ function canonicalValue(value) {
   }
   if (typeof value === "object") {
     return Object.fromEntries(
-      Object.keys(value).sort().map((key) => [key, canonicalValue(value[key])])
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonicalValue(value[key])]),
     );
   }
   if (typeof value === "number") {
@@ -64,7 +66,7 @@ function canonicalAddon(addon = {}) {
     sku: String(addon.sku || "").trim() || null,
     name: String(addon.name || "").trim() || null,
     quantity: Number(addon.quantity ?? 1),
-    priceCents: addon.price == null ? null : moneyCents(addon.price)
+    priceCents: addon.price == null ? null : moneyCents(addon.price),
   };
 }
 
@@ -77,7 +79,7 @@ function canonicalItem(item = {}) {
     priceCents: item.price == null ? null : moneyCents(item.price),
     discountBasisPoints: basisPoints(item.discountPercent ?? 0),
     notes: String(item.notes || ""),
-    addons: (item.addons || []).map(canonicalAddon)
+    addons: (item.addons || []).map(canonicalAddon),
   };
 }
 
@@ -90,13 +92,11 @@ export function orderFingerprintPayload(body = {}, overrides = {}) {
     status: String(value.status || "received"),
     customerName: String(value.customerName || "Cliente"),
     fulfillmentMode,
-    deliveryAddress: fulfillmentMode === "delivery"
-      ? String(value.deliveryAddress || "").trim()
-      : null,
+    deliveryAddress:
+      fulfillmentMode === "delivery" ? String(value.deliveryAddress || "").trim() : null,
     promisedAt: value.promisedAt || null,
-    paymentMethod: tabId && value.paymentMethod == null
-      ? null
-      : String(value.paymentMethod || "cash"),
+    paymentMethod:
+      tabId && value.paymentMethod == null ? null : String(value.paymentMethod || "cash"),
     discountBasisPoints: basisPoints(value.discountPercent ?? 0),
     notes: String(value.notes || ""),
     priority: String(value.priority || "normal"),
@@ -106,7 +106,7 @@ export function orderFingerprintPayload(body = {}, overrides = {}) {
     roundKind: String(value.roundKind || "production"),
     reversesOrderId: value.reversesOrderId || null,
     items: (value.items || []).map(canonicalItem),
-    metadata: value.metadata || {}
+    metadata: value.metadata || {},
   };
 }
 
@@ -117,8 +117,8 @@ export function cancellationFingerprintPayload({ tabId, orderId, body = {} }) {
     reason: String(body.reason || "").trim(),
     items: (body.items || []).map((item) => ({
       itemId: String(item.itemId || ""),
-      quantity: Number(item.quantity ?? 0)
-    }))
+      quantity: Number(item.quantity ?? 0),
+    })),
   };
 }
 
@@ -127,39 +127,34 @@ export function integrationActionFingerprintPayload({ orderId, channel, action, 
     orderId: String(orderId),
     channel: String(channel),
     action: String(action),
-    payload
+    payload,
   };
 }
 
-export async function claimIdempotency(executor, {
-  key,
-  operation,
-  resource,
-  requestFingerprint
-}) {
-  await executor.query(
-    "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
-    [`idempotency:${key}`]
-  );
+export async function claimIdempotency(executor, { key, operation, resource, requestFingerprint }) {
+  await executor.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+    `idempotency:${key}`,
+  ]);
   const { rows } = await executor.query(
     "SELECT * FROM idempotency_records WHERE idempotency_key = $1 FOR UPDATE",
-    [key]
+    [key],
   );
   const existing = rows[0];
   if (existing) {
     if (existing.canonical_version !== CANONICAL_VERSION) {
       return { conflict: "idempotency_version_mismatch" };
     }
-    const matches = existing.operation === operation
-      && existing.resource === resource
-      && existing.fingerprint === requestFingerprint;
+    const matches =
+      existing.operation === operation &&
+      existing.resource === resource &&
+      existing.fingerprint === requestFingerprint;
     if (!matches) return { conflict: "idempotency_payload_mismatch" };
     if (!existing.result_id) return { conflict: "idempotency_incomplete" };
     return {
       repeated: true,
       resultType: existing.result_type,
       resultId: existing.result_id,
-      responseStatus: Number(existing.response_status || 200)
+      responseStatus: Number(existing.response_status || 200),
     };
   }
 
@@ -171,7 +166,7 @@ export async function claimIdempotency(executor, {
        UNION ALL SELECT 'tab_payments' FROM tab_payments WHERE idempotency_key = $1
        UNION ALL SELECT 'channel_commands' FROM channel_commands WHERE idempotency_key = $1
      ) legacy LIMIT 1`,
-    [key]
+    [key],
   );
   if (legacy.rows[0]) return { conflict: "legacy_idempotency_unverifiable" };
 
@@ -179,20 +174,16 @@ export async function claimIdempotency(executor, {
     `INSERT INTO idempotency_records (
        idempotency_key, operation, resource, fingerprint, canonical_version
      ) VALUES ($1,$2,$3,$4,$5)`,
-    [key, operation, resource, requestFingerprint, CANONICAL_VERSION]
+    [key, operation, resource, requestFingerprint, CANONICAL_VERSION],
   );
   return { repeated: false };
 }
 
-export async function completeIdempotency(executor, key, {
-  resultType,
-  resultId,
-  responseStatus
-}) {
+export async function completeIdempotency(executor, key, { resultType, resultId, responseStatus }) {
   await executor.query(
     `UPDATE idempotency_records
      SET result_type = $2, result_id = $3, response_status = $4, completed_at = NOW()
      WHERE idempotency_key = $1`,
-    [key, resultType, resultId, responseStatus]
+    [key, resultType, resultId, responseStatus],
   );
 }

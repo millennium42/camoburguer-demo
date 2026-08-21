@@ -1,6 +1,6 @@
-import test from "node:test";
 import assert from "node:assert/strict";
-import { login, authenticate, revokeSession } from "../apps/api/src/auth.js";
+import test from "node:test";
+import { authenticate, login, revokeSession } from "../apps/api/src/auth.js";
 
 // Helper para expor acesso as variaveis que não sao exportadas para testarmos eviction indiretamente
 // Na verdade, eviction em TtlCache remove a mais antiga.
@@ -8,7 +8,7 @@ import { login, authenticate, revokeSession } from "../apps/api/src/auth.js";
 test("M-07: loginAttempts respeita o limite maximo (eviction) e evita OOM", async () => {
   const db = { query: async () => ({ rows: [] }) };
   const now = new Date("2026-07-28T10:00:00Z");
-  
+
   // 1. Bloquear o IP 'A'
   for (let i = 0; i < 5; i++) {
     await login(db, { username: "victim", password: "wrong", ip: "A", now });
@@ -28,18 +28,18 @@ test("M-07: loginAttempts respeita o limite maximo (eviction) e evita OOM", asyn
 
 test("M-07: revokedTokens respeita o limite maximo (eviction)", async () => {
   let dbQueries = 0;
-  const db = { 
+  const db = {
     query: async (sql) => {
       dbQueries++;
       // always return null / empty for simplicity in this mock
       return { rows: [] };
-    } 
+    },
   };
   const now = new Date("2026-07-28T10:00:00Z");
 
   // 1. Revogar Token A
   await revokeSession(db, "token-A");
-  
+
   // Reset dbQueries
   dbQueries = 0;
 
@@ -63,28 +63,30 @@ test("M-07: revokedTokens respeita o limite maximo (eviction)", async () => {
 test("M-07: auth throtles writes to last_seen_at for SSE write amplification reduction", async () => {
   let updates = 0;
   const now = new Date("2026-07-28T10:00:00Z");
-  
+
   const db = {
     query: async (sql, values) => {
       if (sql.startsWith("SELECT")) {
         return {
-          rows: [{
-            id: "s1",
-            user_id: "u1",
-            csrf_hash: "hash",
-            expires_at: new Date(now.getTime() + 10000000).toISOString(),
-            idle_expires_at: new Date(now.getTime() + 10000000).toISOString(),
-            last_seen_at: new Date(now.getTime() - 2 * 60 * 1000).toISOString(), // Visto a 2 minutos
-            username: "admin",
-            role: "admin"
-          }]
+          rows: [
+            {
+              id: "s1",
+              user_id: "u1",
+              csrf_hash: "hash",
+              expires_at: new Date(now.getTime() + 10000000).toISOString(),
+              idle_expires_at: new Date(now.getTime() + 10000000).toISOString(),
+              last_seen_at: new Date(now.getTime() - 2 * 60 * 1000).toISOString(), // Visto a 2 minutos
+              username: "admin",
+              role: "admin",
+            },
+          ],
         };
       }
       if (sql.startsWith("UPDATE")) {
         updates++;
       }
       return { rows: [] };
-    }
+    },
   };
 
   // Primeira chamada: last_seen_at foi há 2 minutos (menos que 5 minutos)
@@ -94,5 +96,9 @@ test("M-07: auth throtles writes to last_seen_at for SSE write amplification red
   // Segunda chamada simulando o tempo passando para 6 minutos depois da ultima vez q foi gravado
   const futureNow = new Date(now.getTime() + 4 * 60 * 1000); // 2 minutos atras + 4 minutos = 6 minutos
   await authenticate(db, "valid-token", futureNow);
-  assert.equal(updates, 1, "Deve atualizar o DB pois ja se passaram mais de 5 minutos da ultima gravacao");
+  assert.equal(
+    updates,
+    1,
+    "Deve atualizar o DB pois ja se passaram mais de 5 minutos da ultima gravacao",
+  );
 });

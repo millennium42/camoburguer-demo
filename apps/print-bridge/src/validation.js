@@ -17,7 +17,7 @@ export function safeId(value, field) {
 }
 
 export function validPrintContent(value) {
-  return typeof value === "string"
-    && value.length > 0
-    && Buffer.byteLength(value, "utf8") <= 64 * 1024;
+  return (
+    typeof value === "string" && value.length > 0 && Buffer.byteLength(value, "utf8") <= 64 * 1024
+  );
 }

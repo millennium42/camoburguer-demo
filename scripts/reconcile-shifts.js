@@ -42,32 +42,41 @@ function parseArgs(argv) {
   return { canonicalId, duplicateId, declaredAmount, reason };
 }
 
-async function auditIfAvailable(client, { canonicalShift, duplicateShift, duplicateClosed, declaredAmount, differenceAmount, reason }) {
+async function auditIfAvailable(
+  client,
+  { canonicalShift, duplicateShift, duplicateClosed, declaredAmount, differenceAmount, reason },
+) {
   const { rows } = await client.query("SELECT to_regclass('public.audit_events') AS audit_table");
   if (!rows[0]?.audit_table) return;
+
+  const userRes = await client.query("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+  const actorId =
+    userRes.rows[0]?.id || (await client.query("SELECT id FROM users LIMIT 1")).rows[0]?.id;
+  if (!actorId) return;
 
   await client.query(
     `INSERT INTO audit_events
       (id, actor_id, action, resource_path, state_before, state_after, result)
-     VALUES ($1, NULL, $2, $3, $4::jsonb, $5::jsonb, 'success')`,
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, 'success')`,
     [
       randomUUID(),
+      actorId,
       "cash.shift.duplicate_reconciled",
       "/scripts/reconcile-shifts",
       JSON.stringify({
         canonicalShift,
         duplicateShift,
         declaredAmount,
-        reason
+        reason,
       }),
       JSON.stringify({
         canonicalShift,
         duplicateShift: duplicateClosed,
         differenceAmount,
         declaredAmount,
-        reason
-      })
-    ]
+        reason,
+      }),
+    ],
   );
 }
 
@@ -84,11 +93,11 @@ async function reconcile({ canonicalId, duplicateId, declaredAmount, reason }) {
        FROM cash_shifts
        WHERE id = ANY($1::text[])
        FOR UPDATE`,
-      [[canonicalId, duplicateId]]
+      [[canonicalId, duplicateId]],
     );
 
     if (rows.length !== 2) {
-      throw fail("Erro: Um ou ambos os IDs de caixa nao foram encontrados.");
+      throw fail("Erro: Um ou ambos os IDs de caixa não foram encontrados.");
     }
 
     const byId = new Map(rows.map((row) => [row.id, row]));
@@ -101,8 +110,10 @@ async function reconcile({ canonicalId, duplicateId, declaredAmount, reason }) {
       }
     }
 
-    const differenceAmount = Number((declaredAmount - Number(duplicateShift.expected_amount)).toFixed(2));
-    const note = `[RECONCILIACAO] ${reason}`;
+    const differenceAmount = Number(
+      (declaredAmount - Number(duplicateShift.expected_amount)).toFixed(2),
+    );
+    const note = `[RECONCILIAÇÃO] ${reason}`;
     const { rows: updatedRows } = await client.query(
       `UPDATE cash_shifts
        SET status = 'closed',
@@ -115,7 +126,7 @@ async function reconcile({ canonicalId, duplicateId, declaredAmount, reason }) {
            closed_at = NOW()
        WHERE id = $4
        RETURNING id, status, expected_amount, declared_amount, difference_amount, notes, opened_at, closed_at`,
-      [declaredAmount, differenceAmount, note, duplicateId]
+      [declaredAmount, differenceAmount, note, duplicateId],
     );
 
     const duplicateClosed = updatedRows[0];
@@ -126,13 +137,13 @@ async function reconcile({ canonicalId, duplicateId, declaredAmount, reason }) {
       duplicateClosed,
       declaredAmount,
       differenceAmount,
-      reason
+      reason,
     });
 
     await client.query("COMMIT");
     finished = true;
     console.log(
-      `Sucesso: caixa duplicado ${duplicateId} foi fechado. O caixa canônico ${canonicalId} permanece aberto.`
+      `Sucesso: caixa duplicado ${duplicateId} foi fechado. O caixa canônico ${canonicalId} permanece aberto.`,
     );
     return 0;
   } catch (error) {

@@ -1,17 +1,17 @@
-import { mapChannelMapping, mapChannelEvent, mapChannelCommand, mapOrder } from "../db.js";
+import { mapChannelCommand, mapChannelEvent, mapChannelMapping, mapOrder } from "../db.js";
 
 const MAPPING_COLUMNS = {
   externalStatus: "external_status",
   syncStatus: "sync_status",
   syncError: "sync_error",
-  metadata: "metadata"
+  metadata: "metadata",
 };
 
 const EVENT_COLUMNS = {
   status: "status",
   error: "error",
   processedAt: "processed_at",
-  payload: "payload"
+  payload: "payload",
 };
 
 const COMMAND_COLUMNS = {
@@ -29,7 +29,7 @@ const COMMAND_COLUMNS = {
   reconciledAt: "reconciled_at",
   lastHttpStatus: "last_http_status",
   eventDeadlineAt: "event_deadline_at",
-  deadLetteredAt: "dead_lettered_at"
+  deadLetteredAt: "dead_lettered_at",
 };
 
 function columnFor(columns, key) {
@@ -40,7 +40,7 @@ function columnFor(columns, key) {
 export async function findChannelMapping({ channel, merchantId, externalId }, executor) {
   const { rows } = await executor.query(
     "SELECT * FROM channel_mappings WHERE channel = $1 AND merchant_id = $2 AND external_id = $3",
-    [channel, merchantId, externalId]
+    [channel, merchantId, externalId],
   );
   return rows[0] ? mapChannelMapping(rows[0]) : null;
 }
@@ -57,11 +57,11 @@ export async function insertChannelMapping(mapping, executor) {
       mapping.merchantId,
       mapping.externalId,
       mapping.externalStatus,
-      mapping.syncStatus || 'synchronized',
+      mapping.syncStatus || "synchronized",
       JSON.stringify(mapping.metadata || {}),
       mapping.createdAt || new Date().toISOString(),
-      mapping.updatedAt || new Date().toISOString()
-    ]
+      mapping.updatedAt || new Date().toISOString(),
+    ],
   );
   return mapChannelMapping(rows[0]);
 }
@@ -75,7 +75,7 @@ export async function updateChannelMapping(id, updates, executor) {
   for (const [key, value] of Object.entries(updates)) {
     const column = columnFor(MAPPING_COLUMNS, key);
     setClauses.push(`${column} = $${i}`);
-    if (key === 'metadata') {
+    if (key === "metadata") {
       values.push(JSON.stringify(value));
     } else {
       values.push(value);
@@ -85,7 +85,7 @@ export async function updateChannelMapping(id, updates, executor) {
 
   setClauses.push(`updated_at = $${i}`);
   values.push(new Date().toISOString());
-  
+
   values.push(id);
 
   const query = `UPDATE channel_mappings SET ${setClauses.join(", ")} WHERE id = $${i + 1} RETURNING *`;
@@ -96,7 +96,7 @@ export async function updateChannelMapping(id, updates, executor) {
 export async function findChannelEvent({ channel, externalEventId }, executor) {
   const { rows } = await executor.query(
     "SELECT * FROM channel_events WHERE channel = $1 AND external_event_id = $2",
-    [channel, externalEventId]
+    [channel, externalEventId],
   );
   return rows[0] ? mapChannelEvent(rows[0]) : null;
 }
@@ -114,11 +114,11 @@ export async function insertChannelEvent(event, executor) {
       event.externalOrderId,
       event.eventType,
       JSON.stringify(event.payload),
-      event.status || 'pending',
+      event.status || "pending",
       event.error,
       event.occurredAt,
-      event.receivedAt || new Date().toISOString()
-    ]
+      event.receivedAt || new Date().toISOString(),
+    ],
   );
   return rows[0] ? mapChannelEvent(rows[0]) : null;
 }
@@ -156,11 +156,11 @@ export async function insertChannelCommand(command, executor) {
       command.action,
       command.idempotencyKey,
       JSON.stringify(command.payload || {}),
-      command.status || 'pending',
+      command.status || "pending",
       command.correlationId || command.id,
       command.nextAttemptAt || new Date().toISOString(),
-      command.createdAt || new Date().toISOString()
-    ]
+      command.createdAt || new Date().toISOString(),
+    ],
   );
   return rows[0] ? mapChannelCommand(rows[0]) : null;
 }
@@ -168,7 +168,7 @@ export async function insertChannelCommand(command, executor) {
 export async function findChannelCommand({ channel, idempotencyKey }, executor) {
   const { rows } = await executor.query(
     "SELECT * FROM channel_commands WHERE channel = $1 AND idempotency_key = $2",
-    [channel, idempotencyKey]
+    [channel, idempotencyKey],
   );
   return rows[0] ? mapChannelCommand(rows[0]) : null;
 }
@@ -182,7 +182,7 @@ export async function updateChannelCommand(id, updates, executor) {
   for (const [key, value] of Object.entries(updates)) {
     const column = columnFor(COMMAND_COLUMNS, key);
     setClauses.push(`${column} = $${i}`);
-    if (key === 'responsePayload') {
+    if (key === "responsePayload") {
       values.push(JSON.stringify(value));
     } else {
       values.push(value);
@@ -196,11 +196,7 @@ export async function updateChannelCommand(id, updates, executor) {
   return rows[0] ? mapChannelCommand(rows[0]) : null;
 }
 
-export async function claimChannelCommand({
-  channel,
-  workerId,
-  leaseMs = 60_000
-}, executor) {
+export async function claimChannelCommand({ channel, workerId, leaseMs = 60_000 }, executor) {
   const { rows } = await executor.query(
     `WITH candidate AS (
        SELECT id, status AS previous_status
@@ -227,12 +223,12 @@ export async function claimChannelCommand({
      FROM candidate
      WHERE command.id = candidate.id
      RETURNING command.*, candidate.previous_status`,
-    [channel, workerId, leaseMs]
+    [channel, workerId, leaseMs],
   );
   if (!rows[0]) return null;
   return {
     command: mapChannelCommand(rows[0]),
-    mode: rows[0].previous_status === "pending" ? "send" : "reconcile"
+    mode: rows[0].previous_status === "pending" ? "send" : "reconcile",
   };
 }
 
@@ -254,7 +250,7 @@ export async function updateOwnedChannelCommand(id, workerId, updates, executor)
      SET ${setClauses.join(", ")}
      WHERE id = $${index} AND lease_owner = $${index + 1}
      RETURNING *`,
-    values
+    values,
   );
   if (!rows[0]) {
     const error = new Error("Worker perdeu ownership do comando");
@@ -267,7 +263,7 @@ export async function updateOwnedChannelCommand(id, workerId, updates, executor)
 export async function getOrderWithMapping(orderId, executor) {
   const { rows } = await executor.query(
     "SELECT o.*, row_to_json(cm.*) as mapping FROM orders o LEFT JOIN channel_mappings cm ON o.id = cm.order_id WHERE o.id = $1",
-    [orderId]
+    [orderId],
   );
   if (!rows[0]) return null;
   const order = mapOrder(rows[0]);

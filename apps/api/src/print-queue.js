@@ -8,7 +8,7 @@ export function printPayload(job) {
     orderId: job.orderId,
     printerName: job.printerName,
     content: job.content,
-    reason: job.reason
+    reason: job.reason,
   };
 }
 
@@ -38,9 +38,9 @@ export function classifyPrintFailure(error) {
 }
 
 export function printBackoffMs(attempt, jobId = "") {
-  const base = Math.min(5_000 * (2 ** Math.max(0, Number(attempt) - 1)), 300_000);
+  const base = Math.min(5_000 * 2 ** Math.max(0, Number(attempt) - 1), 300_000);
   const seed = [...String(jobId)].reduce((sum, char) => (sum + char.charCodeAt(0)) % 1000, 0);
-  return Math.min(base + Math.floor(base * seed / 10_000), 300_000);
+  return Math.min(base + Math.floor((base * seed) / 10_000), 300_000);
 }
 
 export function assertBridgeStatus(value) {

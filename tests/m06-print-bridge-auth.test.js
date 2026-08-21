@@ -1,10 +1,11 @@
-import test from "node:test";
 import assert from "node:assert/strict";
 import { execSync } from "node:child_process";
 import fs from "node:fs";
+import test from "node:test";
 
 const createRunner = () => {
-  const code = "import 'dotenv/config';\n" +
+  const code =
+    "import 'dotenv/config';\n" +
     "import Fastify from 'fastify';\n" +
     "try {\n" +
     "  const ac = new AbortController();\n" +
@@ -25,12 +26,12 @@ const cleanupRunner = () => {
 
 test("M-06: Matriz ambiente x token x flag x host do print bridge", async (t) => {
   createRunner();
-  
+
   await t.test("Rejeita inicialização sem token e sem flag", () => {
     try {
       execSync("node temp-bridge-runner.js", {
         env: { ...process.env, PRINT_BRIDGE_TOKEN: "", PRINT_BRIDGE_INSECURE_LOCAL: "" },
-        stdio: "pipe"
+        stdio: "pipe",
       });
       assert.fail("Deveria abortar");
     } catch (err) {
@@ -39,21 +40,33 @@ test("M-06: Matriz ambiente x token x flag x host do print bridge", async (t) =>
     }
   });
 
-  await t.test("Aceita inicialização sem token se flag INSECURE estiver true e forca 127.0.0.1", () => {
-    try {
-      execSync("node temp-bridge-runner.js", {
-        env: { ...process.env, PRINT_BRIDGE_TOKEN: "", PRINT_BRIDGE_INSECURE_LOCAL: "true", PORT: "0" },
-        stdio: "pipe",
-        timeout: 2000
-      });
-    } catch (err) {
-      if (err.code === "ETIMEDOUT") {
-        assert.ok(true);
-      } else {
-        assert.ok(err.stdout.toString().includes("ATENÇÃO: print-bridge operando em modo INSEGURO no localhost"));
+  await t.test(
+    "Aceita inicialização sem token se flag INSECURE estiver true e forca 127.0.0.1",
+    () => {
+      try {
+        execSync("node temp-bridge-runner.js", {
+          env: {
+            ...process.env,
+            PRINT_BRIDGE_TOKEN: "",
+            PRINT_BRIDGE_INSECURE_LOCAL: "true",
+            PORT: "0",
+          },
+          stdio: "pipe",
+          timeout: 2000,
+        });
+      } catch (err) {
+        if (err.code === "ETIMEDOUT") {
+          assert.ok(true);
+        } else {
+          assert.ok(
+            err.stdout
+              .toString()
+              .includes("ATENÇÃO: print-bridge operando em modo INSEGURO no localhost"),
+          );
+        }
       }
-    }
-  });
+    },
+  );
 
   cleanupRunner();
 });

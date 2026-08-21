@@ -18,9 +18,10 @@ export function normalizeTabAssignmentPayload(input) {
     return { tabId };
   }
 
-  const newTab = body.newTab && typeof body.newTab === "object" && !Array.isArray(body.newTab)
-    ? body.newTab
-    : {};
+  const newTab =
+    body.newTab && typeof body.newTab === "object" && !Array.isArray(body.newTab)
+      ? body.newTab
+      : {};
   if (Object.keys(newTab).some((key) => !["kind", "label", "customerName"].includes(key))) {
     throw new Error("newTab contém campo inválido");
   }
@@ -32,10 +33,10 @@ export function normalizeTabAssignmentPayload(input) {
   return { newTab: { kind, label, customerName } };
 }
 
-export function tabAssignmentEligibility(order, {
-  hasChannelMapping = false,
-  hasFinanceEntry = false
-} = {}) {
+export function tabAssignmentEligibility(
+  order,
+  { hasChannelMapping = false, hasFinanceEntry = false } = {},
+) {
   let reason = null;
   if (!order) reason = "order_not_found";
   else if (order.tabId) reason = "already_assigned";
@@ -52,10 +53,17 @@ export function sameTabAssignment(assignment, orderId, normalizedPayload) {
   const canonicalJson = (value) => {
     if (Array.isArray(value)) return value.map(canonicalJson);
     if (value && typeof value === "object") {
-      return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalJson(value[key])]));
+      return Object.fromEntries(
+        Object.keys(value)
+          .sort()
+          .map((key) => [key, canonicalJson(value[key])]),
+      );
     }
     return value;
   };
-  return assignment.orderId === orderId
-    && JSON.stringify(canonicalJson(assignment.normalizedPayload)) === JSON.stringify(canonicalJson(normalizedPayload));
+  return (
+    assignment.orderId === orderId &&
+    JSON.stringify(canonicalJson(assignment.normalizedPayload)) ===
+      JSON.stringify(canonicalJson(normalizedPayload))
+  );
 }

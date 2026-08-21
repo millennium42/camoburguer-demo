@@ -34,31 +34,29 @@ const state = {
   csrfToken: "",
   currentUser: null,
   sseConnected: false,
-  eventSources: []
+  eventSources: [],
 };
 
 // O painel e a API compartilham a mesma origem em /app e /api-raiz.
 // Isso mantém cookies SameSite=Strict fora de qualquer fluxo cross-site.
 const apiBase = "";
 
-
 const sourceLabels = {
   counter: "🍔 Balcão",
   whatsapp: "💬 WhatsApp",
   ifood: "🔴 iFood",
   deliverymuch: "🟠 Delivery Much",
-  olaclick: "🟢 OlaClick"
+  olaclick: "🟢 OlaClick",
 };
 
 function isIntegratedOrder(order) {
-  return order?.hasChannelMapping === true
-    || ["ifood", "deliverymuch"].includes(order?.source);
+  return order?.hasChannelMapping === true || ["ifood", "deliverymuch"].includes(order?.source);
 }
 
 const fulfillmentLabels = {
   delivery: "🛵 Delivery",
   pickup: "🛍️ Retirada",
-  local: "🍽️ Local"
+  local: "🍽️ Local",
 };
 
 const statusLabels = {
@@ -67,7 +65,7 @@ const statusLabels = {
   in_preparation: "Em preparo",
   ready: "Pronto",
   completed: "Finalizado",
-  cancelled: "Cancelado"
+  cancelled: "Cancelado",
 };
 
 const paymentLabels = {
@@ -76,7 +74,7 @@ const paymentLabels = {
   credit_card: "Crédito",
   debit_card: "Débito",
   app_paid: "Pago no app",
-  mixed: "Misto"
+  mixed: "Misto",
 };
 
 const financeTypeLabels = {
@@ -85,7 +83,7 @@ const financeTypeLabels = {
   opening: "Abertura",
   cash_reinforcement: "Reforço",
   cash_withdrawal: "Retirada (sangria)",
-  closing_adjustment: "Diferença de fechamento"
+  closing_adjustment: "Diferença de fechamento",
 };
 
 const htmlEscapes = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -96,16 +94,21 @@ export function escapeHtml(value) {
 }
 
 export function splitPreparationItems(items = []) {
-  return items.reduce((groups, item) => {
-    const group = item.preparationMode === "direct_handoff" ? "direct" : "kitchen";
-    groups[group].push(item);
-    return groups;
-  }, { kitchen: [], direct: [] });
+  return items.reduce(
+    (groups, item) => {
+      const group = item.preparationMode === "direct_handoff" ? "direct" : "kitchen";
+      groups[group].push(item);
+      return groups;
+    },
+    { kitchen: [], direct: [] },
+  );
 }
 
 export function catalogItemPayload(data) {
   return {
-    sku: String(data.get("sku") || "").trim().toLowerCase(),
+    sku: String(data.get("sku") || "")
+      .trim()
+      .toLowerCase(),
     name: String(data.get("name") || "").trim(),
     category: String(data.get("category") || "").trim(),
     price: Number(data.get("price")),
@@ -113,7 +116,7 @@ export function catalogItemPayload(data) {
     stockCategory: data.get("stockCategory") || null,
     allowsAddons: data.has("allowsAddons"),
     preparationMode: data.get("preparationMode"),
-    available: data.has("available")
+    available: data.has("available"),
   };
 }
 
@@ -134,7 +137,7 @@ export function reconcileCartItems(items, catalog) {
       preparationMode: current.preparationMode,
       allowsAddons: current.allowsAddons,
       catalogUnavailable: !current.available || addonsDisabled,
-      catalogIssue: !current.available ? "unavailable" : addonsDisabled ? "addons_disabled" : null
+      catalogIssue: !current.available ? "unavailable" : addonsDisabled ? "addons_disabled" : null,
     };
   });
 }
@@ -148,29 +151,50 @@ function hasUnavailableCartItems() {
   return state.orderItems.some((item) => item.catalogUnavailable);
 }
 
-export function addOrAccumulateItem(items, selected, quantity, notes = "", discountPercent = 0, addons = []) {
+export function addOrAccumulateItem(
+  items,
+  selected,
+  quantity,
+  notes = "",
+  discountPercent = 0,
+  addons = [],
+) {
   const normalizedQuantity = Math.max(1, Math.trunc(Number(quantity) || 1));
   const normalizedNotes = String(notes).trim();
   const normalizedDiscount = validDiscountPercent(discountPercent);
-  const addonKey = addons.map((addon) => addon.sku).sort().join(",");
+  const addonKey = addons
+    .map((addon) => addon.sku)
+    .sort()
+    .join(",");
   const existing = items.find(
-    (item) => item.sku === selected.sku
-      && String(item.notes || "").trim() === normalizedNotes
-      && validDiscountPercent(item.discountPercent) === normalizedDiscount
-      && (item.addons || []).map((addon) => addon.sku).sort().join(",") === addonKey
+    (item) =>
+      item.sku === selected.sku &&
+      String(item.notes || "").trim() === normalizedNotes &&
+      validDiscountPercent(item.discountPercent) === normalizedDiscount &&
+      (item.addons || [])
+        .map((addon) => addon.sku)
+        .sort()
+        .join(",") === addonKey,
   );
   if (existing) existing.quantity += normalizedQuantity;
-  else items.push({ ...selected, quantity: normalizedQuantity, addons, discountPercent: normalizedDiscount, notes: normalizedNotes });
+  else
+    items.push({
+      ...selected,
+      quantity: normalizedQuantity,
+      addons,
+      discountPercent: normalizedDiscount,
+      notes: normalizedNotes,
+    });
   return items;
 }
 
 export function setItemDiscount(items, index, discountPercent) {
   const normalizedDiscount = Number(discountPercent);
   if (
-    items[index]
-    && Number.isFinite(normalizedDiscount)
-    && normalizedDiscount >= 0
-    && normalizedDiscount <= 100
+    items[index] &&
+    Number.isFinite(normalizedDiscount) &&
+    normalizedDiscount >= 0 &&
+    normalizedDiscount <= 100
   ) {
     items[index].discountPercent = normalizedDiscount;
   }
@@ -186,9 +210,16 @@ function validDiscountPercent(value) {
 
 export function calculateOrderPreviewTotal(items = [], discountPercent = 0) {
   const subtotal = items.reduce((total, item) => {
-    const addonTotal = (item.addons || []).reduce((sum, addon) => sum + Number(addon.price || 0), 0);
-    return total + (Number(item.price || 0) + addonTotal) * Number(item.quantity || 0)
-      * (1 - validDiscountPercent(item.discountPercent) / 100);
+    const addonTotal = (item.addons || []).reduce(
+      (sum, addon) => sum + Number(addon.price || 0),
+      0,
+    );
+    return (
+      total +
+      (Number(item.price || 0) + addonTotal) *
+        Number(item.quantity || 0) *
+        (1 - validDiscountPercent(item.discountPercent) / 100)
+    );
   }, 0);
   return Math.round(subtotal * (1 - validDiscountPercent(discountPercent) / 100) * 100) / 100;
 }
@@ -203,9 +234,7 @@ export function setItemQuantity(items, index, quantity) {
 
 export function nextOrderAttempt(previous, payload, makeKey = () => crypto.randomUUID()) {
   const fingerprint = JSON.stringify(payload);
-  return previous?.fingerprint === fingerprint
-    ? previous
-    : { key: makeKey(), fingerprint };
+  return previous?.fingerprint === fingerprint ? previous : { key: makeKey(), fingerprint };
 }
 
 export function tabAssignmentPayload(data) {
@@ -216,8 +245,8 @@ export function tabAssignmentPayload(data) {
     newTab: {
       kind: String(data.get("kind") || "tab").trim(),
       label: String(data.get("label") || "").trim(),
-      customerName: String(data.get("customerName") || "").trim()
-    }
+      customerName: String(data.get("customerName") || "").trim(),
+    },
   };
 }
 
@@ -243,7 +272,7 @@ async function chooseCancellationReason(orderId) {
 function money(value) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL"
+    currency: "BRL",
   }).format(Number(value || 0));
 }
 
@@ -253,13 +282,19 @@ function printShiftReport(shift, summary, entries, isDetailed) {
 
   const summaryHtml = Object.entries(summary.paymentsByMethod || {})
     .filter(([, amount]) => amount !== 0)
-    .map(([method, amount]) => `<div style="display: flex; justify-content: space-between;"><span>${escapeHtml(paymentLabels[method] || method)}</span><span>${money(amount)}</span></div>`)
+    .map(
+      ([method, amount]) =>
+        `<div style="display: flex; justify-content: space-between;"><span>${escapeHtml(paymentLabels[method] || method)}</span><span>${money(amount)}</span></div>`,
+    )
     .join("");
 
-  const detailedHtml = isDetailed ? `
+  const detailedHtml = isDetailed
+    ? `
     <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
     <h3 style="text-align: center; font-size: 14px; margin: 0 0 10px 0;">Lançamentos Detalhados</h3>
-    ${entries.map(entry => `
+    ${entries
+      .map(
+        (entry) => `
       <div style="margin-bottom: 6px; font-size: 11px;">
         <div style="display: flex; justify-content: space-between;">
           <strong>${escapeHtml(financeTypeLabels[entry.type] || entry.type)}</strong>
@@ -270,8 +305,11 @@ function printShiftReport(shift, summary, entries, isDetailed) {
           <span style="text-align: right;">${escapeHtml(entry.label).slice(0, 15)}</span>
         </div>
       </div>
-    `).join("")}
-  ` : "";
+    `,
+      )
+      .join("")}
+  `
+    : "";
 
   printArea.innerHTML = `
     <div style="font-family: monospace; width: 300px; padding: 10px; color: black; background: white; font-size: 12px;">
@@ -284,8 +322,8 @@ function printShiftReport(shift, summary, entries, isDetailed) {
       <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Abertura Base:</strong><span>${money(shift.openingAmount)}</span></div>
       <div style="display: flex; justify-content: space-between;"><strong>Total de Vendas:</strong><span>${money(summary.grossSales || 0)}</span></div>
       <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Cancelamentos:</strong><span>${money(summary.cancellations || 0)}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Entradas (Reforço):</strong><span>${money(summary.entriesByType?.['cash_reinforcement'] || 0)}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Saídas (Sangria):</strong><span>${money(summary.entriesByType?.['cash_withdrawal'] || 0)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Entradas (Reforço):</strong><span>${money(summary.entriesByType?.["cash_reinforcement"] || 0)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Saídas (Sangria):</strong><span>${money(summary.entriesByType?.["cash_withdrawal"] || 0)}</span></div>
       <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
       <h3 style="font-size: 13px; margin: 0 0 5px 0;">Resumo por Forma de Pagamento</h3>
       ${summaryHtml || "Nenhuma movimentação"}
@@ -304,10 +342,10 @@ function formatWhen(value) {
   return Number.isNaN(date.getTime())
     ? "Horário não informado"
     : date.toLocaleString("pt-BR", {
-      dateStyle: "short",
-      timeStyle: "short",
-      timeZone: state.financeSummary?.businessTimeZone || "America/Sao_Paulo"
-    });
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: state.financeSummary?.businessTimeZone || "America/Sao_Paulo",
+      });
 }
 
 function syncStamp(label) {
@@ -324,7 +362,9 @@ function notify(message, tone = "success") {
 function renderCatalog() {
   const container = $("#catalog-modal-content");
   if (!container) return;
-  const balances = Object.fromEntries(state.inventory.balances.map((item) => [item.category, item.quantity]));
+  const balances = Object.fromEntries(
+    state.inventory.balances.map((item) => [item.category, item.quantity]),
+  );
 
   const categories = state.catalog.reduce((acc, item) => {
     (acc[item.category] = acc[item.category] || []).push(item);
@@ -332,23 +372,35 @@ function renderCatalog() {
   }, {});
 
   const categoryNames = Object.keys(categories);
-  state.activeCatalogCategory = resolveActiveCatalogCategory(state.activeCatalogCategory, state.catalog);
+  state.activeCatalogCategory = resolveActiveCatalogCategory(
+    state.activeCatalogCategory,
+    state.catalog,
+  );
 
   const tabsHtml = `
     <nav class="tab-bar" style="margin-bottom: 16px;">
-      ${categoryNames.map(cat => `
-        <button type="button" class="tab-button ${state.activeCatalogCategory === cat ? 'active' : ''}" data-catalog-tab="${escapeHtml(cat)}">${escapeHtml(cat)}</button>
-      `).join("")}
+      ${categoryNames
+        .map(
+          (cat) => `
+        <button type="button" class="tab-button ${state.activeCatalogCategory === cat ? "active" : ""}" data-catalog-tab="${escapeHtml(cat)}">${escapeHtml(cat)}</button>
+      `,
+        )
+        .join("")}
     </nav>
   `;
 
   const activeItems = categories[state.activeCatalogCategory] || [];
 
-  const itemsHtml = activeItems.map((item) => {
-    const inStock = !item.stockCategory || Number(balances[item.stockCategory]) > 0;
-    const sellable = item.available && inStock;
-    const availability = !item.available ? "Pausado" : inStock ? money(item.price) : "Sem estoque";
-    return `
+  const itemsHtml = activeItems
+    .map((item) => {
+      const inStock = !item.stockCategory || Number(balances[item.stockCategory]) > 0;
+      const sellable = item.available && inStock;
+      const availability = !item.available
+        ? "Pausado"
+        : inStock
+          ? money(item.price)
+          : "Sem estoque";
+      return `
       <div class="menu-product-card" ${sellable ? "" : 'style="opacity: 0.6;"'}>
         <div>
           <h3>${escapeHtml(item.name)}</h3>
@@ -362,7 +414,8 @@ function renderCatalog() {
         </div>
       </div>
     `;
-  }).join("");
+    })
+    .join("");
 
   container.innerHTML = tabsHtml + `<div class="menu-products-grid">${itemsHtml}</div>`;
 }
@@ -378,7 +431,12 @@ function openItemConfig(sku) {
   const field = $("#config-addons-field");
   field.hidden = !item.allowsAddons;
   $("#config-addons").innerHTML = item.allowsAddons
-    ? state.addOns.map((addon) => `<label class="check-option"><input type="checkbox" name="config-addon" value="${escapeHtml(addon.sku)}" /> ${escapeHtml(addon.name)} <span>${money(addon.price)}</span></label>`).join("")
+    ? state.addOns
+        .map(
+          (addon) =>
+            `<label class="check-option"><input type="checkbox" name="config-addon" value="${escapeHtml(addon.sku)}" /> ${escapeHtml(addon.name)} <span>${money(addon.price)}</span></label>`,
+        )
+        .join("")
     : "";
 
   $("#config-qty").value = "1";
@@ -393,26 +451,40 @@ function renderInventory() {
   const balEl = $("#inventory-balances");
   if (balEl && state.inventory.balances) {
     balEl.innerHTML = state.inventory.balances
-      .map((item) => `<div class="stat"><span>${labels[item.category] || escapeHtml(item.category)}</span><strong>${item.quantity}</strong></div>`)
+      .map(
+        (item) =>
+          `<div class="stat"><span>${labels[item.category] || escapeHtml(item.category)}</span><strong>${item.quantity}</strong></div>`,
+      )
       .join("");
   }
   const movEl = $("#inventory-movements");
   if (movEl && state.inventory.movements) {
     movEl.innerHTML = state.inventory.movements.length
-      ? state.inventory.movements.map((item) => `<div class="entry-card"><div class="mini-meta"><span>${labels[item.category] || escapeHtml(item.category)}</span><span>${formatWhen(item.createdAt)}</span><span>${escapeHtml(item.reason)}</span></div><strong>${item.delta > 0 ? "+" : ""}${item.delta}</strong>${item.metadata?.note ? `<p>${escapeHtml(item.metadata.note)}</p>` : ""}</div>`).join("")
+      ? state.inventory.movements
+          .map(
+            (item) =>
+              `<div class="entry-card"><div class="mini-meta"><span>${labels[item.category] || escapeHtml(item.category)}</span><span>${formatWhen(item.createdAt)}</span><span>${escapeHtml(item.reason)}</span></div><strong>${item.delta > 0 ? "+" : ""}${item.delta}</strong>${item.metadata?.note ? `<p>${escapeHtml(item.metadata.note)}</p>` : ""}</div>`,
+          )
+          .join("")
       : '<p class="empty-state">Nenhuma movimentação.</p>';
   }
   const quickEl = $("#quick-bread-inventory");
   if (quickEl && state.inventory.balances) {
     const breadLabels = { xis: "Pão de Xis", dog: "Pão de Dog", hamburguer: "Pão Hamburguer" };
     const order = ["xis", "dog", "hamburguer"];
-    const balancesMap = Object.fromEntries((state.inventory.balances || []).map((b) => [b.category, b.quantity]));
-    quickEl.innerHTML = order.map((cat) => `
+    const balancesMap = Object.fromEntries(
+      (state.inventory.balances || []).map((b) => [b.category, b.quantity]),
+    );
+    quickEl.innerHTML = order
+      .map(
+        (cat) => `
       <div class="stat" style="padding: 10px; text-align: center;">
         <span style="font-size: 0.78rem;">${breadLabels[cat] || cat}</span>
         <strong style="font-size: 1.15rem;">${balancesMap[cat] ?? 0} un</strong>
       </div>
-    `).join("");
+    `,
+      )
+      .join("");
   }
 }
 
@@ -425,7 +497,8 @@ function renderOrderItems() {
       if (orderTotal) orderTotal.textContent = money(0);
     } else {
       list.innerHTML = state.orderItems
-        .map((item, index) => `
+        .map(
+          (item, index) => `
           <li class="order-card cart-row">
             <div>
               <strong>${escapeHtml(item.name)}</strong>
@@ -447,12 +520,13 @@ function renderOrderItems() {
             <strong>${money(calculateOrderPreviewTotal([item]))}</strong>
             <button type="button" data-remove-item="${index}" class="link-danger">Remover</button>
           </li>
-        `)
+        `,
+        )
         .join("");
       const orderTotal = $("#order-total");
       if (orderTotal) {
         orderTotal.textContent = money(
-          calculateOrderPreviewTotal(state.orderItems, $("#order-discount")?.value || 0)
+          calculateOrderPreviewTotal(state.orderItems, $("#order-discount")?.value || 0),
         );
       }
     }
@@ -465,28 +539,43 @@ function renderTabs() {
   $("#tabs-count").textContent = String(state.tabs.length);
   const sortedTabs = [...state.tabs].reverse();
   $("#tabs-list").innerHTML = sortedTabs.length
-    ? sortedTabs.map((tab) => {
-      const reversedPayments = new Set(tab.payments.filter((payment) => payment.kind === "reversal").map((payment) => payment.reversesPaymentId));
-      return `<article class="order-card">
+    ? sortedTabs
+        .map((tab) => {
+          const reversedPayments = new Set(
+            tab.payments
+              .filter((payment) => payment.kind === "reversal")
+              .map((payment) => payment.reversesPaymentId),
+          );
+          return `<article class="order-card">
         <div class="section-heading"><strong>${escapeHtml(tab.kind === "table" ? `Mesa ${tab.label}` : `Comanda ${tab.label}`)}</strong><span>${money(tab.total)}</span></div>
         <div class="mini-meta"><span>${escapeHtml(tab.customerName || "Sem cliente")}</span><span>${tab.rounds.length} rodada(s)</span><span>${formatWhen(tab.openedAt)}</span></div>
         <div class="mini-meta"><span>Pago: ${money(tab.paid)}</span><strong>Restante: ${money(tab.balance)}</strong><span>${tab.paymentMethod ? paymentLabels[tab.paymentMethod] : "Não pago"}</span></div>
-        <div class="tab-rounds">${tab.rounds.map((round) => `<div class="round-row ${round.roundKind === "cancellation" ? "cancellation" : ""}">
+        <div class="tab-rounds">${tab.rounds
+          .map(
+            (
+              round,
+            ) => `<div class="round-row ${round.roundKind === "cancellation" ? "cancellation" : ""}">
           <strong>${round.roundKind === "cancellation" ? "Cancelamento" : `Rodada ${round.roundNumber}`}${round.discountPercent ? ` · desconto ${round.discountPercent}%` : ""}</strong>
-          ${(round.items || []).map((item) => {
-            const cancelled = tab.rounds.filter((candidate) => candidate.reversesOrderId === round.id)
-              .flatMap((candidate) => candidate.items || [])
-              .filter((candidate) => candidate.reversesItemId === item.id)
-              .reduce((sum, candidate) => sum + Number(candidate.quantity), 0);
-            const remaining = Number(item.quantity) - cancelled;
-            return `<div>${item.quantity}x ${escapeHtml(item.name)}${round.roundKind === "production" && remaining > 0 ? ` <button type="button" data-cancel-item="${escapeHtml(item.id)}" data-cancel-tab="${escapeHtml(tab.id)}" data-cancel-order="${escapeHtml(round.id)}" data-cancel-max="${remaining}" data-cancel-name="${escapeHtml(item.name)}">Cancelar</button>` : ""}</div>`;
-          }).join("")}
-        </div>`).join("")}</div>
+          ${(round.items || [])
+            .map((item) => {
+              const cancelled = tab.rounds
+                .filter((candidate) => candidate.reversesOrderId === round.id)
+                .flatMap((candidate) => candidate.items || [])
+                .filter((candidate) => candidate.reversesItemId === item.id)
+                .reduce((sum, candidate) => sum + Number(candidate.quantity), 0);
+              const remaining = Number(item.quantity) - cancelled;
+              return `<div>${item.quantity}x ${escapeHtml(item.name)}${round.roundKind === "production" && remaining > 0 ? ` <button type="button" data-cancel-item="${escapeHtml(item.id)}" data-cancel-tab="${escapeHtml(tab.id)}" data-cancel-order="${escapeHtml(round.id)}" data-cancel-max="${remaining}" data-cancel-name="${escapeHtml(item.name)}">Cancelar</button>` : ""}</div>`;
+            })
+            .join("")}
+        </div>`,
+          )
+          .join("")}</div>
         <div class="tab-payments">${tab.payments.map((payment) => `<div class="round-row ${payment.kind === "reversal" ? "cancellation" : ""}"><span>${payment.kind === "reversal" ? "Estorno" : paymentLabels[payment.paymentMethod]} · ${money(payment.amount)}</span>${payment.kind === "payment" && !reversedPayments.has(payment.id) ? `<button type="button" data-reverse-payment="${escapeHtml(payment.id)}" data-payment-tab="${escapeHtml(tab.id)}">Estornar</button>` : ""}</div>`).join("")}</div>
         ${tab.balanceCents > 0 ? `<form class="payment-form" data-payment-form data-tab-id="${escapeHtml(tab.id)}"><select name="paymentMethod" aria-label="Forma de pagamento"><option value="cash">Dinheiro</option><option value="pix">Pix</option><option value="credit_card">Crédito</option><option value="debit_card">Débito</option><option value="app_paid">Pago no app</option></select><input name="amount" type="number" min="0.01" max="${tab.balance}" step="0.01" value="${tab.balance}" required aria-label="Valor do pagamento" /><button type="submit">Registrar parcela</button><div data-tab-cash-box style="grid-column: 1 / -1; display: none; background: rgba(16, 185, 129, 0.08); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px dashed rgba(16, 185, 129, 0.3); margin-top: 6px;"><div style="display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap;"><label style="flex: 1 1 180px; flex-direction: row; align-items: center; gap: 8px; font-size: 0.88rem; margin: 0;">Recebido (R$): <input type="number" min="0" step="0.01" data-tab-cash-received placeholder="Ex.: 50,00" style="padding: 6px 10px; width: 110px;" /></label><div><span style="font-size: 0.82rem; color: var(--muted); font-weight: 600;">Troco: </span><strong data-tab-cash-change style="color: #34d399; font-size: 1.15rem;">R$ 0,00</strong></div></div></div></form>` : ""}
         ${tab.balanceCents === 0 ? `<div class="actions"><button type="button" data-close-tab="${escapeHtml(tab.id)}">Encerrar comanda</button></div>` : ""}
       </article>`;
-    }).join("")
+        })
+        .join("")
     : '<p class="empty-state">Nenhuma comanda aberta.</p>';
   document.querySelectorAll("[data-payment-form]").forEach(updateTabCashChange);
   renderActiveTab();
@@ -501,14 +590,17 @@ function renderActiveTab() {
   if (activeCard) {
     activeCard.hidden = !active;
     if (active) {
-      $("#active-comanda-title").textContent = `Lançando rodada ${tab.rounds.length + 1} para ${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label}`;
+      $("#active-comanda-title").textContent =
+        `Lançando rodada ${tab.rounds.length + 1} para ${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label}`;
       const cartList = $("#active-comanda-cart");
       if (cartList) {
         if (!state.orderItems.length) {
-          cartList.innerHTML = '<li class="empty-state">Nenhum produto adicionado a esta rodada ainda. Clique no botão abaixo para escolher itens do cardápio.</li>';
+          cartList.innerHTML =
+            '<li class="empty-state">Nenhum produto adicionado a esta rodada ainda. Clique no botão abaixo para escolher itens do cardápio.</li>';
         } else {
           cartList.innerHTML = state.orderItems
-            .map((item, index) => `
+            .map(
+              (item, index) => `
               <li class="order-card cart-row">
                 <div>
                   <strong>${escapeHtml(item.name)}</strong>
@@ -527,7 +619,9 @@ function renderActiveTab() {
                 <strong>${money(calculateOrderPreviewTotal([item]))}</strong>
                 <button type="button" data-remove-item="${index}" class="link-danger">Remover</button>
               </li>
-            `).join("");
+            `,
+            )
+            .join("");
         }
       }
       const totalEl = $("#active-comanda-total");
@@ -549,7 +643,10 @@ function renderActiveTab() {
     const options = [
       '<option value="">(Nenhuma - Pedido Avulso / Balcão)</option>',
       '<option value="new">➕ Criar Nova Comanda / Mesa...</option>',
-      ...state.tabs.map((t) => `<option value="${escapeHtml(t.id)}">${t.kind === "table" ? "Mesa" : "Comanda"} ${escapeHtml(t.label)}${t.customerName ? ` (${escapeHtml(t.customerName)})` : ""}</option>`)
+      ...state.tabs.map(
+        (t) =>
+          `<option value="${escapeHtml(t.id)}">${t.kind === "table" ? "Mesa" : "Comanda"} ${escapeHtml(t.label)}${t.customerName ? ` (${escapeHtml(t.customerName)})` : ""}</option>`,
+      ),
     ];
     tabSelect.innerHTML = options.join("");
     if (state.isCreatingNewTabInOrder) {
@@ -568,7 +665,8 @@ function orderActions(order) {
   if (order.status === "confirmed") actions.push(["in_preparation", "Em preparo"]);
   if (order.status === "in_preparation") actions.push(["ready", "Pronto"]);
   if (order.status === "ready") actions.push(["completed", "Concluir"]);
-  if (!order.tabId && !['completed', 'cancelled'].includes(order.status)) actions.push(["cancelled", "Cancelar"]);
+  if (!order.tabId && !["completed", "cancelled"].includes(order.status))
+    actions.push(["cancelled", "Cancelar"]);
   return actions;
 }
 
@@ -583,8 +681,8 @@ function syncTabAssignmentFields() {
 }
 
 function openTabAssignment(orderId, opener) {
-  const order = state.orders.find((item) =>
-    item.id === orderId && item.tabAssignmentEligibility?.eligible
+  const order = state.orders.find(
+    (item) => item.id === orderId && item.tabAssignmentEligibility?.eligible,
   );
   if (!order) {
     notify("O pedido não está mais elegível para vínculo. Atualize a tela.", "error");
@@ -598,11 +696,15 @@ function openTabAssignment(orderId, opener) {
   form.reset();
   form.elements.orderId.value = order.id;
   form.elements.customerName.value = order.customerName || "";
-  form.elements.tabId.innerHTML = state.tabs.map((tab) =>
-    `<option value="${escapeHtml(tab.id)}">${escapeHtml(tab.kind === "table" ? `Mesa ${tab.label}` : `Comanda ${tab.label}`)}${tab.customerName ? ` · ${escapeHtml(tab.customerName)}` : ""}</option>`
-  ).join("");
+  form.elements.tabId.innerHTML = state.tabs
+    .map(
+      (tab) =>
+        `<option value="${escapeHtml(tab.id)}">${escapeHtml(tab.kind === "table" ? `Mesa ${tab.label}` : `Comanda ${tab.label}`)}${tab.customerName ? ` · ${escapeHtml(tab.customerName)}` : ""}</option>`,
+    )
+    .join("");
   form.elements.destination.value = state.tabs.length ? "existing" : "new";
-  $("#tab-assignment-order").textContent = `${order.customerName || "Cliente"} · ${money(order.total)} · ${statusLabels[order.status] || order.status}`;
+  $("#tab-assignment-order").textContent =
+    `${order.customerName || "Cliente"} · ${money(order.total)} · ${statusLabels[order.status] || order.status}`;
   syncTabAssignmentFields();
   $("#tab-assignment-dialog").showModal();
   (state.tabs.length ? form.elements.tabId : form.elements.label).focus();
@@ -622,12 +724,16 @@ function renderOrders() {
   const authList = $("#auth-list");
   const authCard = $("#auth-queue-card");
 
-  const authOrders = state.orders.filter((order) => order.status === "received" && isIntegratedOrder(order));
-  const normalOrders = state.orders.filter(o => !authOrders.includes(o));
+  const authOrders = state.orders.filter(
+    (order) => order.status === "received" && isIntegratedOrder(order),
+  );
+  const normalOrders = state.orders.filter((o) => !authOrders.includes(o));
 
   if (authOrders.length) {
     authCard.hidden = false;
-    authList.innerHTML = authOrders.map(order => `
+    authList.innerHTML = authOrders
+      .map(
+        (order) => `
       <div class="order-card integration-card">
         <div class="integration-meta">
           <strong>${escapeHtml(sourceLabels[order.source] || order.source)}</strong>
@@ -646,7 +752,9 @@ function renderOrders() {
           <button type="button" class="danger" data-integration-cancel="${escapeHtml(order.id)}">Recusar</button>
         </div>
       </div>
-    `).join("");
+    `,
+      )
+      .join("");
   } else {
     authCard.hidden = true;
     authList.innerHTML = "";
@@ -665,15 +773,16 @@ function renderOrders() {
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
   list.innerHTML = sortedNormalOrders
-    .map((order) => `
+    .map(
+      (order) => `
       <div class="order-card">
         <div class="order-meta">
-          <span class="pill ${isIntegratedOrder(order) ? 'warning' : ''}">${escapeHtml(sourceLabels[order.source] || order.source)}</span>
+          <span class="pill ${isIntegratedOrder(order) ? "warning" : ""}">${escapeHtml(sourceLabels[order.source] || order.source)}</span>
           <span>${escapeHtml(fulfillmentLabels[order.fulfillmentMode] || order.fulfillmentMode)}</span>
           <span>${escapeHtml(order.customerName || "Cliente")}</span>
-          <span class="pill ${order.status === 'completed' ? 'open' : order.status === 'cancelled' ? 'danger' : ''}">${escapeHtml(statusLabels[order.status] || order.status)}</span>
+          <span class="pill ${order.status === "completed" ? "open" : order.status === "cancelled" ? "danger" : ""}">${escapeHtml(statusLabels[order.status] || order.status)}</span>
           <span>${formatWhen(order.createdAt)}</span>
-          ${order.syncStatus && order.syncStatus !== 'synchronized' ? `<span class="pill warning">Sync: ${escapeHtml(order.syncStatus)}</span>` : ""}
+          ${order.syncStatus && order.syncStatus !== "synchronized" ? `<span class="pill warning">Sync: ${escapeHtml(order.syncStatus)}</span>` : ""}
           ${order.tabId ? `<span class="pill open">${escapeHtml(order.metadata?.tabLabel || "Comanda")} · rodada ${order.roundNumber}</span>` : ""}
           ${order.metadata?.tabAssignment ? '<span class="pill warning">Vinculado após o ticket</span>' : ""}
           ${order.discountPercent ? `<span>Desconto ${order.discountPercent}%</span>` : ""}
@@ -681,16 +790,23 @@ function renderOrders() {
         </div>
         <p>${(order.items || []).map((item) => `${item.quantity}x ${escapeHtml(item.name)}${(item.addons || []).length ? ` + ${item.addons.map((addon) => escapeHtml(addon.name)).join(", ")}` : ""}${item.discountPercent ? ` (-${item.discountPercent}%)` : ""}`).join(" · ")}</p>
         <div class="actions">
-          ${orderActions(order).map(([action, label]) => `
+          ${orderActions(order)
+            .map(
+              ([action, label]) => `
             <button type="button" data-order-action="${action}" data-order-id="${escapeHtml(order.id)}">${escapeHtml(label)}</button>
-          `).join("")}
-          ${order.tabAssignmentEligibility?.eligible
-            ? `<button type="button" class="secondary" data-assign-tab="${escapeHtml(order.id)}">Vincular à comanda</button>`
-            : ""}
+          `,
+            )
+            .join("")}
+          ${
+            order.tabAssignmentEligibility?.eligible
+              ? `<button type="button" class="secondary" data-assign-tab="${escapeHtml(order.id)}">Vincular à comanda</button>`
+              : ""
+          }
           <button type="button" data-reprint="${escapeHtml(order.id)}">Reimprimir</button>
         </div>
       </div>
-    `)
+    `,
+    )
     .join("");
 }
 
@@ -722,18 +838,26 @@ function renderKitchen() {
             <span>${formatWhen(order.createdAt)}</span>
           </div>
           ${order.deliveryAddress ? `<p><strong>Endereço:</strong> ${escapeHtml(order.deliveryAddress)}</p>` : ""}
-          ${groups.kitchen.length ? `
+          ${
+            groups.kitchen.length
+              ? `
             <section class="preparation-group kitchen-preparation-group">
               <strong>${cancellation ? "CANCELAMENTO — RETIRAR DA COZINHA" : "PREPARO COZINHA"}</strong>
               ${renderItems(groups.kitchen)}
             </section>
-          ` : ""}
-          ${groups.direct.length ? `
+          `
+              : ""
+          }
+          ${
+            groups.direct.length
+              ? `
             <section class="preparation-group direct-handoff-group">
               <strong>${cancellation ? "CANCELAR ENTREGA DIRETA — NÃO RETIRAR DA COZINHA" : "ENTREGA DIRETA — NÃO PREPARAR"}</strong>
               ${renderItems(groups.direct)}
             </section>
-          ` : ""}
+          `
+              : ""
+          }
         </div>
       `;
     })
@@ -750,7 +874,14 @@ function renderFinanceSummary() {
       <div class="stat"><span>Vendas líquidas</span><strong>${money(summary.netSales)}</strong></div>
       <div class="stat"><span>Pedidos concluídos</span><strong>${summary.totalOrders}</strong></div>
       <div class="stat"><span>Ticket médio</span><strong>${money(summary.ticketAverage)}</strong></div>
-      <div class="stat"><span>Recebimentos por forma</span><strong>${Object.entries(summary.paymentsByMethod).map(([method, amount]) => `${escapeHtml(paymentLabels[method] || method)}: ${money(amount)}`).join(" · ") || "Sem vendas"}</strong></div>
+      <div class="stat"><span>Recebimentos por forma</span><strong>${
+        Object.entries(summary.paymentsByMethod)
+          .map(
+            ([method, amount]) =>
+              `${escapeHtml(paymentLabels[method] || method)}: ${money(amount)}`,
+          )
+          .join(" · ") || "Sem vendas"
+      }</strong></div>
       <div class="stat"><span>Fuso operacional</span><strong>${escapeHtml(summary.businessTimeZone || "America/Sao_Paulo")}</strong></div>
       ${summary.reconciliation?.balanced === false ? `<div class="stat warning"><span>Diferença de reconciliação</span><strong>${money(summary.reconciliation.difference)}</strong></div>` : ""}
     `;
@@ -766,11 +897,13 @@ function renderFinanceSummary() {
   }
   const activeFilters = [
     state.financeFilters.paymentMethod ? paymentLabels[state.financeFilters.paymentMethod] : null,
-    state.financeFilters.type ? financeTypeLabels[state.financeFilters.type] : null
+    state.financeFilters.type ? financeTypeLabels[state.financeFilters.type] : null,
   ].filter(Boolean);
   const filterStatus = $("#finance-filter-status");
   if (filterStatus) {
-    filterStatus.textContent = activeFilters.length ? `Filtro ativo: ${activeFilters.join(" · ")}` : "Consolidado sem filtros";
+    filterStatus.textContent = activeFilters.length
+      ? `Filtro ativo: ${activeFilters.join(" · ")}`
+      : "Consolidado sem filtros";
   }
 }
 
@@ -781,7 +914,8 @@ function renderEntries() {
     return;
   }
   list.innerHTML = state.financeEntries
-    .map((entry) => `
+    .map(
+      (entry) => `
       <div class="entry-card">
         <div class="order-meta">
           <span class="pill">${escapeHtml(financeTypeLabels[entry.type] || entry.type)}</span>
@@ -792,7 +926,8 @@ function renderEntries() {
         <strong>${escapeHtml(entry.label)}</strong>
         <div>${money(entry.amount)}</div>
       </div>
-    `)
+    `,
+    )
     .join("");
 }
 
@@ -817,7 +952,8 @@ function renderShifts() {
     return;
   }
   list.innerHTML = state.shifts
-    .map((item) => `
+    .map(
+      (item) => `
       <div class="shift-card">
         <div class="order-meta">
           <span class="pill ${item.status === "open" ? "open" : ""}">${item.status === "open" ? "Aberto" : "Fechado"}</span>
@@ -827,24 +963,38 @@ function renderShifts() {
         <div>Esperado: ${money(item.expectedAmount)}</div>
         <div>Contado: ${item.declaredAmount == null ? "—" : money(item.declaredAmount)}</div>
         <div>Diferença: ${item.differenceAmount == null ? "—" : money(item.differenceAmount)}</div>
-        ${item.status === "closed" ? `
+        ${
+          item.status === "closed"
+            ? `
           <div class="actions" style="margin-top: 12px;">
             <button type="button" data-print-shift="${item.id}" data-print-type="summary">🖨️ Resumo</button>
             <button type="button" data-print-shift="${item.id}" data-print-type="detailed">🖨️ Detalhado</button>
           </div>
-        ` : ""}
+        `
+            : ""
+        }
       </div>
-    `)
+    `,
+    )
     .join("");
 }
 
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
   if (options.body && !headers.has("content-type")) headers.set("content-type", "application/json");
-  if (options.method && !["GET", "HEAD"].includes(options.method) && state.csrfToken && path !== "/auth/login") {
+  if (
+    options.method &&
+    !["GET", "HEAD"].includes(options.method) &&
+    state.csrfToken &&
+    path !== "/auth/login"
+  ) {
     headers.set("x-csrf-token", state.csrfToken);
   }
-  const response = await fetch(`${apiBase}${path}`, { ...options, headers, credentials: "include" });
+  const response = await fetch(`${apiBase}${path}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
   const text = await response.text();
   let payload = null;
   try {
@@ -853,7 +1003,12 @@ async function api(path, options = {}) {
     payload = text;
   }
   if (!response.ok) {
-    const errorMsg = typeof payload === "string" ? payload : (payload?.message || payload?.error || (typeof payload === "object" ? JSON.stringify(payload) : "Falha na API"));
+    const errorMsg =
+      typeof payload === "string"
+        ? payload
+        : payload?.message ||
+          payload?.error ||
+          (typeof payload === "object" ? JSON.stringify(payload) : "Falha na API");
     const error = new Error(errorMsg);
     error.status = response.status;
     if (response.status === 401 && typeof document !== "undefined") showLoginDialog();
@@ -907,20 +1062,24 @@ function wireLogin() {
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const body = new FormData(form);
-    await submitLogin(() => api("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ username: body.get("username"), password: body.get("password") })
-    }));
+    await submitLogin(() =>
+      api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ username: body.get("username"), password: body.get("password") }),
+      }),
+    );
   });
 
   form?.querySelectorAll("[data-demo-login]").forEach((button) => {
     button.addEventListener("click", async () => {
       const role = button.dataset.demoLogin;
       if (!role) return;
-      await submitLogin(() => api("/demo/access", {
-        method: "POST",
-        body: JSON.stringify({ role, prepare: true })
-      }));
+      await submitLogin(() =>
+        api("/demo/access", {
+          method: "POST",
+          body: JSON.stringify({ role, prepare: true }),
+        }),
+      );
     });
   });
 
@@ -948,10 +1107,7 @@ function lockCatalogAdmin() {
   state.catalogAdminArchiveUpdatedAt = null;
   state.catalogAdminArchiveOpener = null;
   if ($("#catalog-archive-confirm")) $("#catalog-archive-confirm").hidden = true;
-  [
-    '#catalog-item-form [type="submit"]',
-    "#catalog-archive-submit"
-  ].forEach((selector) => {
+  ['#catalog-item-form [type="submit"]', "#catalog-archive-submit"].forEach((selector) => {
     const control = $(selector);
     if (control) control.disabled = false;
   });
@@ -968,7 +1124,7 @@ export function sameCatalogAdminSession(session, current) {
 
 function catalogAdminSessionIsCurrent(session) {
   return sameCatalogAdminSession(session, {
-    generation: state.catalogAdminGeneration
+    generation: state.catalogAdminGeneration,
   });
 }
 
@@ -1006,10 +1162,12 @@ function renderCatalogAdminList() {
     if (filter === "active") return !item.archivedAt && item.available;
     return true;
   });
-  container.innerHTML = items.length ? items.map((item) => {
-    const status = item.archivedAt ? "Arquivado" : item.available ? "Ativo" : "Pausado";
-    const mode = item.preparationMode === "direct_handoff" ? "Entrega direta" : "Cozinha";
-    return `
+  container.innerHTML = items.length
+    ? items
+        .map((item) => {
+          const status = item.archivedAt ? "Arquivado" : item.available ? "Ativo" : "Pausado";
+          const mode = item.preparationMode === "direct_handoff" ? "Entrega direta" : "Cozinha";
+          return `
       <article class="catalog-admin-item">
         <div>
           <strong>${escapeHtml(item.name)}</strong>
@@ -1017,14 +1175,20 @@ function renderCatalogAdminList() {
           <div class="mini-meta"><span class="pill">${status}</span><span>${mode}</span></div>
         </div>
         <div class="actions">
-          ${item.archivedAt ? '<span class="lede">SKU não reutilizável</span>' : `
+          ${
+            item.archivedAt
+              ? '<span class="lede">SKU não reutilizável</span>'
+              : `
             <button type="button" class="secondary small" data-catalog-admin-edit="${escapeHtml(item.sku)}">Editar</button>
             <button type="button" class="secondary small" data-catalog-admin-toggle="${escapeHtml(item.sku)}">${item.available ? "Pausar" : "Retomar"}</button>
             <button type="button" class="danger small" data-catalog-admin-archive="${escapeHtml(item.sku)}">Arquivar</button>
-          `}
+          `
+          }
         </div>
       </article>`;
-  }).join("") : '<p class="empty-state">Nenhum item neste filtro.</p>';
+        })
+        .join("")
+    : '<p class="empty-state">Nenhum item neste filtro.</p>';
 }
 
 async function refreshCatalogAdminList(session = catalogAdminSession()) {
@@ -1063,34 +1227,51 @@ function requestCatalogArchive(sku, opener) {
   state.catalogAdminArchiveSku = sku;
   state.catalogAdminArchiveUpdatedAt = item.updatedAt;
   state.catalogAdminArchiveOpener = opener;
-  $("#catalog-archive-message").textContent = `Arquivar ${item.name} (${item.sku})? O SKU não poderá ser reutilizado.`;
+  $("#catalog-archive-message").textContent =
+    `Arquivar ${item.name} (${item.sku})? O SKU não poderá ser reutilizado.`;
   $("#catalog-archive-confirm").hidden = false;
   $("#catalog-archive-cancel").focus();
 }
 
 async function refreshAll() {
-  const financeParams = new URLSearchParams(Object.entries(state.financeFilters).filter(([, value]) => value));
+  const financeParams = new URLSearchParams(
+    Object.entries(state.financeFilters).filter(([, value]) => value),
+  );
   const financeQuery = financeParams.size ? `?${financeParams}` : "";
   const role = state.currentUser?.role || "operator";
   const isKitchen = role === "kitchen";
 
   const fetchPromises = [
-    api("/orders").then(r => { state.orders = r.items; }),
-    api("/kitchen/queue").then(r => { state.kitchen = r.items; })
+    api("/orders").then((r) => {
+      state.orders = r.items;
+    }),
+    api("/kitchen/queue").then((r) => {
+      state.kitchen = r.items;
+    }),
   ];
 
   if (!isKitchen) {
     fetchPromises.push(
-      api("/catalog").then(r => { 
+      api("/catalog").then((r) => {
         state.catalog = r.items;
         state.addOns = r.addOns || [];
         state.orderItems = reconcileCartItems(state.orderItems, r.items);
       }),
-      api("/inventory").then(r => { state.inventory = r; }),
-      api("/tabs?status=open").then(r => { state.tabs = r.items; }),
-      api(`/finance/summary${financeQuery}`).then(r => { state.financeSummary = r; }),
-      api(`/finance/entries${financeQuery}`).then(r => { state.financeEntries = r.items; }),
-      api("/cash-shifts").then(r => { state.shifts = r.items; })
+      api("/inventory").then((r) => {
+        state.inventory = r;
+      }),
+      api("/tabs?status=open").then((r) => {
+        state.tabs = r.items;
+      }),
+      api(`/finance/summary${financeQuery}`).then((r) => {
+        state.financeSummary = r;
+      }),
+      api(`/finance/entries${financeQuery}`).then((r) => {
+        state.financeEntries = r.items;
+      }),
+      api("/cash-shifts").then((r) => {
+        state.shifts = r.items;
+      }),
     );
   }
 
@@ -1105,7 +1286,7 @@ async function refreshAll() {
     renderEntries();
     renderShifts();
   }
-  
+
   renderOrders();
   renderKitchen();
   $("#api-status").textContent = "API conectada";
@@ -1120,7 +1301,9 @@ function refreshSafe() {
         $("#api-status").textContent = "Falha ao conectar API";
         $("#last-sync").textContent = error.message;
       })
-      .finally(() => { refreshInFlight = null; });
+      .finally(() => {
+        refreshInFlight = null;
+      });
   }
   return refreshInFlight;
 }
@@ -1135,8 +1318,12 @@ function syncDeliveryAddress() {
 }
 
 function showPanel(name) {
-  document.querySelectorAll(".tab-button").forEach((item) => item.classList.toggle("active", item.dataset.tab === name));
-  document.querySelectorAll(".tab-panel").forEach((item) => item.classList.toggle("active", item.id === `tab-${name}`));
+  document
+    .querySelectorAll(".tab-button")
+    .forEach((item) => item.classList.toggle("active", item.dataset.tab === name));
+  document
+    .querySelectorAll(".tab-panel")
+    .forEach((item) => item.classList.toggle("active", item.id === `tab-${name}`));
 }
 
 function wireTabs() {
@@ -1156,7 +1343,10 @@ function syncCashChange() {
   if (panel) panel.hidden = !isCash;
 
   if (isCash) {
-    const orderTotal = calculateOrderPreviewTotal(state.orderItems, $("#order-discount")?.value || 0);
+    const orderTotal = calculateOrderPreviewTotal(
+      state.orderItems,
+      $("#order-discount")?.value || 0,
+    );
     const received = Number($("#cash-received")?.value || 0);
     const change = received > orderTotal ? Math.round((received - orderTotal) * 100) / 100 : 0;
     const changeEl = $("#cash-change-due");
@@ -1167,15 +1357,15 @@ function syncCashChange() {
 function updateTabCashChange(form) {
   if (!form) return;
   const method = form.querySelector('[name="paymentMethod"]')?.value;
-  const box = form.querySelector('[data-tab-cash-box]');
+  const box = form.querySelector("[data-tab-cash-box]");
   const isCash = method === "cash";
   if (box) box.style.display = isCash ? "block" : "none";
 
   if (isCash) {
     const amount = Number(form.querySelector('[name="amount"]')?.value || 0);
-    const received = Number(form.querySelector('[data-tab-cash-received]')?.value || 0);
+    const received = Number(form.querySelector("[data-tab-cash-received]")?.value || 0);
     const change = received > amount ? Math.round((received - amount) * 100) / 100 : 0;
-    const changeEl = form.querySelector('[data-tab-cash-change]');
+    const changeEl = form.querySelector("[data-tab-cash-change]");
     if (changeEl) changeEl.textContent = money(change);
   }
 }
@@ -1231,7 +1421,8 @@ function wireCart() {
   });
 
   $("#btn-quick-catalog-admin")?.addEventListener("click", async () => {
-    if (state.currentUser?.role !== "admin") return notify("Acesso exclusivo de administrador.", "error");
+    if (state.currentUser?.role !== "admin")
+      return notify("Acesso exclusivo de administrador.", "error");
     const dialog = $("#catalog-admin-dialog");
     dialog?.showModal();
     state.catalogAdminGeneration += 1;
@@ -1294,7 +1485,7 @@ function wireCart() {
       $("#config-discount").value,
       [...document.querySelectorAll('input[name="config-addon"]:checked')]
         .map((input) => state.addOns.find((addon) => addon.sku === input.value))
-        .filter(Boolean)
+        .filter(Boolean),
     );
 
     renderOrderItems();
@@ -1302,110 +1493,113 @@ function wireCart() {
     notify(`${selected.name} adicionado.`);
   });
 
-    document.body.addEventListener("click", async (event) => {
-      const target = event.target;
-      const button = target.closest ? target.closest("button") : null;
-      if (!button) return;
+  document.body.addEventListener("click", async (event) => {
+    const target = event.target;
+    const button = target.closest ? target.closest("button") : null;
+    if (!button) return;
 
-      if (button.dataset.catalogTab) {
-        state.activeCatalogCategory = button.dataset.catalogTab;
-        renderCatalog();
-        return;
+    if (button.dataset.catalogTab) {
+      state.activeCatalogCategory = button.dataset.catalogTab;
+      renderCatalog();
+      return;
+    }
+
+    if (button.dataset.addDirect) {
+      const selected = state.catalog.find((item) => item.sku === button.dataset.addDirect);
+      if (selected) {
+        addOrAccumulateItem(state.orderItems, selected, 1, "", 0, []);
+        renderOrderItems();
+        notify(`${selected.name} adicionado ao carrinho.`);
       }
+      return;
+    }
 
-      if (button.dataset.addDirect) {
-        const selected = state.catalog.find((item) => item.sku === button.dataset.addDirect);
-        if (selected) {
-          addOrAccumulateItem(state.orderItems, selected, 1, "", 0, []);
-          renderOrderItems();
-          notify(`${selected.name} adicionado ao carrinho.`);
-        }
-        return;
+    if (button.dataset.openConfig) {
+      openItemConfig(button.dataset.openConfig);
+      return;
+    }
+
+    if (button.dataset.integrationAccept) {
+      const attempt = integrationAttempt(button.dataset.integrationAccept, "accept");
+      button.disabled = true;
+      try {
+        await api(`/orders/${button.dataset.integrationAccept}/accept`, {
+          method: "POST",
+          headers: { "Idempotency-Key": attempt.key },
+          body: "{}",
+        });
+        delete state.integrationAttempts[attempt.slot];
+        notify("Pedido aceito na integração.");
+        await refreshAll();
+      } catch (error) {
+        notify(error.message, "error");
+      } finally {
+        button.disabled = false;
       }
+      return;
+    }
 
-      if (button.dataset.openConfig) {
-        openItemConfig(button.dataset.openConfig);
-        return;
+    if (button.dataset.integrationCancel) {
+      button.disabled = true;
+      try {
+        const reasonId = await chooseCancellationReason(button.dataset.integrationCancel);
+        if (!reasonId) return;
+        const payload = { reasonId };
+        const attempt = integrationAttempt(button.dataset.integrationCancel, "cancel", payload);
+        await api(`/orders/${button.dataset.integrationCancel}/cancel`, {
+          method: "POST",
+          headers: { "Idempotency-Key": attempt.key },
+          body: JSON.stringify(payload),
+        });
+        delete state.integrationAttempts[attempt.slot];
+        notify("Cancelamento enviado para a integração.");
+        await refreshAll();
+      } catch (error) {
+        notify(error.message, "error");
+      } finally {
+        button.disabled = false;
       }
+      return;
+    }
 
-      if (button.dataset.integrationAccept) {
-        const attempt = integrationAttempt(button.dataset.integrationAccept, "accept");
-        button.disabled = true;
-        try {
-          await api(`/orders/${button.dataset.integrationAccept}/accept`, {
-            method: "POST",
-            headers: { "Idempotency-Key": attempt.key },
-            body: "{}"
-          });
-          delete state.integrationAttempts[attempt.slot];
-          notify("Pedido aceito na integração.");
-          await refreshAll();
-        } catch (error) {
-          notify(error.message, "error");
-        } finally {
-          button.disabled = false;
-        }
-        return;
+    if (button.dataset.assignTab) {
+      openTabAssignment(button.dataset.assignTab, button);
+      return;
+    }
+
+    if (button.dataset.printShift) {
+      button.disabled = true;
+      try {
+        const shiftId = button.dataset.printShift;
+        const isDetailed = button.dataset.printType === "detailed";
+        const shift = state.shifts.find((s) => s.id === shiftId);
+        if (!shift) throw new Error("Caixa não encontrado.");
+
+        const [summary, entriesResult] = await Promise.all([
+          api(`/finance/summary?shiftId=${shiftId}`),
+          api(`/finance/entries?shiftId=${shiftId}`),
+        ]);
+        printShiftReport(shift, summary, entriesResult.items, isDetailed);
+      } catch (error) {
+        notify(error.message, "error");
+      } finally {
+        button.disabled = false;
       }
-
-      if (button.dataset.integrationCancel) {
-        button.disabled = true;
-        try {
-          const reasonId = await chooseCancellationReason(button.dataset.integrationCancel);
-          if (!reasonId) return;
-          const payload = { reasonId };
-          const attempt = integrationAttempt(button.dataset.integrationCancel, "cancel", payload);
-          await api(`/orders/${button.dataset.integrationCancel}/cancel`, {
-            method: "POST",
-            headers: { "Idempotency-Key": attempt.key },
-            body: JSON.stringify(payload)
-          });
-          delete state.integrationAttempts[attempt.slot];
-          notify("Cancelamento enviado para a integração.");
-          await refreshAll();
-        } catch (error) {
-          notify(error.message, "error");
-        } finally {
-          button.disabled = false;
-        }
-        return;
-      }
-
-      if (button.dataset.assignTab) {
-        openTabAssignment(button.dataset.assignTab, button);
-        return;
-      }
-
-      if (button.dataset.printShift) {
-        button.disabled = true;
-        try {
-          const shiftId = button.dataset.printShift;
-          const isDetailed = button.dataset.printType === "detailed";
-          const shift = state.shifts.find(s => s.id === shiftId);
-          if (!shift) throw new Error("Caixa não encontrado.");
-
-          const [summary, entriesResult] = await Promise.all([
-            api(`/finance/summary?shiftId=${shiftId}`),
-            api(`/finance/entries?shiftId=${shiftId}`)
-          ]);
-          printShiftReport(shift, summary, entriesResult.items, isDetailed);
-        } catch (error) {
-          notify(error.message, "error");
-        } finally {
-          button.disabled = false;
-        }
-        return;
-      }
+      return;
+    }
 
     if (button.dataset.reversePayment) {
-      const payload = { tabId: button.dataset.paymentTab, paymentId: button.dataset.reversePayment };
+      const payload = {
+        tabId: button.dataset.paymentTab,
+        paymentId: button.dataset.reversePayment,
+      };
       state.paymentReversalAttempt = nextOrderAttempt(state.paymentReversalAttempt, payload);
       button.disabled = true;
       try {
         await api(`/tabs/${payload.tabId}/payments/${payload.paymentId}/reversals`, {
           method: "POST",
           headers: { "Idempotency-Key": state.paymentReversalAttempt.key },
-          body: JSON.stringify({})
+          body: JSON.stringify({}),
         });
         state.paymentReversalAttempt = null;
         await refreshAll();
@@ -1420,7 +1614,10 @@ function wireCart() {
     if (button.dataset.closeTab) {
       button.disabled = true;
       try {
-        await api(`/tabs/${button.dataset.closeTab}/close`, { method: "POST", body: JSON.stringify({}) });
+        await api(`/tabs/${button.dataset.closeTab}/close`, {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
         await refreshAll();
         notify("Comanda encerrada com saldo zerado.");
       } catch (error) {
@@ -1437,7 +1634,8 @@ function wireCart() {
       form.elements.itemId.value = button.dataset.cancelItem;
       form.elements.quantity.max = button.dataset.cancelMax;
       form.elements.quantity.value = button.dataset.cancelMax;
-      $("#cancellation-item").textContent = `${button.dataset.cancelName} · máximo ${button.dataset.cancelMax}`;
+      $("#cancellation-item").textContent =
+        `${button.dataset.cancelName} · máximo ${button.dataset.cancelMax}`;
       state.cancellationAttempt = null;
       $("#cancellation-dialog").showModal();
       return;
@@ -1472,11 +1670,14 @@ function wireCart() {
     }
     if (button.id === "btn-submit-comanda-round") {
       if (!state.activeTabId) return;
-      const tab = state.tabs.find(t => t.id === state.activeTabId && t.status === "open");
+      const tab = state.tabs.find((t) => t.id === state.activeTabId && t.status === "open");
       if (!tab) {
         state.activeTabId = null;
         renderActiveTab();
-        notify("A comanda selecionada não está mais aberta. Selecione uma comanda aberta.", "error");
+        notify(
+          "A comanda selecionada não está mais aberta. Selecione uma comanda aberta.",
+          "error",
+        );
         return;
       }
       if (!state.orderItems.length) {
@@ -1493,7 +1694,7 @@ function wireCart() {
         const roundPayload = {
           tabId: state.activeTabId,
           items: state.orderItems,
-          discountPercent
+          discountPercent,
         };
         state.roundAttempt = nextOrderAttempt(state.roundAttempt, roundPayload);
         await api(`/tabs/${state.activeTabId}/rounds`, {
@@ -1501,11 +1702,13 @@ function wireCart() {
           headers: { "Idempotency-Key": state.roundAttempt.key },
           body: JSON.stringify({
             items: state.orderItems,
-            discountPercent
-          })
+            discountPercent,
+          }),
         });
         state.roundAttempt = null;
-        notify(`Rodada lançada com sucesso para ${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label}!`);
+        notify(
+          `Rodada lançada com sucesso para ${tab.kind === "table" ? "Mesa" : "Comanda"} ${tab.label}!`,
+        );
         state.orderItems = [];
         state.activeTabId = null;
         await refreshAll();
@@ -1542,40 +1745,44 @@ function wireCart() {
       return;
     }
 
-    if (!button.dataset.orderAction && !button.dataset.reprint && !button.dataset.orderStatus) return;
+    if (!button.dataset.orderAction && !button.dataset.reprint && !button.dataset.orderStatus)
+      return;
     button.disabled = true;
     try {
       if (button.dataset.orderAction || button.dataset.orderStatus) {
         const orderId = button.dataset.orderId || button.dataset.orderStatus; // fallback para botões velhos
         const action = button.dataset.orderAction || button.dataset.status;
         const order = state.orders.find((item) => item.id === orderId);
-        const channelAction = action === "cancelled" && isIntegratedOrder(order)
-          ? "cancel"
-          : action === "in_preparation" && isIntegratedOrder(order) && order?.source === "ifood"
-            ? "start-preparation"
-            : action === "ready" && isIntegratedOrder(order)
-              ? "ready"
-              : null;
+        const channelAction =
+          action === "cancelled" && isIntegratedOrder(order)
+            ? "cancel"
+            : action === "in_preparation" && isIntegratedOrder(order) && order?.source === "ifood"
+              ? "start-preparation"
+              : action === "ready" && isIntegratedOrder(order)
+                ? "ready"
+                : null;
 
         if (channelAction) {
-          const reasonId = channelAction === "cancel" ? await chooseCancellationReason(orderId) : null;
+          const reasonId =
+            channelAction === "cancel" ? await chooseCancellationReason(orderId) : null;
           if (channelAction === "cancel" && !reasonId) return;
           const payload = channelAction === "cancel" ? { reasonId } : {};
           const attempt = integrationAttempt(orderId, channelAction, payload);
           await api(`/orders/${orderId}/${channelAction}`, {
             method: "POST",
             headers: { "Idempotency-Key": attempt.key },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
           });
           delete state.integrationAttempts[attempt.slot];
         } else {
-          const manualCancellation = action === "cancelled"
-            ? integrationAttempt(orderId, "manual-cancel", { status: action })
-            : null;
+          const manualCancellation =
+            action === "cancelled"
+              ? integrationAttempt(orderId, "manual-cancel", { status: action })
+              : null;
           await api(`/orders/${orderId}/status`, {
             method: "PATCH",
             headers: manualCancellation ? { "Idempotency-Key": manualCancellation.key } : {},
-            body: JSON.stringify({ status: action })
+            body: JSON.stringify({ status: action }),
           });
           if (manualCancellation) delete state.integrationAttempts[manualCancellation.slot];
         }
@@ -1626,18 +1833,23 @@ function wireCatalogAdmin() {
     const submit = itemForm.querySelector('[type="submit"]');
     submit.disabled = true;
     try {
-      await catalogAdminApi(editingSku ? `/catalog/items/${editingSku}` : "/catalog/items", {
-        method: editingSku ? "PATCH" : "POST",
-        headers: editingSku ? { "if-match": editingUpdatedAt } : {},
-        body: JSON.stringify(payload)
-      }, session);
+      await catalogAdminApi(
+        editingSku ? `/catalog/items/${editingSku}` : "/catalog/items",
+        {
+          method: editingSku ? "PATCH" : "POST",
+          headers: editingSku ? { "if-match": editingUpdatedAt } : {},
+          body: JSON.stringify(payload),
+        },
+        session,
+      );
       if (!catalogAdminSessionIsCurrent(session)) return;
       resetCatalogItemForm();
       await Promise.all([refreshCatalogAdminList(session), refreshAll()]);
       if (!catalogAdminSessionIsCurrent(session)) return;
       notify(editingSku ? "Item atualizado." : "Item criado.");
     } catch (error) {
-      if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated) notify(error.message, "error");
+      if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated)
+        notify(error.message, "error");
     } finally {
       if (session.generation === state.catalogAdminGeneration) submit.disabled = false;
     }
@@ -1655,22 +1867,29 @@ function wireCatalogAdmin() {
       return;
     }
     if (button.dataset.catalogAdminToggle) {
-      const item = state.catalogAdminItems.find((entry) => entry.sku === button.dataset.catalogAdminToggle);
+      const item = state.catalogAdminItems.find(
+        (entry) => entry.sku === button.dataset.catalogAdminToggle,
+      );
       if (!item) return;
       const session = catalogAdminSession();
       button.disabled = true;
       try {
-        await catalogAdminApi(`/catalog/items/${item.sku}`, {
-          method: "PATCH",
-          headers: { "if-match": item.updatedAt },
-          body: JSON.stringify({ available: !item.available })
-        }, session);
+        await catalogAdminApi(
+          `/catalog/items/${item.sku}`,
+          {
+            method: "PATCH",
+            headers: { "if-match": item.updatedAt },
+            body: JSON.stringify({ available: !item.available }),
+          },
+          session,
+        );
         if (!catalogAdminSessionIsCurrent(session)) return;
         await Promise.all([refreshCatalogAdminList(session), refreshAll()]);
         if (!catalogAdminSessionIsCurrent(session)) return;
         notify(item.available ? "Item pausado." : "Item retomado.");
       } catch (error) {
-        if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated) notify(error.message, "error");
+        if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated)
+          notify(error.message, "error");
       } finally {
         button.disabled = false;
       }
@@ -1696,10 +1915,14 @@ function wireCatalogAdmin() {
     const button = event.currentTarget;
     button.disabled = true;
     try {
-      await catalogAdminApi(`/catalog/items/${sku}`, {
-        method: "DELETE",
-        headers: { "if-match": state.catalogAdminArchiveUpdatedAt }
-      }, session);
+      await catalogAdminApi(
+        `/catalog/items/${sku}`,
+        {
+          method: "DELETE",
+          headers: { "if-match": state.catalogAdminArchiveUpdatedAt },
+        },
+        session,
+      );
       if (!catalogAdminSessionIsCurrent(session)) return;
       state.catalogAdminArchiveSku = null;
       state.catalogAdminArchiveUpdatedAt = null;
@@ -1710,7 +1933,8 @@ function wireCatalogAdmin() {
       if (!catalogAdminSessionIsCurrent(session)) return;
       notify("Item arquivado. O SKU não poderá ser reutilizado.");
     } catch (error) {
-      if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated) notify(error.message, "error");
+      if (catalogAdminSessionIsCurrent(session) || error.catalogAdminSessionInvalidated)
+        notify(error.message, "error");
     } finally {
       if (session.generation === state.catalogAdminGeneration) button.disabled = false;
     }
@@ -1739,14 +1963,19 @@ function wireForms() {
       const result = await api(`/orders/${orderId}/tab-assignment`, {
         method: "POST",
         headers: { "Idempotency-Key": state.tabAssignmentAttempt.key },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       tabAssignmentDialog.close();
       await refreshAll();
-      notify(`${result.tab.kind === "table" ? "Mesa" : "Comanda"} ${result.tab.label} vinculada. O ticket original foi preservado.`);
+      notify(
+        `${result.tab.kind === "table" ? "Mesa" : "Comanda"} ${result.tab.label} vinculada. O ticket original foi preservado.`,
+      );
     } catch (error) {
       notify(`${error.message}. A seleção foi mantida para tentar novamente.`, "error");
-      (form.elements.destination.value === "existing" ? form.elements.tabId : form.elements.label).focus();
+      (form.elements.destination.value === "existing"
+        ? form.elements.tabId
+        : form.elements.label
+      ).focus();
     } finally {
       submit.disabled = false;
     }
@@ -1772,7 +2001,7 @@ function wireForms() {
     const payload = {
       tabId: form.dataset.tabId,
       paymentMethod: data.get("paymentMethod"),
-      amountCents: Math.round(Number(data.get("amount")) * 100)
+      amountCents: Math.round(Number(data.get("amount")) * 100),
     };
     state.paymentAttempt = nextOrderAttempt(state.paymentAttempt, payload);
     const submit = form.querySelector('[type="submit"]');
@@ -1781,7 +2010,10 @@ function wireForms() {
       await api(`/tabs/${payload.tabId}/payments`, {
         method: "POST",
         headers: { "Idempotency-Key": state.paymentAttempt.key },
-        body: JSON.stringify({ paymentMethod: payload.paymentMethod, amountCents: payload.amountCents })
+        body: JSON.stringify({
+          paymentMethod: payload.paymentMethod,
+          amountCents: payload.amountCents,
+        }),
       });
       state.paymentAttempt = null;
       await refreshAll();
@@ -1797,7 +2029,9 @@ function wireForms() {
     state.activeTabId = null;
     renderActiveTab();
   });
-  $("#close-cancellation-dialog").addEventListener("click", () => $("#cancellation-dialog").close());
+  $("#close-cancellation-dialog").addEventListener("click", () =>
+    $("#cancellation-dialog").close(),
+  );
   $("#cancellation-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -1805,14 +2039,14 @@ function wireForms() {
     const data = new FormData(form);
     const payload = {
       items: [{ itemId: data.get("itemId"), quantity: Number(data.get("quantity")) }],
-      reason: data.get("reason")
+      reason: data.get("reason"),
     };
     state.cancellationAttempt = nextOrderAttempt(state.cancellationAttempt, payload);
     try {
       await api(`/tabs/${data.get("tabId")}/rounds/${data.get("orderId")}/cancellations`, {
         method: "POST",
         headers: { "Idempotency-Key": state.cancellationAttempt.key },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       state.cancellationAttempt = null;
       form.reset();
@@ -1832,7 +2066,11 @@ function wireForms() {
     try {
       const tab = await api("/tabs", {
         method: "POST",
-        body: JSON.stringify({ kind: data.get("kind"), label: data.get("label"), customerName: data.get("customerName") })
+        body: JSON.stringify({
+          kind: data.get("kind"),
+          label: data.get("label"),
+          customerName: data.get("customerName"),
+        }),
       });
       state.activeTabId = tab.id;
       state.isCreatingNewTabInOrder = false;
@@ -1854,13 +2092,13 @@ function wireForms() {
     const payload = { delta: Number(data.get("delta")), reason: data.get("reason") };
     state.inventoryAttempt = nextOrderAttempt(state.inventoryAttempt, {
       category: data.get("category"),
-      ...payload
+      ...payload,
     });
     try {
       await api(`/inventory/${data.get("category")}/adjustments`, {
         method: "POST",
         headers: { "Idempotency-Key": state.inventoryAttempt.key },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       state.inventoryAttempt = null;
       form.reset();
@@ -1894,7 +2132,7 @@ function wireForms() {
       paymentMethod: formData.get("paymentMethod"),
       notes: formData.get("notes"),
       discountPercent: Number(formData.get("discountPercent") || 0),
-      items: state.orderItems
+      items: state.orderItems,
     };
     state.orderAttempt = nextOrderAttempt(state.orderAttempt, payload);
 
@@ -1913,8 +2151,8 @@ function wireForms() {
           body: JSON.stringify({
             kind: newKind,
             label: newLabel,
-            customerName: formData.get("customerName") || ""
-          })
+            customerName: formData.get("customerName") || "",
+          }),
         });
         state.activeTabId = createdTab.id;
         state.isCreatingNewTabInOrder = false;
@@ -1924,13 +2162,13 @@ function wireForms() {
         await api(`/tabs/${state.activeTabId}/rounds`, {
           method: "POST",
           headers: { "Idempotency-Key": state.orderAttempt.key },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
       } else {
         await api("/orders", {
           method: "POST",
           headers: { "Idempotency-Key": state.orderAttempt.key },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
       }
       state.orderItems = [];
@@ -1971,7 +2209,7 @@ function wireForms() {
       const formData = new FormData(form);
       await api("/cash-shifts/open", {
         method: "POST",
-        body: JSON.stringify({ openingAmount: Number(formData.get("openingAmount")) })
+        body: JSON.stringify({ openingAmount: Number(formData.get("openingAmount")) }),
       });
       await refreshAll();
       notify("Caixa aberto.");
@@ -2005,13 +2243,13 @@ function wireForms() {
         shiftId: shift.id,
         kind: formData.get("kind"),
         amount: Number(formData.get("amount")),
-        reason: formData.get("reason")
+        reason: formData.get("reason"),
       };
       state.adjustmentAttempt = nextOrderAttempt(state.adjustmentAttempt, payload);
       await api(`/cash-shifts/${shift.id}/adjustments`, {
         method: "POST",
         headers: { "Idempotency-Key": state.adjustmentAttempt.key },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       state.adjustmentAttempt = null;
       form.reset();
@@ -2036,7 +2274,7 @@ function wireForms() {
       const formData = new FormData(form);
       await api(`/cash-shifts/${shift.id}/close`, {
         method: "POST",
-        body: JSON.stringify({ declaredAmount: Number(formData.get("declaredAmount")) })
+        body: JSON.stringify({ declaredAmount: Number(formData.get("declaredAmount")) }),
       });
       form.reset();
       await refreshAll();

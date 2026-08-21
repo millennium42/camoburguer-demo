@@ -32,7 +32,7 @@ export function assertSafeAutoSeed(value) {
   if (value != null && value !== "false") {
     throw new Error(
       `AUTO_SEED=${value} é proibido: a API não executa seed durante o boot. ` +
-      "Use AUTO_SEED=false e a operação administrativa explícita documentada."
+        "Use AUTO_SEED=false e a operação administrativa explícita documentada.",
     );
   }
 }
@@ -45,7 +45,8 @@ if (!authCookieSecure && !["development", "test"].includes(appEnvironment)) {
 
 export const config = {
   port: positiveNumber(process.env.PORT, 3001),
-  databaseUrl: process.env.DATABASE_URL || "postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer",
+  databaseUrl:
+    process.env.DATABASE_URL || "postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer",
   printBridgeUrl: httpUrl(process.env.PRINT_BRIDGE_URL, "127.0.0.1:3100"),
   printBridgeToken: String(process.env.PRINT_BRIDGE_TOKEN || "").trim(),
   defaultPrinter: process.env.DEFAULT_PRINTER || "cozinha-principal",
@@ -58,7 +59,7 @@ export const config = {
   corsOrigins: csv(process.env.CORS_ORIGINS, [
     "http://localhost:3001",
     "http://127.0.0.1:3001",
-    "https://camoburguer-api.onrender.com"
+    "https://camoburguer-api.onrender.com",
   ]),
   deliveryMuch: {
     enabled: process.env.DELIVERYMUCH_ENABLED === "true",

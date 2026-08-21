@@ -1,4 +1,13 @@
-# Camoburguer Demo - AGENTS
+---
+tags: [governanca, agentes]
+---
+
+# Camoburguer Demo — AGENTS
+
+> Doutrina operacional para agentes de IA atuando neste repositório.
+> Estabelece o padrão de uso de ferramentas (Ponytail, m1nd, Graphify),
+> limites arquiteturais e artefatos obrigatórios. Leia antes de propor
+> qualquer plano de execução estrutural.
 
 ## Operating Doctrine
 
@@ -52,3 +61,8 @@ The repository is expected to maintain at least:
 - Report what was proved directly versus what was inferred from docs or graph output.
 - Before risky edits, inspect blast radius with `m1nd` or `graphify`.
 - When a simpler alternative exists and still satisfies the requirement, take it.
+
+## Ver também
+
+[00-mapa-do-projeto.md](00-mapa-do-projeto.md) ·
+[docs/guia-de-desenvolvimento.md](docs/guia-de-desenvolvimento.md)
