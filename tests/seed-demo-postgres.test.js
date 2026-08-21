@@ -777,7 +777,7 @@ if (!connectionString) {
            id, tab_id, round_number, source, status, customer_name,
            fulfillment_mode, total, items
          ) VALUES (
-           'p15-order', 'p15-tab', 1, 'counter', 'confirmed',
+           'p15-order', 'p15-tab', 1, 'counter', 'ready',
            'PII QUE NAO PODE VAZAR', 'local', 0, '[]'::jsonb
          )`,
       );
