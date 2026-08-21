@@ -647,6 +647,10 @@ assert.equal(
   (await api("/inventory")).balances.find((item) => item.category === "xis").quantity,
   initialXis + 5,
 );
+
+await api(`/orders/${tabRound.id}/status`, { method: "PATCH", body: { status: "completed" } });
+await api(`/orders/${cancellation.id}/status`, { method: "PATCH", body: { status: "completed" } });
+
 await api(`/tabs/${tab.id}/close`, { method: "POST", body: {} });
 
 const directCancellationTab = await api("/tabs", {
@@ -696,7 +700,7 @@ await api(`/orders/${preparedRound.id}/status`, {
   method: "PATCH",
   body: { status: "in_preparation" },
 });
-await api(`/tabs/${preparedTab.id}/rounds/${preparedRound.id}/cancellations`, {
+const preparedCancellation = await api(`/tabs/${preparedTab.id}/rounds/${preparedRound.id}/cancellations`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-prepared-cancel-${runId}` },
   body: { items: [{ itemId: preparedRound.items[0].id, quantity: 1 }], reason: "Após preparo" },
@@ -712,6 +716,9 @@ await api("/inventory/xis/adjustments", {
   body: { delta: 1, reason: "Reposição do smoke" },
   expected: [201],
 });
+await api(`/orders/${preparedRound.id}/status`, { method: "PATCH", body: { status: "completed" } });
+await api(`/orders/${preparedCancellation.id}/status`, { method: "PATCH", body: { status: "completed" } });
+
 await api(`/tabs/${preparedTab.id}/close`, { method: "POST", body: {} });
 
 const dogBalance = (await api("/inventory")).balances.find(
@@ -751,7 +758,7 @@ assert.equal(
   0,
 );
 const concurrentWinner = concurrentRounds.find((result) => result.status === 201).body;
-await api(`/tabs/${concurrentWinner.tabId}/rounds/${concurrentWinner.id}/cancellations`, {
+const concurrentCancellation = await api(`/tabs/${concurrentWinner.tabId}/rounds/${concurrentWinner.id}/cancellations`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-concurrent-cancel-${runId}` },
   body: {
@@ -764,6 +771,9 @@ assert.equal(
   (await api("/inventory")).balances.find((item) => item.category === "dog").quantity,
   1,
 );
+await api(`/orders/${concurrentWinner.id}/status`, { method: "PATCH", body: { status: "completed" } });
+await api(`/orders/${concurrentCancellation.id}/status`, { method: "PATCH", body: { status: "completed" } });
+
 await Promise.all(
   concurrentTabs.map((candidate) =>
     api(`/tabs/${candidate.id}/close`, { method: "POST", body: {} }),
@@ -874,7 +884,7 @@ await api(`/tabs/${noShiftTab.id}/payments`, {
   expected: [409],
 });
 assert.equal((await api(`/tabs/${noShiftTab.id}`)).payments.length, 0);
-await api(`/tabs/${noShiftTab.id}/rounds/${noShiftRound.id}/cancellations`, {
+const noShiftCancellation = await api(`/tabs/${noShiftTab.id}/rounds/${noShiftRound.id}/cancellations`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-no-shift-cancel-${runId}` },
   body: {
@@ -883,6 +893,8 @@ await api(`/tabs/${noShiftTab.id}/rounds/${noShiftRound.id}/cancellations`, {
   },
   expected: [201],
 });
+await api(`/orders/${noShiftRound.id}/status`, { method: "PATCH", body: { status: "completed" } });
+await api(`/orders/${noShiftCancellation.id}/status`, { method: "PATCH", body: { status: "completed" } });
 await api(`/tabs/${noShiftTab.id}/close`, { method: "POST", body: {} });
 
 const historicalShift = await api("/cash-shifts/open", {
