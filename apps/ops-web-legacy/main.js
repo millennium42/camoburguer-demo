@@ -367,7 +367,8 @@ function renderCatalog() {
   );
 
   const categories = state.catalog.reduce((acc, item) => {
-    (acc[item.category] = acc[item.category] || []).push(item);
+    if (!acc[item.category]) acc[item.category] = [];
+    acc[item.category].push(item);
     return acc;
   }, {});
 
@@ -1318,12 +1319,12 @@ function syncDeliveryAddress() {
 }
 
 function showPanel(name) {
-  document
-    .querySelectorAll(".tab-button")
-    .forEach((item) => item.classList.toggle("active", item.dataset.tab === name));
-  document
-    .querySelectorAll(".tab-panel")
-    .forEach((item) => item.classList.toggle("active", item.id === `tab-${name}`));
+  document.querySelectorAll(".tab-button").forEach((item) => {
+    item.classList.toggle("active", item.dataset.tab === name);
+  });
+  document.querySelectorAll(".tab-panel").forEach((item) => {
+    item.classList.toggle("active", item.id === `tab-${name}`);
+  });
 }
 
 function wireTabs() {

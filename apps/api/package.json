@@ -10,6 +10,7 @@
     "@camoburguer/domain": "file:../../packages/domain",
     "@camoburguer/finance-core": "file:../../packages/finance-core",
     "@camoburguer/shared-types": "file:../../packages/shared-types",
+    "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^10.0.1",
     "@fastify/helmet": "^13.1.0",
     "@fastify/rate-limit": "^11.1.0",

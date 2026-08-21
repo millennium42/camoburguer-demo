@@ -30,10 +30,10 @@ tags: [cronograma, roadmap]
 - [x] Definir o schema TypeScript/Joi para validação de criação e edição de usuários.
 
 ### Bloco 1.2: Motor de Autenticação
-- [ ] Implementar rota `POST /auth/login` retornando token JWT ou gerando *Session Cookie* (SameSite=Strict, HTTPOnly).
-- [ ] Implementar rota `POST /auth/logout` para revogação da sessão atual.
-- [ ] Criar middleware de autenticação (`requireAuth`) para injetar o usuário no *context* da requisição.
-- [ ] Configurar tempo de expiração da sessão e política de renovação.
+- [x] Implementar rota `POST /auth/login` retornando token JWT ou gerando *Session Cookie* (SameSite=Strict, HTTPOnly).
+- [x] Implementar rota `POST /auth/logout` para revogação da sessão atual.
+- [x] Criar middleware de autenticação (`requireAuth`) para injetar o usuário no *context* da requisição.
+- [x] Configurar tempo de expiração da sessão e política de renovação.
 
 ### Bloco 1.3: Controle de Acesso (RBAC)
 - [ ] Definir catálogo de perfis: `Admin`, `Manager`, `Operator`.

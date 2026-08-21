@@ -1638,13 +1638,11 @@ app.post("/tabs/:tabId/rounds", async (request, reply) => {
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: "Comanda não está aberta" });
   if (result.productionPending)
-    return reply
-      .code(409)
-      .send({
-        code: "TAB_PRODUCTION_PENDING",
-        message: "Aguarde a finalizacao dos itens na cozinha",
-        pendingRounds: result.pendingRounds,
-      });
+    return reply.code(409).send({
+      code: "TAB_PRODUCTION_PENDING",
+      message: "Aguarde a finalizacao dos itens na cozinha",
+      pendingRounds: result.pendingRounds,
+    });
   if (!result.repeated) emitOrderEvent("tab.round.created", result.saved);
   if (!result.repeated && result.saved.status === "ready") {
     emitOrderEvent("order.status.changed", {
@@ -1764,13 +1762,11 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: result.conflict });
   if (result.productionPending)
-    return reply
-      .code(409)
-      .send({
-        code: "TAB_PRODUCTION_PENDING",
-        message: "Aguarde a finalizacao dos itens na cozinha",
-        pendingRounds: result.pendingRounds,
-      });
+    return reply.code(409).send({
+      code: "TAB_PRODUCTION_PENDING",
+      message: "Aguarde a finalizacao dos itens na cozinha",
+      pendingRounds: result.pendingRounds,
+    });
   if (result.invalid) return reply.code(400).send({ message: result.invalid });
   if (!result.repeated) emitOrderEvent("tab.round.cancelled", result.saved);
   if (!result.repeated && result.printJob) await dispatchPrintJob(result.printJob);
@@ -1963,13 +1959,11 @@ app.post("/tabs/:tabId/close", async (request, reply) => {
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: "Comanda já encerrada" });
   if (result.productionPending)
-    return reply
-      .code(409)
-      .send({
-        code: "TAB_PRODUCTION_PENDING",
-        message: "Aguarde a finalizacao dos itens na cozinha",
-        pendingRounds: result.pendingRounds,
-      });
+    return reply.code(409).send({
+      code: "TAB_PRODUCTION_PENDING",
+      message: "Aguarde a finalizacao dos itens na cozinha",
+      pendingRounds: result.pendingRounds,
+    });
   if (result.balance != null)
     return reply.code(409).send({
       code: "TAB_BALANCE_PENDING",
@@ -2202,13 +2196,11 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
   if (result.conflict)
     return reply.code(409).send({ message: "Pedido foi alterado; atualize a tela" });
   if (result.productionPending)
-    return reply
-      .code(409)
-      .send({
-        code: "TAB_PRODUCTION_PENDING",
-        message: "Aguarde a finalizacao dos itens na cozinha",
-        pendingRounds: result.pendingRounds,
-      });
+    return reply.code(409).send({
+      code: "TAB_PRODUCTION_PENDING",
+      message: "Aguarde a finalizacao dos itens na cozinha",
+      pendingRounds: result.pendingRounds,
+    });
   if (result.repeated) return result.saved;
 
   if (result.printJob) {
@@ -2490,13 +2482,11 @@ app.post("/print-jobs/:jobId/reprocess", async (request, reply) => {
   const existing = { rows: [true] };
   if (result.conflict) {
     if (result.productionPending)
-      return reply
-        .code(409)
-        .send({
-          code: "TAB_PRODUCTION_PENDING",
-          message: "Aguarde a finalizacao dos itens na cozinha",
-          pendingRounds: result.pendingRounds,
-        });
+      return reply.code(409).send({
+        code: "TAB_PRODUCTION_PENDING",
+        message: "Aguarde a finalizacao dos itens na cozinha",
+        pendingRounds: result.pendingRounds,
+      });
     if (!existing.rows[0])
       return reply.code(404).send({ message: "Job de impressão não encontrado" });
     return reply.code(409).send({
@@ -2615,13 +2605,11 @@ app.post("/cash-shifts/:shiftId/adjustments", async (request, reply) => {
   if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
   if (result.conflict) return reply.code(409).send({ message: "O caixa está fechado" });
   if (result.productionPending)
-    return reply
-      .code(409)
-      .send({
-        code: "TAB_PRODUCTION_PENDING",
-        message: "Aguarde a finalizacao dos itens na cozinha",
-        pendingRounds: result.pendingRounds,
-      });
+    return reply.code(409).send({
+      code: "TAB_PRODUCTION_PENDING",
+      message: "Aguarde a finalizacao dos itens na cozinha",
+      pendingRounds: result.pendingRounds,
+    });
   if (!result.repeated) emitFinanceEvent("cash.adjustment.created", result);
   return result;
 });
@@ -2670,13 +2658,11 @@ app.post("/cash-shifts/:shiftId/close", async (request, reply) => {
   if (result.notFound) return reply.code(404).send({ message: "Caixa não encontrado" });
   if (result.conflict) return reply.code(409).send({ message: "O caixa já está fechado" });
   if (result.productionPending)
-    return reply
-      .code(409)
-      .send({
-        code: "TAB_PRODUCTION_PENDING",
-        message: "Aguarde a finalizacao dos itens na cozinha",
-        pendingRounds: result.pendingRounds,
-      });
+    return reply.code(409).send({
+      code: "TAB_PRODUCTION_PENDING",
+      message: "Aguarde a finalizacao dos itens na cozinha",
+      pendingRounds: result.pendingRounds,
+    });
   emitFinanceEvent("cash.shift.closed", result.saved);
   return result.saved;
 });
