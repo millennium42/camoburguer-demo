@@ -1843,6 +1843,12 @@ app.post("/tabs/:tabId/payments", async (request, reply) => {
   if (result.closed) return reply.code(409).send({ message: "Comanda não está aberta" });
   if (result.noOpenShift)
     return reply.code(409).send({ message: "Abra o turno de caixa antes de registrar pagamentos" });
+  if (result.productionPending)
+    return reply.code(409).send({
+      code: "TAB_PRODUCTION_PENDING",
+      message: "Aguarde a finalizacao dos itens na cozinha",
+      pendingRounds: result.pendingRounds,
+    });
   if (result.idempotencyConflict)
     return reply.code(409).send({ message: "Idempotency-Key já usada com outro pagamento" });
   if (result.overpayment)
