@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import pg from "pg";
 import { processChannelCommands } from "../apps/api/src/integrations/command-outbox.js";
-import { createOrderAction } from "../apps/api/src/integrations/order-actions.js";
 import createIFoodAdapter from "../apps/api/src/integrations/providers/ifood.js";
 
 const connectionString = process.env.TEST_DATABASE_URL;
@@ -54,7 +53,7 @@ if (!connectionString) {
           );
           return rowCount > 0 ? order : null;
         },
-        changeStock: async (order, qty, reason, client, refId) => {
+        changeStock: async (order, qty, reason, client, _refId) => {
           await client.query(
             "INSERT INTO stock_movements (id, order_id, reason, delta, category) VALUES ($1, $2, $3, $4, 'xis')",
             [`sm-${Date.now()}`, order.id, reason, qty],
@@ -130,7 +129,7 @@ if (!connectionString) {
           );
           return rowCount > 0 ? order : null;
         },
-        changeStock: async (order, qty, reason, client, refId) => {
+        changeStock: async (order, qty, reason, client, _refId) => {
           await client.query(
             "INSERT INTO stock_movements (id, order_id, reason, delta, category) VALUES ($1, $2, $3, $4, 'xis')",
             [`sm-${Date.now()}`, order.id, reason, qty],

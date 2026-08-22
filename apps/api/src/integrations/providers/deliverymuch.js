@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { fingerprint } from "../../idempotency.js";
 import { requestForm, requestJson } from "../http-client.js";
 import {

@@ -1,5 +1,5 @@
+import { randomUUID } from "node:crypto";
 import { confirmOrder, requiresKitchenPreparation, transitionOrder } from "@camoburguer/domain";
-import { randomUUID } from "crypto";
 import {
   claimIdempotency,
   completeIdempotency,
@@ -44,7 +44,7 @@ export async function createOrderAction(orderId, action, payload, idempotencyKey
 
   return db.transaction(async (client) => {
     const order = await getOrderWithMapping(orderId, client);
-    if (!order || !order.mapping) {
+    if (!order?.mapping) {
       const err = new Error("Pedido ou integração não encontrados");
       err.statusCode = 404;
       throw err;
@@ -135,7 +135,7 @@ export async function createOrderAction(orderId, action, payload, idempotencyKey
 export async function activateAcceptedOrder(orderId, db, executor = null) {
   const activate = async (client) => {
     const order = await getOrderWithMapping(orderId, client);
-    if (!order || !order.mapping) {
+    if (!order?.mapping) {
       throw new Error("Pedido não encontrado");
     }
 

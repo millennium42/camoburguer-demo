@@ -11,10 +11,14 @@
             "id": "6ea5904700fa5e0e",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Visualização em gráfico"
+              "type": "markdown",
+              "state": {
+                "file": "docs/trilha-desenvolvimento.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "trilha-desenvolvimento"
             }
           }
         ]
@@ -186,6 +190,7 @@
   },
   "active": "6ea5904700fa5e0e",
   "lastOpenFiles": [
+    "00-mapa-do-projeto.md",
     "apps/print-bridge/spool",
     "temp-bridge-runner.js",
     "temp-runner.js",
@@ -193,7 +198,6 @@
     "docs/pagamentos-comandas.md",
     "docs/trilha-desenvolvimento.md",
     "docs/ciclo-do-pedido.md",
-    "00-mapa-do-projeto.md",
     "AGENTS.md",
     "HANDOFF.md",
     "README.md",

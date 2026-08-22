@@ -33,7 +33,7 @@
   box-sizing: border-box;
 }
 [hidden] {
-  display: none !important;
+  display: none;
 }
 
 body {
@@ -975,11 +975,11 @@ dialog::backdrop {
 
 @media print {
   body * {
-    display: none !important;
+    display: none;
   }
   #print-area,
   #print-area * {
-    display: block !important;
+    display: block;
   }
   #print-area {
     position: absolute;

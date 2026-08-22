@@ -29,7 +29,7 @@ test("M-07: loginAttempts respeita o limite maximo (eviction) e evita OOM", asyn
 test("M-07: revokedTokens respeita o limite maximo (eviction)", async () => {
   let dbQueries = 0;
   const db = {
-    query: async (sql) => {
+    query: async (_sql) => {
       dbQueries++;
       // always return null / empty for simplicity in this mock
       return { rows: [] };
@@ -65,7 +65,7 @@ test("M-07: auth throtles writes to last_seen_at for SSE write amplification red
   const now = new Date("2026-07-28T10:00:00Z");
 
   const db = {
-    query: async (sql, values) => {
+    query: async (sql, _values) => {
       if (sql.startsWith("SELECT")) {
         return {
           rows: [

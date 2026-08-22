@@ -427,7 +427,7 @@ import { buildEntriesFromOrder, summarizeFinance } from "../packages/finance-cor
 test("H-04 Ingestion: aceita e salva externalPayments com paymentMethod mixed na metadata de orders", async () => {
   let insertedOrder;
   const executor = {
-    async query(sql, params) {
+    async query(sql, _params) {
       if (sql.includes("SELECT 1 FROM channel_mappings")) return { rows: [] };
       if (sql.includes("INSERT INTO channel_mappings")) {
         const now = new Date().toISOString();
@@ -495,8 +495,8 @@ test("H-04 Finance Core: buildEntriesFromOrder embute externalPayments e summari
 
   const summary = summarizeFinance(entries);
   assert.equal(summary.grossSales, 50);
-  assert.equal(summary.paymentsByMethod["cash"], 20);
-  assert.equal(summary.paymentsByMethod["app_paid"], 30);
+  assert.equal(summary.paymentsByMethod.cash, 20);
+  assert.equal(summary.paymentsByMethod.app_paid, 30);
   // Reconciliacao deve bater
   assert.equal(summary.reconciliation.balanced, true);
   assert.equal(summary.reconciliation.difference, 0);
@@ -534,7 +534,7 @@ test("H-04 Finance Core: cancelamento com externalPayments reduz corretamente do
   assert.equal(summary.grossSales, 50);
   assert.equal(summary.cancellations, 50);
   assert.equal(summary.netSales, 0);
-  assert.equal(summary.paymentsByMethod["cash"] || 0, 0);
-  assert.equal(summary.paymentsByMethod["app_paid"] || 0, 0);
+  assert.equal(summary.paymentsByMethod.cash || 0, 0);
+  assert.equal(summary.paymentsByMethod.app_paid || 0, 0);
   assert.equal(summary.reconciliation.balanced, true);
 });

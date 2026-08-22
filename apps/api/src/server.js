@@ -537,7 +537,7 @@ app.put("/users/:id", async (request, reply) => {
   }
 });
 
-app.get("/users", async (request) => {
+app.get("/users", async (_request) => {
   const result = await db.query(
     "SELECT id, name, email, username, role, created_at FROM users ORDER BY created_at DESC",
   );
@@ -656,7 +656,7 @@ async function getOrder(orderId, executor = db, forUpdate = false) {
   return rows[0] ? mapOrder(rows[0]) : null;
 }
 
-async function getOrderByIdempotencyKey(idempotencyKey, executor = db) {
+async function _getOrderByIdempotencyKey(idempotencyKey, executor = db) {
   const { rows } = await executor.query(
     `SELECT o.*,
        EXISTS (SELECT 1 FROM channel_mappings mapping WHERE mapping.order_id = o.id) AS has_channel_mapping

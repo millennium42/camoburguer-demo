@@ -15,7 +15,7 @@ test("M-04: PostgreSQL Error Mapper", {
   const app = fastify({ logger: false });
 
   // Utilizar o logger do fastify simulado (que é usado pelo mapPostgresError)
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler((error, _request, reply) => {
     const { statusCode, payload } = mapPostgresError(error, {
       error: () => {},
       warn: () => {}, // Evitar poluir stdout durante o teste

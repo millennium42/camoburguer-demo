@@ -15,7 +15,7 @@ export async function requestJson(url, options = {}) {
   if (text) {
     try {
       payload = JSON.parse(text);
-    } catch (e) {
+    } catch (_e) {
       // Ignored for non-JSON responses
     }
   }

@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { CATALOG, CATALOG_CAPTURED_AT } from "../packages/domain/index.js";
 
 export const PROTECTED_TABLES = Object.freeze([
@@ -483,7 +483,7 @@ export async function requestDemoSeed({
 }
 
 // O CLI é apenas cliente HTTP; nunca abre conexão direta com PostgreSQL.
-if (process.argv[1] && process.argv[1].endsWith("seed-demo.mjs")) {
+if (process.argv[1]?.endsWith("seed-demo.mjs")) {
   const confirmation = process.argv
     .find((argument) => argument.startsWith("--confirm-target="))
     ?.slice("--confirm-target=".length);

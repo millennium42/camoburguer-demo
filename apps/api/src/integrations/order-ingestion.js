@@ -1,5 +1,5 @@
+import { randomUUID } from "node:crypto";
 import { createOrder } from "@camoburguer/domain";
-import { randomUUID } from "crypto";
 import { lockCatalogItems } from "../catalog-repository.js";
 import { findChannelMapping, insertChannelMapping } from "./integration-repository.js";
 

@@ -1,17 +1,13 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import pg from "pg";
 import { createDb } from "../apps/api/src/db.js";
-import {
-  canonicalJson,
-  fingerprint,
-  orderFingerprintPayload,
-} from "../apps/api/src/idempotency.js";
+import { fingerprint, orderFingerprintPayload } from "../apps/api/src/idempotency.js";
 import { normalizeStandaloneOrderDto } from "../packages/domain/index.js";
 
 test("DTO de pedido avulso repudia propriedades estruturais isoladas", () => {
@@ -106,15 +102,15 @@ if (connectionString) {
   test("h01 integracao: POST /orders bloqueia campos estruturais, mantendo estoque intacto e rotas avulsas/dedicadas perenes", async (t) => {
     let target;
     let pool;
-    let db;
-    let adminToken;
+    let _db;
+    let _adminToken;
     let authHeader;
     const port = 34991;
 
     t.before(async () => {
       console.log("t.before start");
       pool = new pg.Pool({ connectionString, max: 10 });
-      db = createDb(pool);
+      _db = createDb(pool);
       console.log("Truncating tables");
       await pool.query(
         "TRUNCATE TABLE users, orders, stock_movements, idempotency_records, tab_payments CASCADE",
@@ -123,7 +119,7 @@ if (connectionString) {
       console.log("Hashing password");
       const pass = await import("../apps/api/src/auth.js").then((m) => m.hashPassword("test1234"));
       console.log("Inserting user");
-      const user = await pool.query(
+      const _user = await pool.query(
         "INSERT INTO users (id, name, email, role, username, password_hash) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
         [randomUUID(), "Admin", "admin@demo.local", "admin", "admin-h01", pass],
       );

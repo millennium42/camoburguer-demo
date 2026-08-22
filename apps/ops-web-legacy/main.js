@@ -322,8 +322,8 @@ function printShiftReport(shift, summary, entries, isDetailed) {
       <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Abertura Base:</strong><span>${money(shift.openingAmount)}</span></div>
       <div style="display: flex; justify-content: space-between;"><strong>Total de Vendas:</strong><span>${money(summary.grossSales || 0)}</span></div>
       <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Cancelamentos:</strong><span>${money(summary.cancellations || 0)}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Entradas (Reforço):</strong><span>${money(summary.entriesByType?.["cash_reinforcement"] || 0)}</span></div>
-      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Saídas (Sangria):</strong><span>${money(summary.entriesByType?.["cash_withdrawal"] || 0)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Entradas (Reforço):</strong><span>${money(summary.entriesByType?.cash_reinforcement || 0)}</span></div>
+      <div style="display: flex; justify-content: space-between;"><strong style="color: #666;">Saídas (Sangria):</strong><span>${money(summary.entriesByType?.cash_withdrawal || 0)}</span></div>
       <div style="border-bottom: 1px dashed black; margin-bottom: 10px; margin-top: 10px;"></div>
       <h3 style="font-size: 13px; margin: 0 0 5px 0;">Resumo por Forma de Pagamento</h3>
       ${summaryHtml || "Nenhuma movimentação"}
@@ -418,7 +418,7 @@ function renderCatalog() {
     })
     .join("");
 
-  container.innerHTML = tabsHtml + `<div class="menu-products-grid">${itemsHtml}</div>`;
+  container.innerHTML = `${tabsHtml}<div class="menu-products-grid">${itemsHtml}</div>`;
 }
 
 function openItemConfig(sku) {
@@ -2351,6 +2351,19 @@ function wireSse() {
   };
 }
 
+async function init() {
+  try {
+    const result = await api("/auth/me");
+    if (result && result.user) {
+      await applyAuthenticatedSession(result, null);
+      return;
+    }
+  } catch (err) {
+    // Ignore, will show login dialog
+  }
+  showLoginDialog();
+}
+
 if (typeof document !== "undefined") {
   window.addEventListener("popstate", enforceAuthGuard);
   wireLogin();
@@ -2360,5 +2373,5 @@ if (typeof document !== "undefined") {
   wireForms();
   syncDeliveryAddress();
   renderOrderItems();
-  showLoginDialog();
+  init();
 }

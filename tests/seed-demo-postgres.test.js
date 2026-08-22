@@ -91,6 +91,7 @@ async function resetBaseline() {
   await pool.query(`
     INSERT INTO stock_balances (category, quantity)
     VALUES ('xis', 0), ('dog', 0), ('hamburguer', 0)
+    ON CONFLICT (category) DO NOTHING
   `);
   await pool.query(
     `
@@ -104,6 +105,7 @@ async function resetBaseline() {
       sku text, name text, category text, price numeric, description text,
       stock_category text, allows_addons boolean, preparation_mode text, available boolean
     )
+    ON CONFLICT (sku) DO NOTHING
   `,
     [
       JSON.stringify(
@@ -1249,7 +1251,7 @@ if (!connectionString) {
     test("fluxos manuais e integrados permanecem isolados por mapping e fallback legado", async () => {
       await resetBaseline();
       const server = await startServer();
-      const admin = await adminSession(server);
+      const _admin = await adminSession(server);
       try {
         const admin = await adminSession(server);
         const before = await countOperationalRows();

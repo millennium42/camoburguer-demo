@@ -536,7 +536,7 @@ export function createDb(connectionString) {
           );
           process.exit(1);
         }
-      } catch (e) {
+      } catch (_e) {
         // Table might not exist yet during fresh setup, ignore.
       }
       await pool.query(schemaSql);

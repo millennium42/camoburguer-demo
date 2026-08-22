@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import fastify from "fastify";
 import { createUserSchema, updateUserSchema } from "../apps/api/src/user-schema.js";
 
 test("createUserSchema validates correctly", () => {
