@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="./styles.css?v=22" />
   </head>
   <body>
-    <dialog id="login-dialog" aria-labelledby="login-title">
-      <form id="login-form" method="dialog" class="card" style="min-width: min(26rem, 90vw);">
+    <div id="login-dialog" aria-labelledby="login-title" style="display: none; position: fixed; inset: 0; align-items: center; justify-content: center; background: var(--bg-alt); z-index: 9999;">
+      <form id="login-form" class="card" style="min-width: min(26rem, 90vw);">
         <h2 id="login-title">Entrar no painel</h2>
         <p id="login-error" role="alert" hidden></p>
         <label>Usuário <input name="username" autocomplete="username" required value="admin" /></label>
@@ -21,7 +21,7 @@
         </div>
         <button type="submit" class="primary">Entrar</button>
       </form>
-    </dialog>
+    </div>
     <div class="app-shell">
       <header class="hero glass">
         <div class="brand-container">

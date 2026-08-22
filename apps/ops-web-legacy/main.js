@@ -565,13 +565,13 @@ function renderTabs() {
                 .filter((candidate) => candidate.reversesItemId === item.id)
                 .reduce((sum, candidate) => sum + Number(candidate.quantity), 0);
               const remaining = Number(item.quantity) - cancelled;
-              return `<div>${item.quantity}x ${escapeHtml(item.name)}${round.roundKind === "production" && remaining > 0 ? ` <button type="button" data-cancel-item="${escapeHtml(item.id)}" data-cancel-tab="${escapeHtml(tab.id)}" data-cancel-order="${escapeHtml(round.id)}" data-cancel-max="${remaining}" data-cancel-name="${escapeHtml(item.name)}">Cancelar</button>` : ""}</div>`;
+              return `<div>${item.quantity}x ${escapeHtml(item.name)}${round.roundKind === "production" && remaining > 0 && state.currentUser?.role === 'admin' ? ` <button type="button" data-cancel-item="${escapeHtml(item.id)}" data-cancel-tab="${escapeHtml(tab.id)}" data-cancel-order="${escapeHtml(round.id)}" data-cancel-max="${remaining}" data-cancel-name="${escapeHtml(item.name)}">Cancelar</button>` : ""}</div>`;
             })
             .join("")}
         </div>`,
           )
           .join("")}</div>
-        <div class="tab-payments">${tab.payments.map((payment) => `<div class="round-row ${payment.kind === "reversal" ? "cancellation" : ""}"><span>${payment.kind === "reversal" ? "Estorno" : paymentLabels[payment.paymentMethod]} · ${money(payment.amount)}</span>${payment.kind === "payment" && !reversedPayments.has(payment.id) ? `<button type="button" data-reverse-payment="${escapeHtml(payment.id)}" data-payment-tab="${escapeHtml(tab.id)}">Estornar</button>` : ""}</div>`).join("")}</div>
+        <div class="tab-payments">${tab.payments.map((payment) => `<div class="round-row ${payment.kind === "reversal" ? "cancellation" : ""}"><span>${payment.kind === "reversal" ? "Estorno" : paymentLabels[payment.paymentMethod]} · ${money(payment.amount)}</span>${payment.kind === "payment" && !reversedPayments.has(payment.id) && state.currentUser?.role === 'admin' ? `<button type="button" data-reverse-payment="${escapeHtml(payment.id)}" data-payment-tab="${escapeHtml(tab.id)}">Estornar</button>` : ""}</div>`).join("")}</div>
         ${tab.balanceCents > 0 ? `<form class="payment-form" data-payment-form data-tab-id="${escapeHtml(tab.id)}"><select name="paymentMethod" aria-label="Forma de pagamento"><option value="cash">Dinheiro</option><option value="pix">Pix</option><option value="credit_card">Crédito</option><option value="debit_card">Débito</option><option value="app_paid">Pago no app</option></select><input name="amount" type="number" min="0.01" max="${tab.balance}" step="0.01" value="${tab.balance}" required aria-label="Valor do pagamento" /><button type="submit">Registrar parcela</button><div data-tab-cash-box style="grid-column: 1 / -1; display: none; background: rgba(16, 185, 129, 0.08); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px dashed rgba(16, 185, 129, 0.3); margin-top: 6px;"><div style="display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap;"><label style="flex: 1 1 180px; flex-direction: row; align-items: center; gap: 8px; font-size: 0.88rem; margin: 0;">Recebido (R$): <input type="number" min="0" step="0.01" data-tab-cash-received placeholder="Ex.: 50,00" style="padding: 6px 10px; width: 110px;" /></label><div><span style="font-size: 0.82rem; color: var(--muted); font-weight: 600;">Troco: </span><strong data-tab-cash-change style="color: #34d399; font-size: 1.15rem;">R$ 0,00</strong></div></div></div></form>` : ""}
         ${tab.balanceCents === 0 ? `<div class="actions"><button type="button" data-close-tab="${escapeHtml(tab.id)}">Encerrar comanda</button></div>` : ""}
       </article>`;
@@ -666,7 +666,9 @@ function orderActions(order) {
   if (order.status === "confirmed") actions.push(["in_preparation", "Em preparo"]);
   if (order.status === "in_preparation") actions.push(["ready", "Pronto"]);
   if (order.status === "ready") actions.push(["completed", "Concluir"]);
-  if (!order.tabId && !["completed", "cancelled"].includes(order.status))
+  
+  const isAdmin = state.currentUser?.role === "admin";
+  if (!order.tabId && !["completed", "cancelled"].includes(order.status) && isAdmin)
     actions.push(["cancelled", "Cancelar"]);
   return actions;
 }
@@ -750,7 +752,7 @@ function renderOrders() {
         <p>${(order.items || []).map((item) => `${item.quantity}x ${escapeHtml(item.name)}${(item.addons || []).length ? ` + ${item.addons.map((addon) => escapeHtml(addon.name)).join(", ")}` : ""}${item.discountPercent ? ` (-${item.discountPercent}%)` : ""}`).join(" · ")}</p>
         <div class="actions">
           <button type="button" class="primary" data-integration-accept="${escapeHtml(order.id)}">Aceitar pedido</button>
-          <button type="button" class="danger" data-integration-cancel="${escapeHtml(order.id)}">Recusar</button>
+          ${state.currentUser?.role === 'admin' ? `<button type="button" class="danger" data-integration-cancel="${escapeHtml(order.id)}">Recusar</button>` : ''}
         </div>
       </div>
     `,
@@ -1018,9 +1020,34 @@ async function api(path, options = {}) {
   return payload;
 }
 
+function enforceAuthGuard() {
+  if (typeof window === "undefined") return;
+  const path = window.location.pathname;
+  const isLoginPage = path === "/app/login";
+  const loginDialog = $("#login-dialog");
+  const appShell = $(".app-shell");
+  
+  if (!state.currentUser && !isLoginPage) {
+    window.history.replaceState({}, "", "/app/login");
+    if (loginDialog) loginDialog.style.display = "flex";
+    if (appShell) appShell.style.display = "none";
+  } else if (state.currentUser && isLoginPage) {
+    window.history.replaceState({}, "", "/app/");
+    if (loginDialog) loginDialog.style.display = "none";
+    if (appShell) appShell.style.display = "";
+  } else {
+    if (isLoginPage) {
+      if (loginDialog) loginDialog.style.display = "flex";
+      if (appShell) appShell.style.display = "none";
+    } else {
+      if (loginDialog) loginDialog.style.display = "none";
+      if (appShell) appShell.style.display = "";
+    }
+  }
+}
+
 function showLoginDialog() {
-  const dialog = $("#login-dialog");
-  if (dialog && !dialog.open) dialog.showModal();
+  enforceAuthGuard();
 }
 
 function setLoginError(message = "") {
@@ -1039,9 +1066,10 @@ function setLoginBusy(form, busy) {
 async function applyAuthenticatedSession(result, form) {
   state.csrfToken = result.csrfToken;
   state.currentUser = result.user;
-  $("#btn-logout").hidden = false;
+  const btnLogout = $("#btn-logout");
+  if (btnLogout) btnLogout.hidden = false;
   form?.reset();
-  $("#login-dialog").close();
+  enforceAuthGuard();
   wireSse();
   await refreshSafe();
 }
@@ -2324,6 +2352,7 @@ function wireSse() {
 }
 
 if (typeof document !== "undefined") {
+  window.addEventListener("popstate", enforceAuthGuard);
   wireLogin();
   wireTabs();
   wireCart();

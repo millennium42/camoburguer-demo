@@ -91,6 +91,7 @@ const PUBLIC_UI_PATHS = new Set([
   "/",
   "/app",
   "/app/",
+  "/app/login",
   "/app/main.js",
   "/app/styles.css",
   "/app/legacy",
