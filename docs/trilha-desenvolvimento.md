@@ -36,10 +36,10 @@ tags: [cronograma, roadmap]
 - [x] Configurar tempo de expiração da sessão e política de renovação.
 
 ### Bloco 1.3: Controle de Acesso (RBAC)
-- [ ] Definir catálogo de perfis: `Admin`, `Manager`, `Operator`.
-- [ ] Criar middleware de autorização (`requireRole(roles)`) aplicado nas rotas protegidas.
-- [ ] Bloquear endpoints do Spool da Print Bridge contra requisições não autorizadas.
-- [ ] Proteger a infraestrutura SSE (Server-Sent Events) checando a sessão no handshake de conexão.
+- [x] Definir catálogo de perfis: `Admin`, `Manager`, `Operator`.
+- [x] Criar middleware de autorização (`requireRole(roles)`) aplicado nas rotas protegidas.
+- [x] Bloquear endpoints do Spool da Print Bridge contra requisições não autorizadas.
+- [x] Proteger a infraestrutura SSE (Server-Sent Events) checando a sessão no handshake de conexão.
 
 ### Bloco 1.4: Proteção do Frontend
 - [ ] Desenvolver tela de Login legado em `/app/login`.
