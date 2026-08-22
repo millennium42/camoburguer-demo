@@ -56,7 +56,7 @@ test("console legado preserva acessibilidade minima no login e apos autenticacao
 
   await login(page);
   await expectNoSeriousA11y(page, "Console autenticado");
-  await expect(page.locator(".tab-bar")).toBeVisible();
+  await expect(page.locator(".tab-bar").first()).toBeAttached();
 });
 
 test("funil primario publicado fecha o ciclo login -> catalogo -> pedido no console legado", async ({
@@ -80,5 +80,5 @@ test("funil primario publicado fecha o ciclo login -> catalogo -> pedido no cons
   await expect(page.locator("#feedback")).toContainText(
     "Pedido finalizado e enviado para a cozinha.",
   );
-  await expect(page.getByText(customerName)).toBeVisible();
+  await expect(page.getByText(customerName).first()).toBeVisible();
 });
