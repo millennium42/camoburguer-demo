@@ -22,7 +22,7 @@
     "test:db": "node --test tests/seed-demo-postgres.test.js",
     "test:e2e": "playwright test",
     "test:a11y": "playwright test --grep @a11y",
-    "smoke": "node tests/smoke.mjs",
+    "smoke": "node --env-file-if-exists=.env.test tests/smoke.mjs",
     "verify": "npm run lint && npm run test:cov && npm run build && npm run smoke",
     "start:api": "npm run start --workspace @camoburguer/api",
     "start:print": "npm run start --workspace @camoburguer/print-bridge",
