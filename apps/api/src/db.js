@@ -47,6 +47,16 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS csrf_hash TEXT NULL;
 CREATE INDEX IF NOT EXISTS auth_sessions_active_token ON auth_sessions (token_hash) WHERE revoked_at IS NULL;
 
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  action TEXT NOT NULL,
+  entity TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  payload_snapshot JSONB NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS audit_events (
   id TEXT PRIMARY KEY,
   actor_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,

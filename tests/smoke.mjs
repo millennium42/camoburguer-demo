@@ -777,11 +777,7 @@ assert.equal(
   (await api("/inventory")).balances.find((item) => item.category === "dog").quantity,
   1,
 );
-await Promise.all(
-  concurrentTabs.map((candidate) =>
-    advanceAndClose(candidate.id),
-  ),
-);
+await Promise.all(concurrentTabs.map((candidate) => advanceAndClose(candidate.id)));
 
 const divergentKey = `smoke-divergent-stock-${runId}`;
 await api("/inventory/hamburguer/adjustments", {
@@ -1033,10 +1029,7 @@ const paidMixedTab = await api(`/tabs/${mixedTab.id}`);
 assert.equal(paidMixedTab.paidCents, 10000);
 assert.equal(paidMixedTab.balanceCents, 0);
 assert.equal(paidMixedTab.paymentMethod, "mixed");
-assert.equal(
-  (await advanceAndClose(mixedTab.id)).status,
-  "closed",
-);
+assert.equal((await advanceAndClose(mixedTab.id)).status, "closed");
 
 const partialTab = await api("/tabs", {
   method: "POST",

@@ -1906,6 +1906,18 @@ app.post("/tabs/:tabId/payments/:paymentId/reversals", async (request, reply) =>
         client,
       );
     }
+    await client.query(
+      `INSERT INTO audit_logs (id, user_id, action, entity, entity_id, payload_snapshot)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb)`,
+      [
+        randomUUID(),
+        request.auth.user.id,
+        "ESTORNO",
+        "tab_payments",
+        saved.id,
+        JSON.stringify(saved),
+      ],
+    );
     return { saved, repeated: false, tab: await tabView(tab, client) };
   });
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
@@ -2248,6 +2260,18 @@ app.patch("/orders/:orderId/discount", async (request, reply) => {
       updatedAt: new Date().toISOString(),
     };
     const saved = await updateOrder(updated, order.status, client);
+    await client.query(
+      `INSERT INTO audit_logs (id, user_id, action, entity, entity_id, payload_snapshot)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb)`,
+      [
+        randomUUID(),
+        request.auth?.user?.id ?? "system",
+        "APLICACAO_DESCONTO",
+        "orders",
+        order.id,
+        JSON.stringify({ discountPercent, total: updated.total }),
+      ],
+    );
     return { saved };
   });
 
@@ -2596,6 +2620,20 @@ app.post("/cash-shifts/:shiftId/adjustments", async (request, reply) => {
       resultId: savedEntry.id,
       responseStatus: 200,
     });
+    if (kind === "withdrawal") {
+      await client.query(
+        `INSERT INTO audit_logs (id, user_id, action, entity, entity_id, payload_snapshot)
+         VALUES ($1, $2, $3, $4, $5, $6::jsonb)`,
+        [
+          randomUUID(),
+          request.auth?.user?.id ?? "system",
+          "SAQUE_CAIXA",
+          "finance_entries",
+          savedEntry.id,
+          JSON.stringify(savedEntry),
+        ],
+      );
+    }
     return { shift: updatedShift, entry: savedEntry, repeated: false };
   });
 

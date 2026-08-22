@@ -668,7 +668,7 @@ if (!connectionString) {
     });
 
     test("bootstrap concorrente cria um unico admin sem expor o segredo", async () => {
-      await pool.query("TRUNCATE auth_sessions, audit_events, users CASCADE");
+      await pool.query("TRUNCATE auth_sessions, audit_events, audit_logs, users CASCADE");
       const [first, second] = await Promise.all([startServer(), startServer()]);
       try {
         const count = await pool.query(
