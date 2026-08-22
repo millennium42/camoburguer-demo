@@ -1,1 +1,1 @@
-﻿Handoff: Bloco 1.2 Concluido e CI verde.
+Handoff: Bloco 1.3 Concluido e CI verde.
