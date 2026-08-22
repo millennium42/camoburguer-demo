@@ -1444,16 +1444,12 @@ if (!connectionString) {
         );
       }
 
-      let inTransaction = false;
+      const { AsyncLocalStorage } = await import("node:async_hooks");
+      const txAls = new AsyncLocalStorage();
       const trackedDb = {
         async transaction(work) {
           return db.transaction(async (client) => {
-            inTransaction = true;
-            try {
-              return await work(client);
-            } finally {
-              inTransaction = false;
-            }
+            return txAls.run(true, () => work(client));
           });
         },
       };
@@ -1462,12 +1458,12 @@ if (!connectionString) {
       const adapter = {
         channel: "fake",
         async sendCommand(command) {
-          assert.equal(inTransaction, false, "HTTP/send fora da transacao");
+          assert.equal(txAls.getStore() || false, false, "HTTP/send fora da transacao");
           assert.equal(command.correlationId, command.id);
           sends += 1;
         },
         async reconcileCommand() {
-          assert.equal(inTransaction, false, "HTTP/reconcile fora da transacao");
+          assert.equal(txAls.getStore() || false, false, "HTTP/reconcile fora da transacao");
           reconciliations += 1;
           return { state: "applied", externalStatus: "accepted" };
         },
@@ -1545,7 +1541,7 @@ if (!connectionString) {
       const unauthorizedAdapter = {
         ...adapter,
         async sendCommand(command) {
-          assert.equal(inTransaction, false);
+          assert.equal(txAls.getStore() || false, false);
           assert.equal(command.id, "p10-http-401");
           sends += 1;
           const error = new Error("credencial expirada");
