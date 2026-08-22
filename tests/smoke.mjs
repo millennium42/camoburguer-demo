@@ -39,6 +39,19 @@ async function request(
 
 const api = (path, options) => request(apiBase, path, options);
 
+async function advanceAndClose(tabId, expected = [200, 201]) {
+  const view = await api(`/tabs/${tabId}`);
+  for (const r of view.rounds) {
+    if (r.status === "confirmed") {
+      await api(`/orders/${r.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
+      await api(`/orders/${r.id}/status`, { method: "PATCH", body: { status: "ready" } });
+    } else if (r.status === "in_preparation") {
+      await api(`/orders/${r.id}/status`, { method: "PATCH", body: { status: "ready" } });
+    }
+  }
+  return await api(`/tabs/${tabId}/close`, { method: "POST", body: {}, expected });
+}
+
 async function observeOrderEvents() {
   const controller = new AbortController();
   const response = await fetch(`${apiBase}/events/orders`, {
@@ -647,13 +660,7 @@ assert.equal(
   (await api("/inventory")).balances.find((item) => item.category === "xis").quantity,
   initialXis + 5,
 );
-
-await api(`/orders/${tabRound.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
-await api(`/orders/${tabRound.id}/status`, { method: "PATCH", body: { status: "ready" } });
-await api(`/orders/${cancellation.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
-await api(`/orders/${cancellation.id}/status`, { method: "PATCH", body: { status: "ready" } });
-
-await api(`/tabs/${tab.id}/close`, { method: "POST", body: {} });
+await advanceAndClose(tab.id);
 
 const directCancellationTab = await api("/tabs", {
   method: "POST",
@@ -685,7 +692,7 @@ assert.equal(
   (await api("/kitchen/queue")).items.find((order) => order.id === directCancellation.id)?.status,
   "ready",
 );
-await api(`/tabs/${directCancellationTab.id}/close`, { method: "POST", body: {} });
+await advanceAndClose(directCancellationTab.id);
 
 const preparedTab = await api("/tabs", {
   method: "POST",
@@ -702,7 +709,7 @@ await api(`/orders/${preparedRound.id}/status`, {
   method: "PATCH",
   body: { status: "in_preparation" },
 });
-const preparedCancellation = await api(`/tabs/${preparedTab.id}/rounds/${preparedRound.id}/cancellations`, {
+await api(`/tabs/${preparedTab.id}/rounds/${preparedRound.id}/cancellations`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-prepared-cancel-${runId}` },
   body: { items: [{ itemId: preparedRound.items[0].id, quantity: 1 }], reason: "Após preparo" },
@@ -718,12 +725,7 @@ await api("/inventory/xis/adjustments", {
   body: { delta: 1, reason: "Reposição do smoke" },
   expected: [201],
 });
-await api(`/orders/${preparedRound.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
-await api(`/orders/${preparedRound.id}/status`, { method: "PATCH", body: { status: "ready" } });
-await api(`/orders/${preparedCancellation.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
-await api(`/orders/${preparedCancellation.id}/status`, { method: "PATCH", body: { status: "ready" } });
-
-await api(`/tabs/${preparedTab.id}/close`, { method: "POST", body: {} });
+await advanceAndClose(preparedTab.id);
 
 const dogBalance = (await api("/inventory")).balances.find(
   (item) => item.category === "dog",
@@ -762,7 +764,7 @@ assert.equal(
   0,
 );
 const concurrentWinner = concurrentRounds.find((result) => result.status === 201).body;
-const concurrentCancellation = await api(`/tabs/${concurrentWinner.tabId}/rounds/${concurrentWinner.id}/cancellations`, {
+await api(`/tabs/${concurrentWinner.tabId}/rounds/${concurrentWinner.id}/cancellations`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-concurrent-cancel-${runId}` },
   body: {
@@ -775,14 +777,9 @@ assert.equal(
   (await api("/inventory")).balances.find((item) => item.category === "dog").quantity,
   1,
 );
-await api(`/orders/${concurrentWinner.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
-await api(`/orders/${concurrentWinner.id}/status`, { method: "PATCH", body: { status: "ready" } });
-await api(`/orders/${concurrentCancellation.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
-await api(`/orders/${concurrentCancellation.id}/status`, { method: "PATCH", body: { status: "ready" } });
-
 await Promise.all(
   concurrentTabs.map((candidate) =>
-    api(`/tabs/${candidate.id}/close`, { method: "POST", body: {} }),
+    advanceAndClose(candidate.id),
   ),
 );
 
@@ -851,7 +848,7 @@ await api(`/tabs/${rollbackTab.id}/rounds`, {
 const afterRollback = await api("/inventory");
 assert.equal(afterRollback.balances.find((item) => item.category === "dog").quantity, 1);
 assert.equal(afterRollback.balances.find((item) => item.category === "xis").quantity, 1);
-await api(`/tabs/${rollbackTab.id}/close`, { method: "POST", body: {} });
+await advanceAndClose(rollbackTab.id);
 
 const initialShifts = (await api("/cash-shifts")).items;
 const previousOpenShift = initialShifts.find((shift) => shift.status === "open");
@@ -890,7 +887,7 @@ await api(`/tabs/${noShiftTab.id}/payments`, {
   expected: [409],
 });
 assert.equal((await api(`/tabs/${noShiftTab.id}`)).payments.length, 0);
-const noShiftCancellation = await api(`/tabs/${noShiftTab.id}/rounds/${noShiftRound.id}/cancellations`, {
+await api(`/tabs/${noShiftTab.id}/rounds/${noShiftRound.id}/cancellations`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-no-shift-cancel-${runId}` },
   body: {
@@ -899,11 +896,7 @@ const noShiftCancellation = await api(`/tabs/${noShiftTab.id}/rounds/${noShiftRo
   },
   expected: [201],
 });
-await api(`/orders/${noShiftRound.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
-await api(`/orders/${noShiftRound.id}/status`, { method: "PATCH", body: { status: "ready" } });
-await api(`/orders/${noShiftCancellation.id}/status`, { method: "PATCH", body: { status: "in_preparation" } });
-await api(`/orders/${noShiftCancellation.id}/status`, { method: "PATCH", body: { status: "ready" } });
-await api(`/tabs/${noShiftTab.id}/close`, { method: "POST", body: {} });
+await advanceAndClose(noShiftTab.id);
 
 const historicalShift = await api("/cash-shifts/open", {
   method: "POST",
@@ -977,7 +970,7 @@ await api(`/tabs/${crossShiftTab.id}/payments`, {
   body: { paymentMethod: "pix", amountCents: 500 },
   expected: [201],
 });
-await api(`/tabs/${crossShiftTab.id}/close`, { method: "POST", body: {} });
+await advanceAndClose(crossShiftTab.id);
 
 const mixedTab = await api("/tabs", {
   method: "POST",
@@ -1041,7 +1034,7 @@ assert.equal(paidMixedTab.paidCents, 10000);
 assert.equal(paidMixedTab.balanceCents, 0);
 assert.equal(paidMixedTab.paymentMethod, "mixed");
 assert.equal(
-  (await api(`/tabs/${mixedTab.id}/close`, { method: "POST", body: {} })).status,
+  (await advanceAndClose(mixedTab.id)).status,
   "closed",
 );
 
@@ -1072,14 +1065,14 @@ await api(`/tabs/${partialTab.id}/payments`, {
   body: { paymentMethod: "pix", amountCents: 9999 },
   expected: [201],
 });
-await api(`/tabs/${partialTab.id}/close`, { method: "POST", body: {}, expected: [409] });
+await advanceAndClose(partialTab.id, [409]);
 await api(`/tabs/${partialTab.id}/payments`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-partial-cent-${runId}` },
   body: { paymentMethod: "pix", amountCents: 1 },
   expected: [201],
 });
-await api(`/tabs/${partialTab.id}/close`, { method: "POST", body: {} });
+await advanceAndClose(partialTab.id);
 
 const paymentRaceTab = await api("/tabs", {
   method: "POST",
@@ -1118,7 +1111,7 @@ const paymentRace = await Promise.all(
 );
 assert.deepEqual(paymentRace.sort(), [201, 409]);
 assert.equal((await api(`/tabs/${paymentRaceTab.id}`)).balanceCents, 0);
-await api(`/tabs/${paymentRaceTab.id}/close`, { method: "POST", body: {} });
+await advanceAndClose(paymentRaceTab.id);
 
 const reversalTab = await api("/tabs", {
   method: "POST",
@@ -1160,7 +1153,7 @@ await api(`/tabs/${reversalTab.id}/payments`, {
   body: { paymentMethod: "pix", amountCents: 2000 },
   expected: [201],
 });
-await api(`/tabs/${reversalTab.id}/close`, { method: "POST", body: {} });
+await advanceAndClose(reversalTab.id);
 await api(`/cash-shifts/${shift.id}/adjustments`, {
   method: "POST",
   headers: { "Idempotency-Key": `smoke-cash-reinforcement-${runId}` },
