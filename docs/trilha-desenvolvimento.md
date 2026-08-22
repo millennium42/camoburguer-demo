@@ -47,8 +47,8 @@ tags: [cronograma, roadmap]
 - [ ] Condicionar a renderização de botões destrutivos (ex: "Cancelar Pedido", "Estornar Pagamento") ao perfil do usuário logado.
 
 ### Bloco 1.5: Trilha de Auditoria
-- [ ] Criar tabela de auditoria `audit_logs` (id, user_id, action, entity, entity_id, payload_snapshot, timestamp).
-- [ ] Acoplar gravação de auditoria em ações críticas: estorno, aplicação de desconto, saque de caixa.
+- [x] Criar tabela de auditoria `audit_logs` (id, user_id, action, entity, entity_id, payload_snapshot, timestamp).
+- [x] Acoplar gravação de auditoria em ações críticas: estorno, aplicação de desconto, saque de caixa.
 
 ---
 
