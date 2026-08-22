@@ -1806,10 +1806,6 @@ app.post("/tabs/:tabId/payments", async (request, reply) => {
     if (!tab) return { notFound: true };
     if (tab.status !== "open") return { closed: true };
     const view = await tabView(tab, client);
-    const pendingRounds = view.rounds.filter(
-      (r) => r.status === "confirmed" || r.status === "in_preparation",
-    );
-    if (pendingRounds.length > 0) return { productionPending: true, pendingRounds };
     if (amountCents > view.balanceCents)
       return { overpayment: true, balanceCents: view.balanceCents };
     const shift = await getOpenShift(client);
@@ -1843,12 +1839,6 @@ app.post("/tabs/:tabId/payments", async (request, reply) => {
   if (result.closed) return reply.code(409).send({ message: "Comanda não está aberta" });
   if (result.noOpenShift)
     return reply.code(409).send({ message: "Abra o turno de caixa antes de registrar pagamentos" });
-  if (result.productionPending)
-    return reply.code(409).send({
-      code: "TAB_PRODUCTION_PENDING",
-      message: "Aguarde a finalizacao dos itens na cozinha",
-      pendingRounds: result.pendingRounds,
-    });
   if (result.idempotencyConflict)
     return reply.code(409).send({ message: "Idempotency-Key já usada com outro pagamento" });
   if (result.overpayment)
