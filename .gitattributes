@@ -1,0 +1,15 @@
+# Normalize line endings to LF on checkout across all platforms.
+# Prevents CRLF phantom diffs when editing via WSL or Windows.
+* text=auto eol=lf
+
+# Binary files — do not touch
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.svg binary
