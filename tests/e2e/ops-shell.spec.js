@@ -13,24 +13,28 @@ function adminPassword() {
 }
 
 async function loginLegacyIfNeeded(page) {
-  const dialog = page.locator("#login-dialog[open]");
+  const dialog = page.locator("#login-dialog");
   if (!(await dialog.isVisible())) return;
 
   const demoButton = page.getByRole("button", { name: "Entrar como admin demo" });
   if (await demoButton.isVisible().catch(() => false)) {
-    await demoButton.click();
+    await expect(async () => {
+      await demoButton.click();
+      await expect(dialog).toBeHidden({ timeout: 1000 });
+    }).toPass();
   } else {
     await page.locator('#login-form input[name="username"]').fill("admin");
     await page.locator('#login-form input[name="password"]').fill(adminPassword());
     await page.locator('#login-form button[type="submit"]').click();
   }
+  await expect(dialog).toBeHidden();
   await expect(page.locator("#btn-logout")).toBeVisible();
 }
 
 async function login(page) {
   await page.goto("/app/");
-  await expect(page.getByRole("heading", { name: /Gest.*Operacional/i })).toBeVisible();
   await loginLegacyIfNeeded(page);
+  await expect(page.getByRole("heading", { name: /Gest.*Operacional/i })).toBeVisible();
   await expect(page.locator("#btn-logout")).toBeVisible();
 }
 
@@ -51,7 +55,7 @@ test("console legado preserva acessibilidade minima no login e apos autenticacao
   page,
 }) => {
   await page.goto("/app/");
-  await expect(page.getByRole("heading", { name: /Gest.*Operacional/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Entrar no painel/i })).toBeVisible();
   await expectNoSeriousA11y(page, "Tela de login");
 
   await login(page);
