@@ -112,4 +112,7 @@ const host = insecureLocal && !bridgeToken ? "127.0.0.1" : "0.0.0.0";
 if (insecureLocal && !bridgeToken) {
   app.log.warn("ATENÇÃO: print-bridge operando em modo INSEGURO no localhost.");
 }
-await app.listen({ host, port });
+const address = await app.listen({ host, port });
+if (process.env.PRINT_BRIDGE_PORT_FILE) {
+  await writeFile(process.env.PRINT_BRIDGE_PORT_FILE, String(new URL(address).port), "utf8");
+}

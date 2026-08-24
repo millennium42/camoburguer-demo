@@ -20,7 +20,6 @@ let target;
 let db;
 let pool;
 let nextPort = 33410;
-let nextBridgePort = 34510;
 
 function assertSafeTestUrl(value) {
   const url = new URL(value);
@@ -223,15 +222,16 @@ async function stopServer(server) {
 }
 
 async function startPrintBridge() {
-  const port = nextBridgePort++;
   const spoolDir = await mkdtemp(join(tmpdir(), "camoburguer-lgpd-"));
+  const portFile = join(spoolDir, "bridge-port");
   const child = spawn(process.execPath, ["apps/print-bridge/src/server.js"], {
     cwd: process.cwd(),
     env: {
       ...process.env,
-      PORT: String(port),
+      PORT: "0",
       PRINT_SPOOL_DIR: spoolDir,
       PRINT_BRIDGE_TOKEN: "privacy-test-token",
+      PRINT_BRIDGE_PORT_FILE: portFile,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -242,16 +242,18 @@ async function startPrintBridge() {
   child.stderr.on("data", (chunk) => {
     output += chunk;
   });
-  const bridge = {
-    child,
-    base: `http://127.0.0.1:${port}`,
-    spoolDir,
-    output: () => output,
-  };
   const deadline = Date.now() + 8000;
   while (Date.now() < deadline) {
     if (child.exitCode != null) throw new Error(`Bridge encerrou:\n${output}`);
     try {
+      const port = Number((await readFile(portFile, "utf8")).trim());
+      if (!Number.isInteger(port) || port < 1) throw new Error("porta inválida");
+      const bridge = {
+        child,
+        base: `http://127.0.0.1:${port}`,
+        spoolDir,
+        output: () => output,
+      };
       if ((await fetch(`${bridge.base}/health`)).ok) return bridge;
     } catch {}
     await new Promise((resolve) => setTimeout(resolve, 50));
