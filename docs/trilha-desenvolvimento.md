@@ -42,9 +42,9 @@ tags: [cronograma, roadmap]
 - [x] Proteger a infraestrutura SSE (Server-Sent Events) checando a sessão no handshake de conexão.
 
 ### Bloco 1.4: Proteção do Frontend
-- [ ] Desenvolver tela de Login legado em `/app/login`.
-- [ ] Adicionar *Auth Guard* global no roteador do frontend para bloquear acesso a rotas operacionais.
-- [ ] Condicionar a renderização de botões destrutivos (ex: "Cancelar Pedido", "Estornar Pagamento") ao perfil do usuário logado.
+- [x] Desenvolver tela de Login legado em `/app/login`.
+- [x] Adicionar *Auth Guard* global no roteador do frontend para bloquear acesso a rotas operacionais.
+- [x] Condicionar a renderização de botões destrutivos (ex: "Cancelar Pedido", "Estornar Pagamento") ao perfil do usuário logado.
 
 ### Bloco 1.5: Trilha de Auditoria
 - [x] Criar tabela de auditoria `audit_logs` (id, user_id, action, entity, entity_id, payload_snapshot, timestamp).
