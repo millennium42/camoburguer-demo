@@ -661,15 +661,6 @@ async function getOrder(orderId, executor = db, forUpdate = false) {
   return rows[0] ? mapOrder(rows[0]) : null;
 }
 
-async function _getOrderByIdempotencyKey(idempotencyKey, executor = db) {
-  const { rows } = await executor.query(
-    `SELECT o.*,
-       EXISTS (SELECT 1 FROM channel_mappings mapping WHERE mapping.order_id = o.id) AS has_channel_mapping
-     FROM orders o WHERE o.idempotency_key = $1`,
-    [idempotencyKey],
-  );
-  return rows[0] ? mapOrder(rows[0]) : null;
-}
 
 async function listOrders() {
   const { rows } = await db.query(`
@@ -1402,13 +1393,7 @@ app.post("/tabs/:tabId/rounds", async (request, reply) => {
   if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: "Comanda não está aberta" });
-  if (result.productionPending)
-    return reply.code(409).send({
-      code: "TAB_PRODUCTION_PENDING",
-      message: "Aguarde a finalizacao dos itens na cozinha",
-      pendingRounds: result.pendingRounds,
-    });
-  if (!result.repeated) emitOrderEvent("tab.round.created", result.saved);
+if (!result.repeated) emitOrderEvent("tab.round.created", result.saved);
   if (!result.repeated && result.saved.status === "ready") {
     emitOrderEvent("order.status.changed", {
       orderId: result.saved.id,
@@ -1526,13 +1511,7 @@ app.post("/tabs/:tabId/rounds/:orderId/cancellations", async (request, reply) =>
   if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: result.conflict });
-  if (result.productionPending)
-    return reply.code(409).send({
-      code: "TAB_PRODUCTION_PENDING",
-      message: "Aguarde a finalizacao dos itens na cozinha",
-      pendingRounds: result.pendingRounds,
-    });
-  if (result.invalid) return reply.code(400).send({ message: result.invalid });
+if (result.invalid) return reply.code(400).send({ message: result.invalid });
   if (!result.repeated) emitOrderEvent("tab.round.cancelled", result.saved);
   if (!result.repeated && result.printJob) await dispatchPrintJob(result.printJob);
   return reply.code(result.responseStatus).send(result.saved);
@@ -1731,13 +1710,7 @@ app.post("/tabs/:tabId/close", async (request, reply) => {
   });
   if (result.notFound) return reply.code(404).send({ message: "Comanda não encontrada" });
   if (result.conflict) return reply.code(409).send({ message: "Comanda já encerrada" });
-  if (result.productionPending)
-    return reply.code(409).send({
-      code: "TAB_PRODUCTION_PENDING",
-      message: "Aguarde a finalizacao dos itens na cozinha",
-      pendingRounds: result.pendingRounds,
-    });
-  if (result.balance != null)
+if (result.balance != null)
     return reply.code(409).send({
       code: "TAB_BALANCE_PENDING",
       message: "Registre os pagamentos antes de encerrar a comanda",
@@ -1968,13 +1941,7 @@ app.patch("/orders/:orderId/status", async (request, reply) => {
       .send({ message: "Use um ticket corretivo para cancelar itens da comanda" });
   if (result.conflict)
     return reply.code(409).send({ message: "Pedido foi alterado; atualize a tela" });
-  if (result.productionPending)
-    return reply.code(409).send({
-      code: "TAB_PRODUCTION_PENDING",
-      message: "Aguarde a finalizacao dos itens na cozinha",
-      pendingRounds: result.pendingRounds,
-    });
-  if (result.repeated) return result.saved;
+if (result.repeated) return result.saved;
 
   if (result.printJob) {
     const printJob = await dispatchPrintJob(result.printJob);
@@ -2266,13 +2233,7 @@ app.post("/print-jobs/:jobId/reprocess", async (request, reply) => {
   if (result.notFound) return reply.code(404).send({ message: "Job de impressao nao encontrado" });
   const existing = { rows: [true] };
   if (result.conflict) {
-    if (result.productionPending)
-      return reply.code(409).send({
-        code: "TAB_PRODUCTION_PENDING",
-        message: "Aguarde a finalizacao dos itens na cozinha",
-        pendingRounds: result.pendingRounds,
-      });
-    if (!existing.rows[0])
+if (!existing.rows[0])
       return reply.code(404).send({ message: "Job de impressão não encontrado" });
     return reply.code(409).send({
       code: "PRINT_JOB_NOT_DEAD_LETTER",
@@ -2403,13 +2364,7 @@ app.post("/cash-shifts/:shiftId/adjustments", async (request, reply) => {
 
   if (result.idempotencyConflict) return sendIdempotencyConflict(reply, result.idempotencyConflict);
   if (result.conflict) return reply.code(409).send({ message: "O caixa está fechado" });
-  if (result.productionPending)
-    return reply.code(409).send({
-      code: "TAB_PRODUCTION_PENDING",
-      message: "Aguarde a finalizacao dos itens na cozinha",
-      pendingRounds: result.pendingRounds,
-    });
-  if (!result.repeated) emitFinanceEvent("cash.adjustment.created", result);
+if (!result.repeated) emitFinanceEvent("cash.adjustment.created", result);
   return result;
 });
 
@@ -2456,13 +2411,7 @@ app.post("/cash-shifts/:shiftId/close", async (request, reply) => {
 
   if (result.notFound) return reply.code(404).send({ message: "Caixa não encontrado" });
   if (result.conflict) return reply.code(409).send({ message: "O caixa já está fechado" });
-  if (result.productionPending)
-    return reply.code(409).send({
-      code: "TAB_PRODUCTION_PENDING",
-      message: "Aguarde a finalizacao dos itens na cozinha",
-      pendingRounds: result.pendingRounds,
-    });
-  emitFinanceEvent("cash.shift.closed", result.saved);
+emitFinanceEvent("cash.shift.closed", result.saved);
   return result.saved;
 });
 
@@ -2618,10 +2567,6 @@ await ensureBootstrapAdmin(db, config.adminBootstrapPassword, {
 await recoverPrintJobs();
 setInterval(() => recoverPrintJobs().catch((error) => app.log.error(error)), 15_000).unref();
 
-db.updateOrder = updateOrder;
-db.changeStock = changeStock;
-db.reservePrintJob = reservePrintJob;
-db.insertOrder = insertOrder;
 
 startIntegrationPolling({ config, db, sse });
 
