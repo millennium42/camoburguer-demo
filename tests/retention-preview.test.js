@@ -4,6 +4,7 @@ import {
   applyRetention,
   previewRetention,
   RETENTION_ELIGIBLE_SQL,
+  reconcilePendingRetention,
 } from "../apps/api/src/retention.js";
 import { createRetentionFixture, databaseDigest } from "./helpers/retention-fixture.js";
 
@@ -26,6 +27,52 @@ test(
       assert.deepEqual(
         rows.map(({ id }) => id),
         ["cancelled-after-delivery", "old"],
+      );
+    } finally {
+      await fixture.close();
+    }
+  },
+);
+
+test(
+  "external cleanup keeps a failed spool pending and retries it with bounded batches",
+  options,
+  async () => {
+    const fixture = await createRetentionFixture();
+    try {
+      await fixture.pool.query(`INSERT INTO print_jobs
+        (id,order_id,status,printer_name,content) VALUES
+        ('old-spool','old-alone','printed','synthetic','Synthetic Customer')`);
+      await applyRetention(fixture.db);
+      const failed = await reconcilePendingRetention(fixture.db, {
+        bridgeUrl: "http://bridge.test",
+        fetchImpl: async () => ({ ok: false, json: async () => ({}) }),
+      });
+      assert.deepEqual(failed, { completed: 0, pending: 1 });
+      assert.equal(
+        (await fixture.pool.query("SELECT status FROM privacy_requests")).rows[0].status,
+        "pending_external_cleanup",
+      );
+
+      const calls = [];
+      const retried = await reconcilePendingRetention(fixture.db, {
+        bridgeUrl: "http://bridge.test/",
+        bridgeToken: "synthetic-token",
+        fetchImpl: async (_url, request) => {
+          calls.push(request);
+          const artifacts = JSON.parse(request.body).artifacts;
+          return {
+            ok: true,
+            json: async () => ({ ok: true, sanitized: artifacts.map(({ jobId }) => jobId) }),
+          };
+        },
+      });
+      assert.deepEqual(retried, { completed: 1, pending: 0 });
+      assert.equal(calls.length, 1);
+      assert.match(calls[0].headers.authorization, /Bearer synthetic-token/);
+      assert.equal(
+        (await fixture.pool.query("SELECT status FROM privacy_requests")).rows[0].status,
+        "completed",
       );
     } finally {
       await fixture.close();

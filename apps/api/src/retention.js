@@ -296,11 +296,13 @@ export function applyRetention(db) {
       )
       .digest("hex");
     await applyRows(client, plans);
+    const printArtifacts =
+      plans.find(({ table }) => table === "print_jobs")?.rows.map(({ id }) => ({ jobId: id })) ||
+      [];
     const result = {
       ...summary,
       requestId,
-      printArtifactIds:
-        plans.find(({ table }) => table === "print_jobs")?.rows.map(({ id }) => id) || [],
+      printArtifacts,
     };
     await client.query(
       `INSERT INTO privacy_requests (id,idempotency_key,fingerprint,status,result)
@@ -309,4 +311,85 @@ export function applyRetention(db) {
     );
     return { ...summary, status: "db_completed", requestId };
   });
+}
+
+function batchesForArtifacts(artifacts) {
+  const batches = [];
+  let batch = [];
+  for (const artifact of artifacts) {
+    const candidate = [...batch, artifact];
+    if (candidate.length > 100 || JSON.stringify({ artifacts: candidate }).length > 128 * 1024) {
+      if (!batch.length) throw new Error("privacy artifact exceeds bridge body limit");
+      batches.push(batch);
+      batch = [artifact];
+    } else batch = candidate;
+  }
+  if (batch.length) batches.push(batch);
+  return batches;
+}
+
+async function updateCleanupStatus(db, row, status, cleanupError = null) {
+  const result = {
+    ...(row.result && typeof row.result === "object" ? row.result : {}),
+    externalCleanup: status === "completed" ? "completed" : "pending",
+    cleanupError,
+  };
+  await db.query(
+    "UPDATE privacy_requests SET status=$2, result=$3::jsonb, updated_at=NOW() WHERE id=$1",
+    [row.id, status, JSON.stringify(result)],
+  );
+}
+
+export async function reconcilePendingRetention(
+  db,
+  { bridgeUrl = "", bridgeToken = "", fetchImpl = globalThis.fetch } = {},
+) {
+  const { rows } = await db.query(
+    `SELECT id, status, result FROM privacy_requests
+     WHERE idempotency_key LIKE 'retention:%'
+       AND status IN ('db_completed','pending_external_cleanup')
+     ORDER BY created_at, id`,
+  );
+  let completed = 0;
+  let pending = 0;
+  for (const row of rows) {
+    const artifacts = Array.isArray(row.result?.printArtifacts) ? row.result.printArtifacts : [];
+    if (!artifacts.length) {
+      await updateCleanupStatus(db, row, "completed");
+      completed += 1;
+      continue;
+    }
+    if (typeof fetchImpl !== "function" || !String(bridgeUrl).trim()) {
+      await updateCleanupStatus(db, row, "pending_external_cleanup", "print_bridge_unconfigured");
+      pending += 1;
+      continue;
+    }
+    try {
+      for (const artifactsBatch of batchesForArtifacts(artifacts)) {
+        const response = await fetchImpl(
+          `${String(bridgeUrl).replace(/\/$/, "")}/privacy/anonymize`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              ...(bridgeToken ? { authorization: `Bearer ${bridgeToken}` } : {}),
+            },
+            body: JSON.stringify({ artifacts: artifactsBatch }),
+            signal: AbortSignal.timeout(10_000),
+          },
+        );
+        if (!response.ok) throw new Error("bridge_http_failure");
+        const payload = await response.json();
+        const sanitized = new Set(Array.isArray(payload?.sanitized) ? payload.sanitized : []);
+        if (payload?.ok !== true || !artifactsBatch.every(({ jobId }) => sanitized.has(jobId)))
+          throw new Error("bridge_invalid_response");
+      }
+      await updateCleanupStatus(db, row, "completed");
+      completed += 1;
+    } catch {
+      await updateCleanupStatus(db, row, "pending_external_cleanup", "print_bridge_unavailable");
+      pending += 1;
+    }
+  }
+  return { completed, pending };
 }

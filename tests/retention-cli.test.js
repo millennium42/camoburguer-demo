@@ -52,7 +52,7 @@ test(
 
       const applied = await runCli([`--apply`, `--confirm-database=${fixture.databaseName}`], env);
       assert.equal(applied.code, 0, applied.stderr);
-      assert.equal(JSON.parse(applied.stdout).status, "db_completed");
+      assert.equal(JSON.parse(applied.stdout).status, "completed");
     } finally {
       await fixture.close();
     }

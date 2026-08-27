@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createDb } from "./db.js";
-import { applyRetention, previewRetention } from "./retention.js";
+import { applyRetention, previewRetention, reconcilePendingRetention } from "./retention.js";
 
 function parseArgs(args) {
   let apply = false;
@@ -28,7 +28,25 @@ try {
     if (rows[0]?.database !== confirmation)
       throw new Error("unsafe retention apply: connected database does not match confirmation");
   }
-  const result = await (apply ? applyRetention(db) : previewRetention(db));
+  let result = await (apply ? applyRetention(db) : previewRetention(db));
+  if (apply) {
+    const cleanup = await reconcilePendingRetention(db, {
+      bridgeUrl: process.env.PRINT_BRIDGE_URL,
+      bridgeToken: process.env.PRINT_BRIDGE_TOKEN,
+    });
+    result = {
+      ...result,
+      status:
+        cleanup.pending > 0
+          ? "pending_external_cleanup"
+          : result.status === "no_op"
+            ? "no_op"
+            : "completed",
+      externalCleanup: cleanup.pending > 0 ? "pending" : "completed",
+      pendingRequests: cleanup.pending,
+    };
+    if (cleanup.pending > 0) process.exitCode = 1;
+  }
   console.log(JSON.stringify(result));
 } catch (error) {
   const safe = /^(DATABASE_URL|Usage:|unsafe retention apply)/.test(error.message);
