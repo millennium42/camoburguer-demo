@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'codex/**']
 
 permissions:
   contents: read
@@ -47,6 +47,12 @@ jobs:
           test "$(POSTGRES_DB="$database" docker compose -p "$project" exec -T db psql -U camoburguer -d "$database" -Atc 'select current_database()')" = "$database"
           server_identity="$(POSTGRES_DB="$database" docker compose -p "$project" exec -T -e PGPASSWORD=camoburguer db psql -h "$container_ip" -U camoburguer -d "$database" -Atc "select host(inet_server_addr()) || ':' || inet_server_port() || '/' || current_database()")"
           test "$server_identity" = "$container_ip:5432/$database"
+      - name: Migrations UP/DOWN e rollback no PostgreSQL efêmero
+        run: |
+          POSTGRES_DB=camoburguer_auto_seed_test docker compose -p camoburguer-auto-seed-test exec -T db createdb -U camoburguer camoburguer_migrations_test
+          npm run test:migrations
+        env:
+          TEST_MIGRATIONS_DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_migrations_test
       - name: Testes reais do seed no PostgreSQL efêmero
         run: npm run test:db
         env:

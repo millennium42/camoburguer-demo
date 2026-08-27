@@ -27,7 +27,7 @@ Procedimento permanente: [ciclo granular](../workflows/ciclo-granular-red-green.
 
 | Microbloco | Contrato | Estado |
 |---|---|---|
-| 2.1 | SQL versionado `001_initial_schema`, ledger/checksum, lock transacional, up/down testados, adoção sem apagar dados | Pendente |
+| 2.1 | SQL versionado `001_initial_schema`, ledger/checksum, lock transacional, up/down testados, adoção sem apagar dados | Implementado localmente; CI remoto pendente |
 | 2.2 | Sem seed de operação no boot/login público; `POST /admin/seed` admin + CSRF + flags + preflight; caixa fechado bloqueia seed | Pendente |
 | 2.3 | TZ America/Sao_Paulo em app/container/DB; teste de virada do dia; dump/restore isolado e prova de PITR do provedor | Pendente; acesso externo necessário |
 | 2.4 | Retenção diária executável, dry-run sem writes; dados de clientes de pedidos entregues há mais de 30 dias; hashes, IDs e valores preservados | Pendente |
@@ -64,6 +64,7 @@ reaproveitar agentes e escalar apenas quando a evidência exigir.
 - **B2.1-LEGACY concluída:** red reproduzido em outro banco descartável já migrado: M05 falhava na proteção unique (4 passaram, 2 falharam). A fixture agora representa um legado sem ledger em banco próprio; mantém todas as asserções e fecha conexões, sem `DROP TABLE CASCADE` compartilhado. Green 6/6 e revisão Luna/low aprovada. `h01` ainda precisa preparar schema antes de truncar um banco inicialmente vazio.
 - **B2.1-DOWN concluída:** red confirmou ausência de guarda; green 8/8 UP+DOWN, incluindo falha DDL com rollback integral, round-trip e recusa de banco com dados preservando hash. Revisão Terra/high aprovada. DOWN requer `environment=test`, URL loopback explícita e `confirmDatabase`; confere identidade real e bloqueia tabelas antes da verificação de vazio. Uma versão por chamada, sem `CASCADE`.
 - **B2.1-CLI concluída:** red (arquivo ausente), green `npm run test:migrations` 14/14 sem skips, incluindo CLI real UP/DOWN/UP. Revisão Luna/low aprovada; lint dos sete arquivos de código/teste passou. [Runbook de migrações](operacao/migracoes.md). CI ainda pendente.
+- **B2.1-CI configurado:** gate UP/DOWN após validar identidade do container, com banco de controle separado; push em `codex/**` também dispara CI, sem exigir merge/deploy. Sintaxe local: 66 arquivos JS aprovados. Execução remota ainda não comprovada.
 
 ## Fechamento obrigatório
 
