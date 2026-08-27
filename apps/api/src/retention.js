@@ -102,7 +102,7 @@ const artifactSpecs = [
   },
   {
     table: "audit_logs",
-    predicate: `t.entity_id = ANY($1::text[])
+    predicate: `(t.entity_id = ANY($1::text[]) OR t.entity_id = ANY($2::text[]))
       AND t.entity IN ('orders','service_tabs','tab_payments','finance_entries','print_jobs')`,
     fields: { payload_snapshot: "retention_redact_json(t.payload_snapshot)" },
   },
