@@ -25,6 +25,7 @@
     "test:recovery": "node --test tests/backup-restore.test.js",
     "migrate:up": "node --env-file-if-exists=.env apps/api/src/migrate-cli.js up",
     "migrate:down": "node --env-file-if-exists=.env apps/api/src/migrate-cli.js down",
+    "retention": "node --env-file-if-exists=.env apps/api/src/retention-cli.js",
     "test:e2e": "playwright test",
     "test:a11y": "playwright test --grep @a11y",
     "smoke": "node --env-file-if-exists=.env.test tests/smoke.mjs",
