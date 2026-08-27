@@ -5,10 +5,10 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import pg from "pg";
 import { createDb } from "../apps/api/src/db.js";
 import { fingerprint, orderFingerprintPayload } from "../apps/api/src/idempotency.js";
 import { normalizeStandaloneOrderDto } from "../packages/domain/index.js";
+import { createPostgresFixture } from "./helpers/postgres-fixture.js";
 
 test("DTO de pedido avulso repudia propriedades estruturais isoladas", () => {
   for (const field of ["tabId", "roundNumber", "roundKind", "reversesOrderId"]) {
@@ -102,19 +102,23 @@ if (connectionString) {
   test("h01 integracao: POST /orders bloqueia campos estruturais, mantendo estoque intacto e rotas avulsas/dedicadas perenes", async (t) => {
     let target;
     let pool;
-    let _db;
+    let fixture;
     let _adminToken;
     let authHeader;
     const port = 34991;
 
     t.before(async () => {
       console.log("t.before start");
-      pool = new pg.Pool({ connectionString, max: 10 });
-      _db = createDb(pool);
-      console.log("Truncating tables");
-      await pool.query(
-        "TRUNCATE TABLE users, orders, stock_movements, idempotency_records, tab_payments CASCADE",
-      );
+      fixture = await createPostgresFixture(connectionString, {
+        controlDatabase: "camoburguer_auto_seed_test",
+      });
+      pool = fixture.pool;
+      const db = createDb(fixture.connectionString);
+      try {
+        await db.init();
+      } finally {
+        await db.close();
+      }
 
       console.log("Hashing password");
       const pass = await import("../apps/api/src/auth.js").then((m) => m.hashPassword("test1234"));
@@ -129,11 +133,11 @@ if (connectionString) {
 
       console.log("Spawning server");
       const dir = await mkdtemp(join(tmpdir(), "camoburguer-h01-"));
-      target = spawn("node", ["apps/api/src/server.js"], {
+      target = spawn(process.execPath, ["apps/api/src/server.js"], {
         env: {
           ...process.env,
           PORT: String(port),
-          DATABASE_URL: connectionString,
+          DATABASE_URL: fixture.connectionString,
           DATA_DIRECTORY: dir,
         },
       });
@@ -171,8 +175,15 @@ if (connectionString) {
     });
 
     t.after(async () => {
-      if (target) target.kill();
-      if (pool) await pool.end();
+      try {
+        if (target && target.exitCode === null && target.signalCode === null) {
+          const exited = new Promise((resolve) => target.once("exit", resolve));
+          target.kill();
+          await exited;
+        }
+      } finally {
+        await fixture?.close();
+      }
     });
 
     await t.test("Rejeita payload com tabId (400) e nao afeta o banco", async () => {
