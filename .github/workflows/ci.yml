@@ -53,6 +53,11 @@ jobs:
           npm run test:migrations
         env:
           TEST_MIGRATIONS_DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_migrations_test
+      - name: Fuso de São Paulo no PostgreSQL e configurações de deploy
+        run: npm run test:timezone
+        env:
+          TEST_MIGRATIONS_DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_migrations_test
+          TEST_COMPOSE_CONFIG: "true"
       - name: Testes reais do seed no PostgreSQL efêmero
         run: npm run test:db
         env:
