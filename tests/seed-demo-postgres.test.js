@@ -209,19 +209,20 @@ async function startServer(overrides = {}, { expectFailure = false } = {}) {
 }
 
 async function stopServer(server) {
-  if (server.child.exitCode != null) return;
-  const exited = new Promise((resolve) => server.child.once("exit", resolve));
-  server.child.kill();
+  const child = server?.child;
+  if (!child || child.exitCode != null || child.signalCode != null) return;
+  const exited = new Promise((resolve) => child.once("exit", resolve));
+  child.kill();
   await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 1000))]);
-  if (server.child.exitCode == null && process.platform === "win32") {
-    const killer = spawn("taskkill", ["/PID", String(server.child.pid), "/T", "/F"], {
+  if (child.exitCode == null && child.signalCode == null && process.platform === "win32") {
+    const killer = spawn("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
       stdio: "ignore",
     });
     await new Promise((resolve) => killer.once("exit", resolve));
-  } else if (server.child.exitCode == null) {
-    server.child.kill("SIGKILL");
+  } else if (child.exitCode == null && child.signalCode == null) {
+    child.kill("SIGKILL");
   }
-  if (server.child.exitCode == null) {
+  if (child.exitCode == null && child.signalCode == null) {
     await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2000))]);
   }
 }
@@ -229,47 +230,52 @@ async function stopServer(server) {
 async function startPrintBridge() {
   const spoolDir = await mkdtemp(join(tmpdir(), "camoburguer-lgpd-"));
   const portFile = join(spoolDir, "bridge-port");
-  const child = spawn(process.execPath, ["apps/print-bridge/src/server.js"], {
-    cwd: process.cwd(),
-    env: {
-      ...process.env,
-      PORT: "0",
-      PRINT_SPOOL_DIR: spoolDir,
-      PRINT_BRIDGE_TOKEN: "privacy-test-token",
-      PRINT_BRIDGE_PORT_FILE: portFile,
-    },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const bridge = { child: null, base: null, spoolDir, output: () => output };
   let output = "";
-  child.stdout.on("data", (chunk) => {
-    output += chunk;
-  });
-  child.stderr.on("data", (chunk) => {
-    output += chunk;
-  });
-  const deadline = Date.now() + 8000;
-  while (Date.now() < deadline) {
-    if (child.exitCode != null) throw new Error(`Bridge encerrou:\n${output}`);
-    try {
-      const port = Number((await readFile(portFile, "utf8")).trim());
-      if (!Number.isInteger(port) || port < 1) throw new Error("porta inválida");
-      const bridge = {
-        child,
-        base: `http://127.0.0.1:${port}`,
-        spoolDir,
-        output: () => output,
-      };
-      if ((await fetch(`${bridge.base}/health`)).ok) return bridge;
-    } catch {}
-    await new Promise((resolve) => setTimeout(resolve, 50));
+  try {
+    bridge.child = spawn(process.execPath, ["apps/print-bridge/src/server.js"], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        PORT: "0",
+        PRINT_SPOOL_DIR: spoolDir,
+        PRINT_BRIDGE_TOKEN: "privacy-test-token",
+        PRINT_BRIDGE_PORT_FILE: portFile,
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    bridge.child.stdout.on("data", (chunk) => {
+      output += chunk;
+    });
+    bridge.child.stderr.on("data", (chunk) => {
+      output += chunk;
+    });
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      if (bridge.child.exitCode != null || bridge.child.signalCode != null) {
+        throw new Error(`Bridge encerrou:\n${output}`);
+      }
+      try {
+        const port = Number((await readFile(portFile, "utf8")).trim());
+        if (!Number.isInteger(port) || port < 1) throw new Error("porta inválida");
+        bridge.base = `http://127.0.0.1:${port}`;
+        if ((await fetch(`${bridge.base}/health`)).ok) return bridge;
+      } catch {}
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error(`Timeout bridge:\n${output}`);
+  } catch (error) {
+    await stopPrintBridge(bridge);
+    throw error;
   }
-  await stopServer(bridge);
-  throw new Error(`Timeout bridge:\n${output}`);
 }
 
 async function stopPrintBridge(bridge) {
-  await stopServer(bridge);
-  await rm(bridge.spoolDir, { recursive: true, force: true });
+  try {
+    await stopServer(bridge);
+  } finally {
+    await rm(bridge.spoolDir, { recursive: true, force: true });
+  }
 }
 
 async function loginSession(server, username, password) {
