@@ -58,6 +58,15 @@ jobs:
         env:
           TEST_MIGRATIONS_DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_migrations_test
           TEST_COMPOSE_CONFIG: "true"
+      - name: Restauração lógica em outro banco efêmero
+        run: |
+          TEST_POSTGRES_CONTAINER="$(POSTGRES_DB=camoburguer_auto_seed_test docker compose -p camoburguer-auto-seed-test ps -q db)"
+          test -n "$TEST_POSTGRES_CONTAINER"
+          export TEST_POSTGRES_CONTAINER
+          npm run test:recovery
+        env:
+          REQUIRE_RECOVERY_TESTS: "true"
+          TEST_MIGRATIONS_DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_migrations_test
       - name: Testes reais do seed no PostgreSQL efêmero
         run: npm run test:db
         env:

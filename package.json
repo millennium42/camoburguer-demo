@@ -22,6 +22,7 @@
     "test:db": "node --test tests/seed-demo-postgres.test.js",
     "test:migrations": "node --test --test-concurrency=1 tests/migrations.test.js tests/migrations-down.test.js tests/migrations-cli.test.js tests/postgres-fixture.test.js",
     "test:timezone": "node --test --test-concurrency=1 tests/postgres-timezone.test.js tests/timezone-config.test.js tests/finance.test.js",
+    "test:recovery": "node --test tests/backup-restore.test.js",
     "migrate:up": "node --env-file-if-exists=.env apps/api/src/migrate-cli.js up",
     "migrate:down": "node --env-file-if-exists=.env apps/api/src/migrate-cli.js down",
     "test:e2e": "playwright test",

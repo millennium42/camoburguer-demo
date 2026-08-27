@@ -34,3 +34,22 @@ Não sobrescrever a origem nem desligar o serviço operacional durante o ensaio.
 Um `pg_dump`/`pg_restore` isolado prova restauração lógica, não PITR. Backups
 contêm dados pessoais: restringir acesso, aplicar retenção do provedor e executar
 a política de anonimização após restauração, antes de expor a instância recuperada.
+
+## Ensaio lógico reproduzível
+
+Execute `rtk npm run test:recovery` com `TEST_MIGRATIONS_DATABASE_URL` do controle
+efêmero e `TEST_POSTGRES_CONTAINER` identificando o container PostgreSQL 16.14
+de teste. Aceitam-se somente o label `camoburguer.scope=bloco2-test` ou o projeto
+Compose `camoburguer-auto-seed-test` do CI. Não use um container operacional.
+
+A suíte cria dois bancos aleatórios próprios, semeia dados sintéticos na origem,
+mantém o dump custom apenas em memória e restaura em destino vazio com transação
+única. Não usa `--clean` nem sobrescreve um banco existente. Compara ledger,
+hashes, vínculos e valores financeiros dos dois bancos e confirma origem intacta.
+O cleanup remove apenas as duas fixtures criadas. Sem as duas variáveis, o teste
+real é explicitamente pulado; não confundir isso com prova de restauração.
+No gate obrigatório, `REQUIRE_RECOVERY_TESTS=true` transforma ausência de identidade
+em falha. Os clientes rodam com ambiente limpo e host/porta explícitos; antes do
+dump/restore, o identificador do cluster e os nomes dos dois bancos são comparados
+entre os pools e o cliente dentro do container. O teste injeta `PGSERVICE` e
+`PGHOSTADDR` conflitantes e comprova que não redirecionam a operação.
