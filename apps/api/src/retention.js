@@ -296,9 +296,14 @@ export function applyRetention(db) {
       )
       .digest("hex");
     await applyRows(client, plans);
-    const printArtifacts =
-      plans.find(({ table }) => table === "print_jobs")?.rows.map(({ id }) => ({ jobId: id })) ||
-      [];
+    const printIds =
+      plans.find(({ table }) => table === "print_jobs")?.rows.map(({ id }) => id) || [];
+    const { rows: printArtifacts } = printIds.length
+      ? await client.query(
+          'SELECT id AS "jobId", order_id AS "orderId" FROM print_jobs WHERE id=ANY($1::text[])',
+          [printIds],
+        )
+      : { rows: [] };
     const result = {
       ...summary,
       requestId,

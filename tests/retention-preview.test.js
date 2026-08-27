@@ -46,6 +46,9 @@ test(
         (id,order_id,status,printer_name,content) VALUES
         ('old-spool','old-alone','printed','synthetic','Synthetic Customer')`);
       await applyRetention(fixture.db);
+      const storedArtifact = (await fixture.pool.query("SELECT result FROM privacy_requests"))
+        .rows[0].result.printArtifacts[0];
+      assert.deepEqual(storedArtifact, { jobId: "old-spool", orderId: "old-alone" });
       const failed = await reconcilePendingRetention(fixture.db, {
         bridgeUrl: "http://bridge.test",
         fetchImpl: async () => ({ ok: false, json: async () => ({}) }),
@@ -63,6 +66,7 @@ test(
         fetchImpl: async (_url, request) => {
           calls.push(request);
           const artifacts = JSON.parse(request.body).artifacts;
+          assert.deepEqual(artifacts, [{ jobId: "old-spool", orderId: "old-alone" }]);
           return {
             ok: true,
             json: async () => ({ ok: true, sanitized: artifacts.map(({ jobId }) => jobId) }),
