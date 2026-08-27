@@ -84,8 +84,16 @@ assertSafeAutoSeed(process.env.AUTO_SEED);
 const app = Fastify({ logger: true });
 const db = createDb(config.databaseUrl);
 
-const printDispatcher = createPrintDispatcher(db, config);
-const { reservePrintJob, reserveReprintJob, dispatchPrintJob, recoverPrintJobs, listPrintJobs } = printDispatcher;
+const printDispatcher = createPrintDispatcher({ db, config });
+const {
+  reservePrintJob,
+  getPrimaryPrintJob,
+  reserveReprintJob,
+  dispatchPrintJob,
+  recoverPrintJobs,
+  listPrintJobs,
+  mapPrintJob,
+} = printDispatcher;
 
 const sse = createSseHub();
 const TAB_PAYMENT_METHODS = ["cash", "pix", "credit_card", "debit_card", "app_paid"];
@@ -2567,6 +2575,10 @@ await ensureBootstrapAdmin(db, config.adminBootstrapPassword, {
 await recoverPrintJobs();
 setInterval(() => recoverPrintJobs().catch((error) => app.log.error(error)), 15_000).unref();
 
+db.updateOrder = updateOrder;
+db.changeStock = changeStock;
+db.reservePrintJob = reservePrintJob;
+db.insertOrder = insertOrder;
 
 startIntegrationPolling({ config, db, sse });
 
