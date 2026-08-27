@@ -18,6 +18,16 @@ function positiveNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+export function parseListenPort(value) {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return 3001;
+  const port = Number(normalized);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error("PORT must be an integer between 0 and 65535");
+  }
+  return port;
+}
+
 export function validateTimeZone(value) {
   const normalized = String(value || "America/Sao_Paulo").trim();
   try {
@@ -44,7 +54,7 @@ if (!authCookieSecure && !["development", "test"].includes(appEnvironment)) {
 }
 
 export const config = {
-  port: positiveNumber(process.env.PORT, 3001),
+  port: parseListenPort(process.env.PORT),
   databaseUrl:
     process.env.DATABASE_URL || "postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer",
   printBridgeUrl: httpUrl(process.env.PRINT_BRIDGE_URL, "127.0.0.1:3100"),

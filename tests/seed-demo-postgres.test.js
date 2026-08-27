@@ -19,7 +19,6 @@ const ADMIN_PASSWORD = "postgres-test-admin-password";
 let target;
 let db;
 let pool;
-let nextPort = 33410;
 
 function assertSafeTestUrl(value) {
   const url = new URL(value);
@@ -147,7 +146,7 @@ function serverEnv(overrides = {}) {
   const env = {
     ...process.env,
     DATABASE_URL: connectionString,
-    PORT: String(nextPort++),
+    PORT: "0",
     ADMIN_BOOTSTRAP_PASSWORD: ADMIN_PASSWORD,
     APP_ENV: "demo",
     DEMO_SEED_ENABLED: "true",
@@ -168,7 +167,7 @@ async function startServer(overrides = {}, { expectFailure = false } = {}) {
   const child = spawn(process.execPath, ["apps/api/src/server.js"], {
     cwd: process.cwd(),
     env,
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: ["ignore", "pipe", "pipe", "ipc"],
   });
   let output = "";
   child.stdout.on("data", (chunk) => {
@@ -177,7 +176,12 @@ async function startServer(overrides = {}, { expectFailure = false } = {}) {
   child.stderr.on("data", (chunk) => {
     output += chunk;
   });
-  const base = `http://127.0.0.1:${env.PORT}`;
+  let base = env.PORT === "0" ? null : `http://127.0.0.1:${env.PORT}`;
+  child.on("message", (message) => {
+    if (message?.type === "api-ready" && Number.isInteger(message.port) && message.port > 0) {
+      base = `http://127.0.0.1:${message.port}`;
+    }
+  });
 
   if (expectFailure) {
     const exitCode = await new Promise((resolve, reject) => {
@@ -194,8 +198,9 @@ async function startServer(overrides = {}, { expectFailure = false } = {}) {
   while (Date.now() < deadline) {
     if (child.exitCode != null) throw new Error(`API encerrou no boot:\n${output}`);
     try {
-      const response = await fetch(`${base}/health`);
-      if (response.ok) return { child, base, env, output: () => output };
+      if (base && (await fetch(`${base}/health`)).ok) {
+        return { child, base, env, output: () => output };
+      }
     } catch {}
     await new Promise((resolve) => setTimeout(resolve, 50));
   }

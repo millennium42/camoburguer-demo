@@ -105,7 +105,7 @@ if (connectionString) {
     let fixture;
     let _adminToken;
     let authHeader;
-    const port = 34991;
+    let port;
 
     t.before(async () => {
       console.log("t.before start");
@@ -136,21 +136,29 @@ if (connectionString) {
       target = spawn(process.execPath, ["apps/api/src/server.js"], {
         env: {
           ...process.env,
-          PORT: String(port),
+          PORT: "0",
           DATABASE_URL: fixture.connectionString,
           DATA_DIRECTORY: dir,
         },
+        stdio: ["ignore", "pipe", "pipe", "ipc"],
       });
 
       await new Promise((resolve, reject) => {
-        target.stdout.on("data", (data) => {
-          if (data.toString().includes(String(port))) resolve();
+        const timer = setTimeout(() => reject(new Error("API readiness timeout")), 12000);
+        target.stdout.resume();
+        target.on("message", (message) => {
+          if (message?.type === "api-ready" && Number.isInteger(message.port) && message.port > 0) {
+            port = message.port;
+            clearTimeout(timer);
+            resolve();
+          }
         });
         target.stderr.on("data", (data) => {
           console.error("SERVER ERROR:", data.toString());
         });
         target.on("exit", (code) => {
-          if (code !== 0) reject(new Error(`Server exited with code ${code}`));
+          clearTimeout(timer);
+          reject(new Error(`Server exited with code ${code}`));
         });
       });
 

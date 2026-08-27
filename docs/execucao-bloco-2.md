@@ -67,6 +67,7 @@ reaproveitar agentes e escalar apenas quando a evidência exigir.
 - **B2.1-CLI concluída:** red (arquivo ausente), green `npm run test:migrations` 14/14 sem skips, incluindo CLI real UP/DOWN/UP. Revisão Luna/low aprovada; lint dos sete arquivos de código/teste passou. [Runbook de migrações](operacao/migracoes.md). CI ainda pendente.
 - **B2.1-CI configurado:** gate UP/DOWN após validar identidade do container, com banco de controle separado; push em `codex/**` também dispara CI, sem exigir merge/deploy. Sintaxe local: 66 arquivos JS aprovados. Execução remota ainda não comprovada.
 - **B2.2 concluído localmente:** red confirmou rota canônica não classificada, seed no login público e CLI usando alias. Green: 7/7 safety e 22/22 PostgreSQL/HTTP (sem skips); revisão Terra/high aprovada. Handler administrativo único com alias protegido, login sem seed e caixa fechado preservado. [Runbook](operacao/seed-seguro.md). O banco efêmero local foi recriado antes desta verificação para remover efeitos das antigas fixtures compartilhadas; nenhum banco operacional foi alterado.
+- **B2-CI-PORT:** red real no CI `33084537242`: `EADDRINUSE` em porta fixa. Testes agora usam `PORT=0` e recebem a porta efetiva via IPC somente após `listen`. Green local: parsing 1/1 e H01 + PostgreSQL/HTTP 32/32, zero skips. Revisão Luna/medium aprovada; o caminho IPC é exercitado pelos testes HTTP, não pelo teste unitário do parser. Não houve red unitário observado para este microproblema.
 
 ## Fechamento obrigatório
 

@@ -2557,3 +2557,6 @@ db.insertOrder = insertOrder;
 startIntegrationPolling({ config, db, sse });
 
 await app.listen({ host: "0.0.0.0", port: config.port });
+if (process.send && process.connected) {
+  process.send({ type: "api-ready", port: app.server.address().port });
+}
