@@ -1,16 +1,16 @@
 # Graph Report - camoburguer-demo  (2026-08-27)
 
 ## Corpus Check
-- 205 files · ~132,858 words
+- 205 files · ~132,943 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1697 nodes · 2474 edges · 160 communities (152 shown, 8 thin omitted)
+- 1698 nodes · 2475 edges · 160 communities (151 shown, 9 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 48 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e6678632`
+- Built from commit: `050faf03`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -37,7 +37,7 @@
 - config.js
 - finance-core/package.json
 - Guia de Desenvolvimento — Camoburguer Demo
-- integration-repository.js
+- order-actions.js
 - shared-types/index.js
 - event-simulator/package.json
 - print-bridge/package.json
@@ -48,7 +48,7 @@
 - createSseHub
 - check-syntax.mjs
 - l02-rota-raiz.test.js
-- mapOrder
+- integration-repository.js
 - m06-print-bridge-auth.test.js
 - finance-core/index.js
 - demo-simulator-client.mjs
@@ -159,12 +159,12 @@
 - Guia de uso
 - devDependencies
 - package.json
-- createDeliveryMuchAdapter
+- catalog-repository.js
 - test-db.js
 - Consolidação de Especificações (Fase de Integridade: C-01 a H-06)
 - camoburguer-implementation-flow.md
 - workspaces
-- getOrderWithMapping
+- user-schema.js
 - Guia de uso
 - Guia de desenvolvimento
 - retention-daily.sh
@@ -196,7 +196,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (160 total, 8 thin omitted)
+## Communities (160 total, 9 thin omitted)
 
 ### Community 0 - "ifood.js"
 Cohesion: 0.13
@@ -207,20 +207,20 @@ Cohesion: 0.08
 Nodes (74): activeShift(), addOrAccumulateItem(), api(), applyAuthenticatedSession(), calculateOrderPreviewTotal(), catalogAdminApi(), catalogAdminSession(), catalogAdminSessionIsCurrent() (+66 more)
 
 ### Community 2 - "domain/index.js"
-Cohesion: 0.15
-Nodes (26): changeStock(), normalizeCatalogItem(), ADD_ONS, addonCategories, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL, directHandoffCategories (+18 more)
+Cohesion: 0.16
+Nodes (25): changeStock(), normalizeCatalogItem(), ADD_ONS, addonCategories, CATALOG, CATALOG_CAPTURED_AT, CATALOG_SOURCE_URL, directHandoffCategories (+17 more)
 
 ### Community 3 - "sidecar_digests"
 Cohesion: 0.05
 Nodes (41): brain_id, checkpoint_id, created_at_unix_ms, epoch, external_authority_refs, authority_wal_root_digest, autonomy_epoch_record_digest, intent_core_store_root_digest (+33 more)
 
 ### Community 4 - "auth.js"
-Cohesion: 0.11
-Nodes (25): allowedLogin(), authenticate(), canRoleTransitionOrderStatus(), changePassword(), createCsrfToken(), ensureBootstrapAdmin(), hashPassword(), hashToken() (+17 more)
+Cohesion: 0.10
+Nodes (27): allowedLogin(), authenticate(), canRoleTransitionOrderStatus(), changePassword(), createCsrfToken(), ensureBootstrapAdmin(), hashPassword(), hashToken() (+19 more)
 
 ### Community 5 - "api/src/server.js"
-Cohesion: 0.06
-Nodes (29): mapFinanceEntry(), mapShift(), app, auditMutation(), db, DEMO_ROLES, getOpenShift(), getOrderTabAssignmentByKey() (+21 more)
+Cohesion: 0.05
+Nodes (37): mapFinanceEntry(), mapOrder(), mapShift(), mapTab(), mapTabPayment(), app, auditMutation(), db (+29 more)
 
 ### Community 6 - "scripts"
 Cohesion: 0.07
@@ -255,7 +255,7 @@ Cohesion: 0.67
 Nodes (3): Auditoria commit a commit (Julho 2026), Guia de uso, Histórico de evolução 5W2H
 
 ### Community 14 - "00-mapa-do-projeto.md"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (12): Arquitetura do Sistema — Camoburguer Demo, Automações por Cenário — Camoburguer Demo, Canais e Captura — Camoburguer Demo, Ciclo do Pedido — Camoburguer Demo, Ciclo Financeiro — Camoburguer Demo, Contexto Operacional — Camoburguer Demo, Deploy e Infraestrutura — Camoburguer Demo, Estoque por Categoria — Camoburguer Demo (+4 more)
 
 ### Community 15 - "domain/package.json"
@@ -286,13 +286,13 @@ Nodes (8): dependencies, @camoburguer/shared-types, @camoburguer/shared-types, m
 Cohesion: 0.07
 Nodes (29): Ambiente padrão: Ubuntu no WSL, Atualização do Graphify, Autenticação e rollback, Estado que o agente deve assumir, Estoque, Financeiro, Gate 0 — diff e sintaxe, Gate 1 — unitário/contrato (+21 more)
 
-### Community 22 - "integration-repository.js"
-Cohesion: 0.17
-Nodes (19): mapChannelCommand(), mapChannelEvent(), claimIdempotency(), completeIdempotency(), integrationActionFingerprintPayload(), claimChannelCommand(), columnFor(), COMMAND_COLUMNS (+11 more)
+### Community 22 - "order-actions.js"
+Cohesion: 0.21
+Nodes (20): mapChannelCommand(), claimIdempotency(), completeIdempotency(), integrationActionFingerprintPayload(), findChannelCommand(), getOrderWithMapping(), insertChannelCommand(), updateChannelMapping() (+12 more)
 
 ### Community 23 - "shared-types/index.js"
-Cohesion: 0.15
-Nodes (16): archiveCatalogItem(), getCatalogItem(), insertCatalogItem(), listCatalogItems(), lockCatalogItems(), mapCatalogItem(), updateCatalogItem(), COMMAND_STATUSES (+8 more)
+Cohesion: 0.20
+Nodes (9): COMMAND_STATUSES, FINANCE_ENTRY_TYPES, FULFILLMENT_MODES, INTEGRATION_CHANNELS, ORDER_SOURCES, ORDER_STATUSES, PAYMENT_METHODS, SHIFT_STATUSES (+1 more)
 
 ### Community 24 - "event-simulator/package.json"
 Cohesion: 0.29
@@ -311,8 +311,8 @@ Cohesion: 0.33
 Nodes (5): main, name, private, type, version
 
 ### Community 28 - "command-outbox.js"
-Cohesion: 0.36
-Nodes (10): backoffMs(), classifyCommandError(), finishUnknown(), processChannelCommands(), reconcileCommand(), sanitizedError(), sendCommand(), updateOwnedChannelCommand() (+2 more)
+Cohesion: 0.33
+Nodes (11): backoffMs(), classifyCommandError(), finishUnknown(), processChannelCommands(), reconcileCommand(), sanitizedError(), sendCommand(), claimChannelCommand() (+3 more)
 
 ### Community 29 - "ops-shell.spec.js"
 Cohesion: 0.60
@@ -322,9 +322,9 @@ Nodes (3): adminPassword(), login(), loginLegacyIfNeeded()
 Cohesion: 0.43
 Nodes (5): createSseHub(), publish(), remove(), subscribe(), validateOrClose()
 
-### Community 33 - "mapOrder"
-Cohesion: 0.17
-Nodes (12): mapOrder(), mapTab(), mapTabPayment(), getOrder(), getTab(), getTabPayment(), getTabPaymentByIdempotencyKey(), insertOrder() (+4 more)
+### Community 33 - "integration-repository.js"
+Cohesion: 0.24
+Nodes (13): mapChannelEvent(), mapChannelMapping(), columnFor(), COMMAND_COLUMNS, EVENT_COLUMNS, findChannelEvent(), findChannelMapping(), insertChannelEvent() (+5 more)
 
 ### Community 35 - "finance-core/index.js"
 Cohesion: 0.36
@@ -335,12 +335,12 @@ Cohesion: 0.23
 Nodes (13): assertSafeSimulationBaseUrl(), createSimulationClient(), login(), request(), LOCAL_HOSTS, mark(), parseCookie(), printSimulationSummary() (+5 more)
 
 ### Community 37 - "integrations.test.js"
-Cohesion: 0.19
-Nodes (13): mapChannelMapping(), requestForm(), requestJson(), findChannelMapping(), insertChannelMapping(), ingestExternalOrder(), DELIVERYMUCH_STATUS, deliveryMuchPayloadFingerprint() (+5 more)
+Cohesion: 0.17
+Nodes (16): requestForm(), requestJson(), createDeliveryMuchAdapter(), authorizedRequest(), fetchBatch(), fetchOrders(), getToken(), reconcileCommand() (+8 more)
 
 ### Community 43 - "idempotency.js"
-Cohesion: 0.36
-Nodes (11): basisPoints(), cancellationFingerprintPayload(), CANONICAL_VERSION, canonicalAddon(), canonicalItem(), canonicalJson(), canonicalValue(), decimalUnits() (+3 more)
+Cohesion: 0.30
+Nodes (12): basisPoints(), cancellationFingerprintPayload(), CANONICAL_VERSION, canonicalAddon(), canonicalItem(), canonicalJson(), canonicalValue(), decimalUnits() (+4 more)
 
 ### Community 44 - "L-01: Alinhar README, segurança e resultados de CI ao estado atual"
 Cohesion: 0.14
@@ -384,7 +384,7 @@ Nodes (12): Casos extremos e falhas, Definição de concluído, Escopo, Estado e
 
 ### Community 54 - "HANDOFF.md"
 Cohesion: 0.12
-Nodes (15): 1. Bloco 1.4 - Login Legado e RBAC (Concluído), 1. Implementação da Tabela `audit_logs`, 2. Acoplamento de Auditoria em Ações Críticas, 2. Depuração e Resolução do "Heisenbug" na Suíte de Testes (Test 19), 3. Cobertura de Testes (Coverage) e Qualidade, 3. Padrões de Qualidade e Workflow Ralph Multiagente, 4. Handoff, A Investigação Profunda (+7 more)
+Nodes (16): 1. Bloco 1.4 - Login Legado e RBAC (Concluído), 1. Implementação da Tabela `audit_logs`, 2. Acoplamento de Auditoria em Ações Críticas, 2. Depuração e Resolução do "Heisenbug" na Suíte de Testes (Test 19), 3. Cobertura de Testes (Coverage) e Qualidade, 3. Padrões de Qualidade e Workflow Ralph Multiagente, 4. Handoff, A Investigação Profunda (+8 more)
 
 ### Community 55 - "Especificação H-02: Impedir Fechamento de Comanda com Produção Pendente"
 Cohesion: 0.18
@@ -579,7 +579,7 @@ Cohesion: 0.33
 Nodes (6): Aceito conscientemente na v1, Auditoria e invariantes, Corte de migração, Guia de desenvolvimento, Locks e ordem determinística, Ver também
 
 ### Community 103 - "Runbook: Múltiplos Caixas Abertos (Duplicatas)"
-Cohesion: 0.40
+Cohesion: 0.33
 Nodes (5): Ação Requerida (Reconciliação), Backup e Rollback, Diagnóstico, Runbook: Múltiplos Caixas Abertos (Duplicatas), Ver também
 
 ### Community 104 - "Guia de desenvolvimento"
@@ -758,17 +758,13 @@ Nodes (13): @axe-core/playwright, @biomejs/biome, c8, devDependencies, @axe-core
 Cohesion: 0.25
 Nodes (7): dependencies, pg, pg, name, private, type, version
 
-### Community 148 - "createDeliveryMuchAdapter"
-Cohesion: 0.52
-Nodes (7): createDeliveryMuchAdapter(), authorizedRequest(), fetchBatch(), fetchOrders(), getToken(), reconcileCommand(), sendCommand()
+### Community 148 - "catalog-repository.js"
+Cohesion: 0.46
+Nodes (7): archiveCatalogItem(), getCatalogItem(), insertCatalogItem(), listCatalogItems(), lockCatalogItems(), mapCatalogItem(), updateCatalogItem()
 
 ### Community 153 - "workspaces"
 Cohesion: 0.40
 Nodes (5): packages/*, workspaces, apps/api, apps/event-simulator, apps/print-bridge
-
-### Community 154 - "getOrderWithMapping"
-Cohesion: 0.40
-Nodes (11): getOrderWithMapping(), updateChannelMapping(), integrationRoutes(), adapterEnabled(), enqueueAction(), publishSyncStatus(), activateAcceptedOrder(), applyIntegratedTransition() (+3 more)
 
 ### Community 155 - "Guia de uso"
 Cohesion: 0.67
@@ -779,16 +775,16 @@ Cohesion: 0.67
 Nodes (3): Guia de desenvolvimento, Propósito do histórico, Ver também
 
 ## Knowledge Gaps
-- **885 isolated node(s):** `name`, `version`, `private`, `type`, `start` (+880 more)
+- **886 isolated node(s):** `name`, `version`, `private`, `type`, `start` (+881 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **9 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `createIFoodAdapter()` connect `ifood.js` to `getOrderWithMapping`, `command-outbox.js`, `integrations.test.js`?**
+- **Why does `createIFoodAdapter()` connect `ifood.js` to `command-outbox.js`, `integrations.test.js`, `order-actions.js`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
-- **Why does `createDb()` connect `db.js` to `seed-demo-postgres.test.js`, `api/src/server.js`?**
+- **Why does `createDb()` connect `db.js` to `seed-demo-postgres.test.js`, `idempotency.js`, `api/src/server.js`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **Why does `Documentação Central — Camoburguer Demo` connect `Documentação Central — Camoburguer Demo` to `00-mapa-do-projeto.md`?**
   _High betweenness centrality (0.004) - this node is a cross-community bridge._
@@ -797,6 +793,6 @@ _Questions this graph is uniquely positioned to answer:_
 - **Are the 5 inferred relationships involving `createIFoodAdapter()` (e.g. with `fetchBatch()` and `finalizeCommand()`) actually correct?**
   _`createIFoodAdapter()` has 5 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `version`, `private` to the rest of the system?**
-  _885 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _886 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ifood.js` be split into smaller, more focused modules?**
   _Cohesion score 0.1349206349206349 - nodes in this community are weakly interconnected._

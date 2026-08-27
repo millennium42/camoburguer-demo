@@ -1518,88 +1518,88 @@
       "source_location": "L147"
     },
     {
-      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter",
-      "label": "createDeliveryMuchAdapter()",
+      "id": "apps_api_src_catalog_repository_archivecatalogitem",
+      "label": "archiveCatalogItem()",
       "_callable": true,
       "_origin": "ast",
       "community": 148,
-      "community_name": "createDeliveryMuchAdapter",
+      "community_name": "catalog-repository.js",
       "file_type": "code",
-      "norm_label": "createdeliverymuchadapter()",
-      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
-      "source_location": "L65"
+      "norm_label": "archivecatalogitem()",
+      "source_file": "apps/api/src/catalog-repository.js",
+      "source_location": "L96"
     },
     {
-      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_authorizedrequest",
-      "label": "authorizedRequest()",
+      "id": "apps_api_src_catalog_repository_getcatalogitem",
+      "label": "getCatalogItem()",
       "_callable": true,
       "_origin": "ast",
       "community": 148,
-      "community_name": "createDeliveryMuchAdapter",
+      "community_name": "catalog-repository.js",
       "file_type": "code",
-      "norm_label": "authorizedrequest()",
-      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
-      "source_location": "L86"
+      "norm_label": "getcatalogitem()",
+      "source_file": "apps/api/src/catalog-repository.js",
+      "source_location": "L44"
     },
     {
-      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_fetchbatch",
-      "label": "fetchBatch()",
+      "id": "apps_api_src_catalog_repository_insertcatalogitem",
+      "label": "insertCatalogItem()",
       "_callable": true,
       "_origin": "ast",
       "community": 148,
-      "community_name": "createDeliveryMuchAdapter",
+      "community_name": "catalog-repository.js",
       "file_type": "code",
-      "norm_label": "fetchbatch()",
-      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
-      "source_location": "L116"
+      "norm_label": "insertcatalogitem()",
+      "source_file": "apps/api/src/catalog-repository.js",
+      "source_location": "L52"
     },
     {
-      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_fetchorders",
-      "label": "fetchOrders()",
+      "id": "apps_api_src_catalog_repository_listcatalogitems",
+      "label": "listCatalogItems()",
       "_callable": true,
       "_origin": "ast",
       "community": 148,
-      "community_name": "createDeliveryMuchAdapter",
+      "community_name": "catalog-repository.js",
       "file_type": "code",
-      "norm_label": "fetchorders()",
-      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
-      "source_location": "L94"
+      "norm_label": "listcatalogitems()",
+      "source_file": "apps/api/src/catalog-repository.js",
+      "source_location": "L22"
     },
     {
-      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_gettoken",
-      "label": "getToken()",
+      "id": "apps_api_src_catalog_repository_lockcatalogitems",
+      "label": "lockCatalogItems()",
       "_callable": true,
       "_origin": "ast",
       "community": 148,
-      "community_name": "createDeliveryMuchAdapter",
+      "community_name": "catalog-repository.js",
       "file_type": "code",
-      "norm_label": "gettoken()",
-      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
-      "source_location": "L68"
+      "norm_label": "lockcatalogitems()",
+      "source_file": "apps/api/src/catalog-repository.js",
+      "source_location": "L30"
     },
     {
-      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_reconcilecommand",
-      "label": "reconcileCommand()",
+      "id": "apps_api_src_catalog_repository_mapcatalogitem",
+      "label": "mapCatalogItem()",
       "_callable": true,
       "_origin": "ast",
       "community": 148,
-      "community_name": "createDeliveryMuchAdapter",
+      "community_name": "catalog-repository.js",
       "file_type": "code",
-      "norm_label": "reconcilecommand()",
-      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
-      "source_location": "L279"
+      "norm_label": "mapcatalogitem()",
+      "source_file": "apps/api/src/catalog-repository.js",
+      "source_location": "L3"
     },
     {
-      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_sendcommand",
-      "label": "sendCommand()",
+      "id": "apps_api_src_catalog_repository_updatecatalogitem",
+      "label": "updateCatalogItem()",
       "_callable": true,
       "_origin": "ast",
       "community": 148,
-      "community_name": "createDeliveryMuchAdapter",
+      "community_name": "catalog-repository.js",
       "file_type": "code",
-      "norm_label": "sendcommand()",
-      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
-      "source_location": "L99"
+      "norm_label": "updatecatalogitem()",
+      "source_file": "apps/api/src/catalog-repository.js",
+      "source_location": "L74"
     },
     {
       "id": "test_db_main",
@@ -1612,138 +1612,6 @@
       "norm_label": "main()",
       "source_file": "test-db.js",
       "source_location": "L3"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_repository_getorderwithmapping",
-      "label": "getOrderWithMapping()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "getorderwithmapping()",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L263"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_repository_updatechannelmapping",
-      "label": "updateChannelMapping()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "updatechannelmapping()",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L69"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_routes_integrationroutes",
-      "label": "integrationRoutes()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "integrationroutes()",
-      "source_file": "apps/api/src/integrations/integration-routes.js",
-      "source_location": "L5"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_routes_integrationroutes_adapterenabled",
-      "label": "adapterEnabled()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "adapterenabled()",
-      "source_file": "apps/api/src/integrations/integration-routes.js",
-      "source_location": "L6"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_routes_integrationroutes_enqueueaction",
-      "label": "enqueueAction()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "enqueueaction()",
-      "source_file": "apps/api/src/integrations/integration-routes.js",
-      "source_location": "L20"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_routes_integrationroutes_publishsyncstatus",
-      "label": "publishSyncStatus()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "publishsyncstatus()",
-      "source_file": "apps/api/src/integrations/integration-routes.js",
-      "source_location": "L12"
-    },
-    {
-      "id": "apps_api_src_integrations_order_actions_activateacceptedorder",
-      "label": "activateAcceptedOrder()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "activateacceptedorder()",
-      "source_file": "apps/api/src/integrations/order-actions.js",
-      "source_location": "L135"
-    },
-    {
-      "id": "apps_api_src_integrations_order_actions_applyintegratedtransition",
-      "label": "applyIntegratedTransition()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "applyintegratedtransition()",
-      "source_file": "apps/api/src/integrations/order-actions.js",
-      "source_location": "L170"
-    },
-    {
-      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_finalizecommand",
-      "label": "finalizeCommand()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "finalizecommand()",
-      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
-      "source_location": "L298"
-    },
-    {
-      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_persistbatch",
-      "label": "persistBatch()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "persistbatch()",
-      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
-      "source_location": "L127"
-    },
-    {
-      "id": "apps_api_src_integrations_providers_ifood_createifoodadapter_finalizecommand",
-      "label": "finalizeCommand()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 154,
-      "community_name": "getOrderWithMapping",
-      "file_type": "code",
-      "norm_label": "finalizecommand()",
-      "source_file": "apps/api/src/integrations/providers/ifood.js",
-      "source_location": "L453"
     },
     {
       "id": "tests_timezone_config_test_read",
@@ -2082,18 +1950,6 @@
       "source_location": "L37"
     },
     {
-      "id": "packages_domain_index_normalizestandaloneorderdto",
-      "label": "normalizeStandaloneOrderDto()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 2,
-      "community_name": "domain/index.js",
-      "file_type": "code",
-      "norm_label": "normalizestandaloneorderdto()",
-      "source_file": "packages/domain/index.js",
-      "source_location": "L367"
-    },
-    {
       "id": "packages_domain_index_requireskitchenpreparation",
       "label": "requiresKitchenPreparation()",
       "_callable": true,
@@ -2147,23 +2003,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "mapchannelcommand()",
       "source_file": "apps/api/src/db.js",
       "source_location": "L463"
-    },
-    {
-      "id": "apps_api_src_db_mapchannelevent",
-      "label": "mapChannelEvent()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "integration-repository.js",
-      "file_type": "code",
-      "norm_label": "mapchannelevent()",
-      "source_file": "apps/api/src/db.js",
-      "source_location": "L446"
     },
     {
       "id": "apps_api_src_idempotency_claimidempotency",
@@ -2171,7 +2015,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "claimidempotency()",
       "source_file": "apps/api/src/idempotency.js",
@@ -2183,7 +2027,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "completeidempotency()",
       "source_file": "apps/api/src/idempotency.js",
@@ -2195,35 +2039,11 @@
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "integrationactionfingerprintpayload()",
       "source_file": "apps/api/src/idempotency.js",
       "source_location": "L125"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_repository_claimchannelcommand",
-      "label": "claimChannelCommand()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "integration-repository.js",
-      "file_type": "code",
-      "norm_label": "claimchannelcommand()",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L199"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_repository_columnfor",
-      "label": "columnFor()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "integration-repository.js",
-      "file_type": "code",
-      "norm_label": "columnfor()",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L35"
     },
     {
       "id": "apps_api_src_integrations_integration_repository_findchannelcommand",
@@ -2231,23 +2051,23 @@
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "findchannelcommand()",
       "source_file": "apps/api/src/integrations/integration-repository.js",
       "source_location": "L168"
     },
     {
-      "id": "apps_api_src_integrations_integration_repository_findchannelevent",
-      "label": "findChannelEvent()",
+      "id": "apps_api_src_integrations_integration_repository_getorderwithmapping",
+      "label": "getOrderWithMapping()",
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
-      "norm_label": "findchannelevent()",
+      "norm_label": "getorderwithmapping()",
       "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L96"
+      "source_location": "L263"
     },
     {
       "id": "apps_api_src_integrations_integration_repository_insertchannelcommand",
@@ -2255,47 +2075,95 @@
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "insertchannelcommand()",
       "source_file": "apps/api/src/integrations/integration-repository.js",
       "source_location": "L145"
     },
     {
-      "id": "apps_api_src_integrations_integration_repository_insertchannelevent",
-      "label": "insertChannelEvent()",
+      "id": "apps_api_src_integrations_integration_repository_updatechannelmapping",
+      "label": "updateChannelMapping()",
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
-      "norm_label": "insertchannelevent()",
+      "norm_label": "updatechannelmapping()",
       "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L104"
+      "source_location": "L69"
     },
     {
-      "id": "apps_api_src_integrations_integration_repository_updatechannelcommand",
-      "label": "updateChannelCommand()",
+      "id": "apps_api_src_integrations_integration_routes_integrationroutes",
+      "label": "integrationRoutes()",
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
-      "norm_label": "updatechannelcommand()",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L176"
+      "norm_label": "integrationroutes()",
+      "source_file": "apps/api/src/integrations/integration-routes.js",
+      "source_location": "L5"
     },
     {
-      "id": "apps_api_src_integrations_integration_repository_updatechannelevent",
-      "label": "updateChannelEvent()",
+      "id": "apps_api_src_integrations_integration_routes_integrationroutes_adapterenabled",
+      "label": "adapterEnabled()",
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
-      "norm_label": "updatechannelevent()",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L126"
+      "norm_label": "adapterenabled()",
+      "source_file": "apps/api/src/integrations/integration-routes.js",
+      "source_location": "L6"
+    },
+    {
+      "id": "apps_api_src_integrations_integration_routes_integrationroutes_enqueueaction",
+      "label": "enqueueAction()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "order-actions.js",
+      "file_type": "code",
+      "norm_label": "enqueueaction()",
+      "source_file": "apps/api/src/integrations/integration-routes.js",
+      "source_location": "L20"
+    },
+    {
+      "id": "apps_api_src_integrations_integration_routes_integrationroutes_publishsyncstatus",
+      "label": "publishSyncStatus()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "order-actions.js",
+      "file_type": "code",
+      "norm_label": "publishsyncstatus()",
+      "source_file": "apps/api/src/integrations/integration-routes.js",
+      "source_location": "L12"
+    },
+    {
+      "id": "apps_api_src_integrations_order_actions_activateacceptedorder",
+      "label": "activateAcceptedOrder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "order-actions.js",
+      "file_type": "code",
+      "norm_label": "activateacceptedorder()",
+      "source_file": "apps/api/src/integrations/order-actions.js",
+      "source_location": "L135"
+    },
+    {
+      "id": "apps_api_src_integrations_order_actions_applyintegratedtransition",
+      "label": "applyIntegratedTransition()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 22,
+      "community_name": "order-actions.js",
+      "file_type": "code",
+      "norm_label": "applyintegratedtransition()",
+      "source_file": "apps/api/src/integrations/order-actions.js",
+      "source_location": "L170"
     },
     {
       "id": "apps_api_src_integrations_order_actions_createorderaction",
@@ -2303,95 +2171,47 @@
       "_callable": true,
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "createorderaction()",
       "source_file": "apps/api/src/integrations/order-actions.js",
       "source_location": "L31"
     },
     {
-      "id": "apps_api_src_catalog_repository_archivecatalogitem",
-      "label": "archiveCatalogItem()",
+      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_finalizecommand",
+      "label": "finalizeCommand()",
       "_callable": true,
       "_origin": "ast",
-      "community": 23,
-      "community_name": "shared-types/index.js",
+      "community": 22,
+      "community_name": "order-actions.js",
       "file_type": "code",
-      "norm_label": "archivecatalogitem()",
-      "source_file": "apps/api/src/catalog-repository.js",
-      "source_location": "L96"
+      "norm_label": "finalizecommand()",
+      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
+      "source_location": "L298"
     },
     {
-      "id": "apps_api_src_catalog_repository_getcatalogitem",
-      "label": "getCatalogItem()",
+      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_persistbatch",
+      "label": "persistBatch()",
       "_callable": true,
       "_origin": "ast",
-      "community": 23,
-      "community_name": "shared-types/index.js",
+      "community": 22,
+      "community_name": "order-actions.js",
       "file_type": "code",
-      "norm_label": "getcatalogitem()",
-      "source_file": "apps/api/src/catalog-repository.js",
-      "source_location": "L44"
+      "norm_label": "persistbatch()",
+      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
+      "source_location": "L127"
     },
     {
-      "id": "apps_api_src_catalog_repository_insertcatalogitem",
-      "label": "insertCatalogItem()",
+      "id": "apps_api_src_integrations_providers_ifood_createifoodadapter_finalizecommand",
+      "label": "finalizeCommand()",
       "_callable": true,
       "_origin": "ast",
-      "community": 23,
-      "community_name": "shared-types/index.js",
+      "community": 22,
+      "community_name": "order-actions.js",
       "file_type": "code",
-      "norm_label": "insertcatalogitem()",
-      "source_file": "apps/api/src/catalog-repository.js",
-      "source_location": "L52"
-    },
-    {
-      "id": "apps_api_src_catalog_repository_listcatalogitems",
-      "label": "listCatalogItems()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "shared-types/index.js",
-      "file_type": "code",
-      "norm_label": "listcatalogitems()",
-      "source_file": "apps/api/src/catalog-repository.js",
-      "source_location": "L22"
-    },
-    {
-      "id": "apps_api_src_catalog_repository_lockcatalogitems",
-      "label": "lockCatalogItems()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "shared-types/index.js",
-      "file_type": "code",
-      "norm_label": "lockcatalogitems()",
-      "source_file": "apps/api/src/catalog-repository.js",
-      "source_location": "L30"
-    },
-    {
-      "id": "apps_api_src_catalog_repository_mapcatalogitem",
-      "label": "mapCatalogItem()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "shared-types/index.js",
-      "file_type": "code",
-      "norm_label": "mapcatalogitem()",
-      "source_file": "apps/api/src/catalog-repository.js",
-      "source_location": "L3"
-    },
-    {
-      "id": "apps_api_src_catalog_repository_updatecatalogitem",
-      "label": "updateCatalogItem()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "shared-types/index.js",
-      "file_type": "code",
-      "norm_label": "updatecatalogitem()",
-      "source_file": "apps/api/src/catalog-repository.js",
-      "source_location": "L74"
+      "norm_label": "finalizecommand()",
+      "source_file": "apps/api/src/integrations/providers/ifood.js",
+      "source_location": "L453"
     },
     {
       "id": "scripts_reconcile_shifts_auditifavailable",
@@ -2548,6 +2368,18 @@
       "norm_label": "sendcommand()",
       "source_file": "apps/api/src/integrations/command-outbox.js",
       "source_location": "L92"
+    },
+    {
+      "id": "apps_api_src_integrations_integration_repository_claimchannelcommand",
+      "label": "claimChannelCommand()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "command-outbox.js",
+      "file_type": "code",
+      "norm_label": "claimchannelcommand()",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L199"
     },
     {
       "id": "apps_api_src_integrations_integration_repository_updateownedchannelcommand",
@@ -2730,148 +2562,124 @@
       "source_location": "L15"
     },
     {
-      "id": "apps_api_src_db_maporder",
-      "label": "mapOrder()",
+      "id": "apps_api_src_db_mapchannelevent",
+      "label": "mapChannelEvent()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "maporder()",
+      "norm_label": "mapchannelevent()",
       "source_file": "apps/api/src/db.js",
-      "source_location": "L344"
+      "source_location": "L446"
     },
     {
-      "id": "apps_api_src_db_maptab",
-      "label": "mapTab()",
+      "id": "apps_api_src_db_mapchannelmapping",
+      "label": "mapChannelMapping()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "maptab()",
+      "norm_label": "mapchannelmapping()",
       "source_file": "apps/api/src/db.js",
-      "source_location": "L370"
+      "source_location": "L430"
     },
     {
-      "id": "apps_api_src_db_maptabpayment",
-      "label": "mapTabPayment()",
+      "id": "apps_api_src_integrations_integration_repository_columnfor",
+      "label": "columnFor()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "maptabpayment()",
-      "source_file": "apps/api/src/db.js",
-      "source_location": "L383"
+      "norm_label": "columnfor()",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L35"
     },
     {
-      "id": "apps_api_src_server_getorder",
-      "label": "getOrder()",
+      "id": "apps_api_src_integrations_integration_repository_findchannelevent",
+      "label": "findChannelEvent()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "getorder()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L631"
+      "norm_label": "findchannelevent()",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L96"
     },
     {
-      "id": "apps_api_src_server_gettab",
-      "label": "getTab()",
+      "id": "apps_api_src_integrations_integration_repository_findchannelmapping",
+      "label": "findChannelMapping()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "gettab()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L699"
+      "norm_label": "findchannelmapping()",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L40"
     },
     {
-      "id": "apps_api_src_server_gettabpayment",
-      "label": "getTabPayment()",
+      "id": "apps_api_src_integrations_integration_repository_insertchannelevent",
+      "label": "insertChannelEvent()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "gettabpayment()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L756"
+      "norm_label": "insertchannelevent()",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L104"
     },
     {
-      "id": "apps_api_src_server_gettabpaymentbyidempotencykey",
-      "label": "getTabPaymentByIdempotencyKey()",
+      "id": "apps_api_src_integrations_integration_repository_insertchannelmapping",
+      "label": "insertChannelMapping()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "gettabpaymentbyidempotencykey()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L764"
+      "norm_label": "insertchannelmapping()",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L48"
     },
     {
-      "id": "apps_api_src_server_insertorder",
-      "label": "insertOrder()",
+      "id": "apps_api_src_integrations_integration_repository_updatechannelcommand",
+      "label": "updateChannelCommand()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "insertorder()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L592"
+      "norm_label": "updatechannelcommand()",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L176"
     },
     {
-      "id": "apps_api_src_server_inserttabpayment",
-      "label": "insertTabPayment()",
+      "id": "apps_api_src_integrations_integration_repository_updatechannelevent",
+      "label": "updateChannelEvent()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "inserttabpayment()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L771"
+      "norm_label": "updatechannelevent()",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L126"
     },
     {
-      "id": "apps_api_src_server_listtabs",
-      "label": "listTabs()",
+      "id": "apps_api_src_integrations_order_ingestion_ingestexternalorder",
+      "label": "ingestExternalOrder()",
       "_callable": true,
       "_origin": "ast",
       "community": 33,
-      "community_name": "mapOrder",
+      "community_name": "integration-repository.js",
       "file_type": "code",
-      "norm_label": "listtabs()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L747"
-    },
-    {
-      "id": "apps_api_src_server_tabview",
-      "label": "tabView()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 33,
-      "community_name": "mapOrder",
-      "file_type": "code",
-      "norm_label": "tabview()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L707"
-    },
-    {
-      "id": "apps_api_src_server_updateorder",
-      "label": "updateOrder()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 33,
-      "community_name": "mapOrder",
-      "file_type": "code",
-      "norm_label": "updateorder()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L886"
+      "norm_label": "ingestexternalorder()",
+      "source_file": "apps/api/src/integrations/order-ingestion.js",
+      "source_location": "L6"
     },
     {
       "id": "tests_m06_print_bridge_auth_test_cleanuprunner",
@@ -3150,18 +2958,6 @@
       "source_location": "L6"
     },
     {
-      "id": "apps_api_src_db_mapchannelmapping",
-      "label": "mapChannelMapping()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "integrations.test.js",
-      "file_type": "code",
-      "norm_label": "mapchannelmapping()",
-      "source_file": "apps/api/src/db.js",
-      "source_location": "L430"
-    },
-    {
       "id": "apps_api_src_integrations_http_client_requestform",
       "label": "requestForm()",
       "_callable": true,
@@ -3186,40 +2982,88 @@
       "source_location": "L1"
     },
     {
-      "id": "apps_api_src_integrations_integration_repository_findchannelmapping",
-      "label": "findChannelMapping()",
+      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter",
+      "label": "createDeliveryMuchAdapter()",
       "_callable": true,
       "_origin": "ast",
       "community": 37,
       "community_name": "integrations.test.js",
       "file_type": "code",
-      "norm_label": "findchannelmapping()",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L40"
+      "norm_label": "createdeliverymuchadapter()",
+      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
+      "source_location": "L65"
     },
     {
-      "id": "apps_api_src_integrations_integration_repository_insertchannelmapping",
-      "label": "insertChannelMapping()",
+      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_authorizedrequest",
+      "label": "authorizedRequest()",
       "_callable": true,
       "_origin": "ast",
       "community": 37,
       "community_name": "integrations.test.js",
       "file_type": "code",
-      "norm_label": "insertchannelmapping()",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L48"
+      "norm_label": "authorizedrequest()",
+      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
+      "source_location": "L86"
     },
     {
-      "id": "apps_api_src_integrations_order_ingestion_ingestexternalorder",
-      "label": "ingestExternalOrder()",
+      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_fetchbatch",
+      "label": "fetchBatch()",
       "_callable": true,
       "_origin": "ast",
       "community": 37,
       "community_name": "integrations.test.js",
       "file_type": "code",
-      "norm_label": "ingestexternalorder()",
-      "source_file": "apps/api/src/integrations/order-ingestion.js",
-      "source_location": "L6"
+      "norm_label": "fetchbatch()",
+      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
+      "source_location": "L116"
+    },
+    {
+      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_fetchorders",
+      "label": "fetchOrders()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "integrations.test.js",
+      "file_type": "code",
+      "norm_label": "fetchorders()",
+      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
+      "source_location": "L94"
+    },
+    {
+      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_gettoken",
+      "label": "getToken()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "integrations.test.js",
+      "file_type": "code",
+      "norm_label": "gettoken()",
+      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
+      "source_location": "L68"
+    },
+    {
+      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_reconcilecommand",
+      "label": "reconcileCommand()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "integrations.test.js",
+      "file_type": "code",
+      "norm_label": "reconcilecommand()",
+      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
+      "source_location": "L279"
+    },
+    {
+      "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter_sendcommand",
+      "label": "sendCommand()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "integrations.test.js",
+      "file_type": "code",
+      "norm_label": "sendcommand()",
+      "source_file": "apps/api/src/integrations/providers/deliverymuch.js",
+      "source_location": "L99"
     },
     {
       "id": "apps_api_src_integrations_providers_deliverymuch_deliverymuchpayloadfingerprint",
@@ -3618,6 +3462,30 @@
       "source_location": "L80"
     },
     {
+      "id": "apps_api_src_server_openeventstream",
+      "label": "openEventStream()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "auth.js",
+      "file_type": "code",
+      "norm_label": "openeventstream()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L2463"
+    },
+    {
+      "id": "apps_api_src_server_readcookie",
+      "label": "readCookie()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "auth.js",
+      "file_type": "code",
+      "norm_label": "readcookie()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L199"
+    },
+    {
       "id": "tests_auth_test_query",
       "label": "query()",
       "_callable": true,
@@ -3834,6 +3702,18 @@
       "source_location": "L86"
     },
     {
+      "id": "packages_domain_index_normalizestandaloneorderdto",
+      "label": "normalizeStandaloneOrderDto()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 43,
+      "community_name": "idempotency.js",
+      "file_type": "code",
+      "norm_label": "normalizestandaloneorderdto()",
+      "source_file": "packages/domain/index.js",
+      "source_location": "L367"
+    },
+    {
       "id": "apps_api_src_db_mapfinanceentry",
       "label": "mapFinanceEntry()",
       "_callable": true,
@@ -3846,6 +3726,18 @@
       "source_location": "L399"
     },
     {
+      "id": "apps_api_src_db_maporder",
+      "label": "mapOrder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "maporder()",
+      "source_file": "apps/api/src/db.js",
+      "source_location": "L344"
+    },
+    {
       "id": "apps_api_src_db_mapshift",
       "label": "mapShift()",
       "_callable": true,
@@ -3856,6 +3748,30 @@
       "norm_label": "mapshift()",
       "source_file": "apps/api/src/db.js",
       "source_location": "L416"
+    },
+    {
+      "id": "apps_api_src_db_maptab",
+      "label": "mapTab()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "maptab()",
+      "source_file": "apps/api/src/db.js",
+      "source_location": "L370"
+    },
+    {
+      "id": "apps_api_src_db_maptabpayment",
+      "label": "mapTabPayment()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "maptabpayment()",
+      "source_file": "apps/api/src/db.js",
+      "source_location": "L383"
     },
     {
       "id": "apps_api_src_server_aborttransaction",
@@ -3942,6 +3858,18 @@
       "source_location": "L1040"
     },
     {
+      "id": "apps_api_src_server_getorder",
+      "label": "getOrder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "getorder()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L631"
+    },
+    {
       "id": "apps_api_src_server_getordertabassignmentbykey",
       "label": "getOrderTabAssignmentByKey()",
       "_callable": true,
@@ -3966,6 +3894,42 @@
       "source_location": "L966"
     },
     {
+      "id": "apps_api_src_server_gettab",
+      "label": "getTab()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "gettab()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L699"
+    },
+    {
+      "id": "apps_api_src_server_gettabpayment",
+      "label": "getTabPayment()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "gettabpayment()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L756"
+    },
+    {
+      "id": "apps_api_src_server_gettabpaymentbyidempotencykey",
+      "label": "getTabPaymentByIdempotencyKey()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "gettabpaymentbyidempotencykey()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L764"
+    },
+    {
       "id": "apps_api_src_server_insertentries",
       "label": "insertEntries()",
       "_callable": true,
@@ -3978,6 +3942,18 @@
       "source_location": "L930"
     },
     {
+      "id": "apps_api_src_server_insertorder",
+      "label": "insertOrder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "insertorder()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L592"
+    },
+    {
       "id": "apps_api_src_server_insertshift",
       "label": "insertShift()",
       "_callable": true,
@@ -3988,6 +3964,18 @@
       "norm_label": "insertshift()",
       "source_file": "apps/api/src/server.js",
       "source_location": "L974"
+    },
+    {
+      "id": "apps_api_src_server_inserttabpayment",
+      "label": "insertTabPayment()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "inserttabpayment()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L771"
     },
     {
       "id": "apps_api_src_server_inventoryview",
@@ -4050,6 +4038,18 @@
       "source_location": "L961"
     },
     {
+      "id": "apps_api_src_server_listtabs",
+      "label": "listTabs()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "listtabs()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L747"
+    },
+    {
       "id": "apps_api_src_server_mapordertabassignment",
       "label": "mapOrderTabAssignment()",
       "_callable": true,
@@ -4060,18 +4060,6 @@
       "norm_label": "mapordertabassignment()",
       "source_file": "apps/api/src/server.js",
       "source_location": "L666"
-    },
-    {
-      "id": "apps_api_src_server_openeventstream",
-      "label": "openEventStream()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "api/src/server.js",
-      "file_type": "code",
-      "norm_label": "openeventstream()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L2463"
     },
     {
       "id": "apps_api_src_server_orderassignmentflags",
@@ -4096,18 +4084,6 @@
       "norm_label": "origin()",
       "source_file": "apps/api/src/server.js",
       "source_location": "L127"
-    },
-    {
-      "id": "apps_api_src_server_readcookie",
-      "label": "readCookie()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "api/src/server.js",
-      "file_type": "code",
-      "norm_label": "readcookie()",
-      "source_file": "apps/api/src/server.js",
-      "source_location": "L199"
     },
     {
       "id": "apps_api_src_server_requiredemoadmin",
@@ -4192,6 +4168,30 @@
       "norm_label": "setsessioncookies()",
       "source_file": "apps/api/src/server.js",
       "source_location": "L207"
+    },
+    {
+      "id": "apps_api_src_server_tabview",
+      "label": "tabView()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "tabview()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L707"
+    },
+    {
+      "id": "apps_api_src_server_updateorder",
+      "label": "updateOrder()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 5,
+      "community_name": "api/src/server.js",
+      "file_type": "code",
+      "norm_label": "updateorder()",
+      "source_file": "apps/api/src/server.js",
+      "source_location": "L886"
     },
     {
       "id": "apps_api_src_server_updateshift",
@@ -5723,6 +5723,21 @@
       "source_location": "L82"
     },
     {
+      "id": "docs_operacao_runbook_duplicatas",
+      "label": "runbook-duplicatas.md",
+      "_origin": "ast",
+      "community": 103,
+      "community_name": "Runbook: M\u00faltiplos Caixas Abertos (Duplicatas)",
+      "file_type": "document",
+      "frontmatter": {
+        "tags": "[operacao, runbook]"
+      },
+      "node_kind": "page",
+      "norm_label": "runbook-duplicatas.md",
+      "source_file": "docs/operacao/runbook-duplicatas.md",
+      "source_location": "L1"
+    },
+    {
       "id": "docs_operacao_runbook_duplicatas_a\u00e7\u00e3o_requerida_reconcilia\u00e7\u00e3o",
       "label": "A\u00e7\u00e3o Requerida (Reconcilia\u00e7\u00e3o)",
       "_origin": "ast",
@@ -6388,17 +6403,6 @@
       "file_type": "code",
       "norm_label": "backup-restore.test.js",
       "source_file": "tests/backup-restore.test.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "tests_h01_orders_dto_test",
-      "label": "h01-orders-dto.test.js",
-      "_origin": "ast",
-      "community": 11,
-      "community_name": "db.js",
-      "file_type": "code",
-      "norm_label": "h01-orders-dto.test.js",
-      "source_file": "tests/h01-orders-dto.test.js",
       "source_location": "L1"
     },
     {
@@ -9162,21 +9166,6 @@
       "source_location": "L1"
     },
     {
-      "id": "docs_operacao_runbook_duplicatas",
-      "label": "runbook-duplicatas.md",
-      "_origin": "ast",
-      "community": 14,
-      "community_name": "00-mapa-do-projeto.md",
-      "file_type": "document",
-      "frontmatter": {
-        "tags": "[operacao, runbook]"
-      },
-      "node_kind": "page",
-      "norm_label": "runbook-duplicatas.md",
-      "source_file": "docs/operacao/runbook-duplicatas.md",
-      "source_location": "L1"
-    },
-    {
       "id": "docs_guia_de_desenvolvimento",
       "label": "guia-de-desenvolvimento.md",
       "_origin": "ast",
@@ -9898,6 +9887,17 @@
       "source_location": "L43"
     },
     {
+      "id": "apps_api_src_catalog_repository",
+      "label": "catalog-repository.js",
+      "_origin": "ast",
+      "community": 148,
+      "community_name": "catalog-repository.js",
+      "file_type": "code",
+      "norm_label": "catalog-repository.js",
+      "source_file": "apps/api/src/catalog-repository.js",
+      "source_location": "L1"
+    },
+    {
       "id": "test_db",
       "label": "test-db.js",
       "_origin": "ast",
@@ -10131,6 +10131,50 @@
       "norm_label": "apps/print-bridge",
       "source_file": "package.json",
       "source_location": "L6"
+    },
+    {
+      "id": "apps_api_src_user_schema",
+      "label": "user-schema.js",
+      "_origin": "ast",
+      "community": 154,
+      "community_name": "user-schema.js",
+      "file_type": "code",
+      "norm_label": "user-schema.js",
+      "source_file": "apps/api/src/user-schema.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "apps_api_src_user_schema_createuserschema",
+      "label": "createUserSchema",
+      "_origin": "ast",
+      "community": 154,
+      "community_name": "user-schema.js",
+      "file_type": "code",
+      "norm_label": "createuserschema",
+      "source_file": "apps/api/src/user-schema.js",
+      "source_location": "L3"
+    },
+    {
+      "id": "apps_api_src_user_schema_updateuserschema",
+      "label": "updateUserSchema",
+      "_origin": "ast",
+      "community": 154,
+      "community_name": "user-schema.js",
+      "file_type": "code",
+      "norm_label": "updateuserschema",
+      "source_file": "apps/api/src/user-schema.js",
+      "source_location": "L14"
+    },
+    {
+      "id": "tests_users_crud_test",
+      "label": "users-crud.test.js",
+      "_origin": "ast",
+      "community": 154,
+      "community_name": "user-schema.js",
+      "file_type": "code",
+      "norm_label": "users-crud.test.js",
+      "source_file": "tests/users-crud.test.js",
+      "source_location": "L1"
     },
     {
       "id": "docs_estoque_escopo_da_v1",
@@ -11320,55 +11364,11 @@
       "source_location": "L326"
     },
     {
-      "id": "apps_api_src_integrations_integration_repository",
-      "label": "integration-repository.js",
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "integration-repository.js",
-      "file_type": "code",
-      "norm_label": "integration-repository.js",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_repository_command_columns",
-      "label": "COMMAND_COLUMNS",
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "integration-repository.js",
-      "file_type": "code",
-      "norm_label": "command_columns",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L17"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_repository_event_columns",
-      "label": "EVENT_COLUMNS",
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "integration-repository.js",
-      "file_type": "code",
-      "norm_label": "event_columns",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L10"
-    },
-    {
-      "id": "apps_api_src_integrations_integration_repository_mapping_columns",
-      "label": "MAPPING_COLUMNS",
-      "_origin": "ast",
-      "community": 22,
-      "community_name": "integration-repository.js",
-      "file_type": "code",
-      "norm_label": "mapping_columns",
-      "source_file": "apps/api/src/integrations/integration-repository.js",
-      "source_location": "L3"
-    },
-    {
       "id": "apps_api_src_integrations_integration_routes",
       "label": "integration-routes.js",
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "integration-routes.js",
       "source_file": "apps/api/src/integrations/integration-routes.js",
@@ -11379,7 +11379,7 @@
       "label": "order-actions.js",
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "order-actions.js",
       "source_file": "apps/api/src/integrations/order-actions.js",
@@ -11390,7 +11390,7 @@
       "label": "ACTION_RULES",
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "action_rules",
       "source_file": "apps/api/src/integrations/order-actions.js",
@@ -11401,22 +11401,11 @@
       "label": "CHANNEL_ACTIONS",
       "_origin": "ast",
       "community": 22,
-      "community_name": "integration-repository.js",
+      "community_name": "order-actions.js",
       "file_type": "code",
       "norm_label": "channel_actions",
       "source_file": "apps/api/src/integrations/order-actions.js",
       "source_location": "L26"
-    },
-    {
-      "id": "apps_api_src_catalog_repository",
-      "label": "catalog-repository.js",
-      "_origin": "ast",
-      "community": 23,
-      "community_name": "shared-types/index.js",
-      "file_type": "code",
-      "norm_label": "catalog-repository.js",
-      "source_file": "apps/api/src/catalog-repository.js",
-      "source_location": "L1"
     },
     {
       "id": "packages_shared_types_index",
@@ -12409,6 +12398,61 @@
       "source_location": "L4"
     },
     {
+      "id": "apps_api_src_integrations_integration_repository",
+      "label": "integration-repository.js",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "integration-repository.js",
+      "file_type": "code",
+      "norm_label": "integration-repository.js",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "apps_api_src_integrations_integration_repository_command_columns",
+      "label": "COMMAND_COLUMNS",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "integration-repository.js",
+      "file_type": "code",
+      "norm_label": "command_columns",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L17"
+    },
+    {
+      "id": "apps_api_src_integrations_integration_repository_event_columns",
+      "label": "EVENT_COLUMNS",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "integration-repository.js",
+      "file_type": "code",
+      "norm_label": "event_columns",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L10"
+    },
+    {
+      "id": "apps_api_src_integrations_integration_repository_mapping_columns",
+      "label": "MAPPING_COLUMNS",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "integration-repository.js",
+      "file_type": "code",
+      "norm_label": "mapping_columns",
+      "source_file": "apps/api/src/integrations/integration-repository.js",
+      "source_location": "L3"
+    },
+    {
+      "id": "apps_api_src_integrations_order_ingestion",
+      "label": "order-ingestion.js",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "integration-repository.js",
+      "file_type": "code",
+      "norm_label": "order-ingestion.js",
+      "source_file": "apps/api/src/integrations/order-ingestion.js",
+      "source_location": "L1"
+    },
+    {
       "id": "tests_apps_print_bridge_src_server",
       "label": "./apps/print-bridge/src/server.js",
       "_origin": "ast",
@@ -12527,17 +12571,6 @@
       "file_type": "code",
       "norm_label": "http-client.js",
       "source_file": "apps/api/src/integrations/http-client.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "apps_api_src_integrations_order_ingestion",
-      "label": "order-ingestion.js",
-      "_origin": "ast",
-      "community": 37,
-      "community_name": "integrations.test.js",
-      "file_type": "code",
-      "norm_label": "order-ingestion.js",
-      "source_file": "apps/api/src/integrations/order-ingestion.js",
       "source_location": "L1"
     },
     {
@@ -12767,6 +12800,17 @@
       "norm_label": "canonical_version",
       "source_file": "apps/api/src/idempotency.js",
       "source_location": "L3"
+    },
+    {
+      "id": "tests_h01_orders_dto_test",
+      "label": "h01-orders-dto.test.js",
+      "_origin": "ast",
+      "community": 43,
+      "community_name": "idempotency.js",
+      "file_type": "code",
+      "norm_label": "h01-orders-dto.test.js",
+      "source_file": "tests/h01-orders-dto.test.js",
+      "source_location": "L1"
     },
     {
       "id": "tests_idempotency_test",
@@ -13909,50 +13953,6 @@
       "source_location": "L99"
     },
     {
-      "id": "apps_api_src_user_schema",
-      "label": "user-schema.js",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "api/src/server.js",
-      "file_type": "code",
-      "norm_label": "user-schema.js",
-      "source_file": "apps/api/src/user-schema.js",
-      "source_location": "L1"
-    },
-    {
-      "id": "apps_api_src_user_schema_createuserschema",
-      "label": "createUserSchema",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "api/src/server.js",
-      "file_type": "code",
-      "norm_label": "createuserschema",
-      "source_file": "apps/api/src/user-schema.js",
-      "source_location": "L3"
-    },
-    {
-      "id": "apps_api_src_user_schema_updateuserschema",
-      "label": "updateUserSchema",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "api/src/server.js",
-      "file_type": "code",
-      "norm_label": "updateuserschema",
-      "source_file": "apps/api/src/user-schema.js",
-      "source_location": "L14"
-    },
-    {
-      "id": "tests_users_crud_test",
-      "label": "users-crud.test.js",
-      "_origin": "ast",
-      "community": 5,
-      "community_name": "api/src/server.js",
-      "file_type": "code",
-      "norm_label": "users-crud.test.js",
-      "source_file": "tests/users-crud.test.js",
-      "source_location": "L1"
-    },
-    {
       "id": "docs_deploy_e_infraestrutura_gate_0_fechar_a_exposi\u00e7\u00e3o_p\u00fablica_p0",
       "label": "Gate 0 \u2014 Fechar a exposi\u00e7\u00e3o p\u00fablica (P0)",
       "_origin": "ast",
@@ -14598,7 +14598,7 @@
       "node_kind": "heading",
       "norm_label": "1. bloco 1.4 - login legado e rbac (concluido)",
       "source_file": "HANDOFF.md",
-      "source_location": "L62"
+      "source_location": "L69"
     },
     {
       "id": "handoff_1_implementa\u00e7\u00e3o_da_tabela_audit_logs",
@@ -14610,7 +14610,7 @@
       "node_kind": "heading",
       "norm_label": "1. implementacao da tabela `audit_logs`",
       "source_file": "HANDOFF.md",
-      "source_location": "L43"
+      "source_location": "L50"
     },
     {
       "id": "handoff_2_acoplamento_de_auditoria_em_a\u00e7\u00f5es_cr\u00edticas",
@@ -14622,7 +14622,7 @@
       "node_kind": "heading",
       "norm_label": "2. acoplamento de auditoria em acoes criticas",
       "source_file": "HANDOFF.md",
-      "source_location": "L47"
+      "source_location": "L54"
     },
     {
       "id": "handoff_2_depura\u00e7\u00e3o_e_resolu\u00e7\u00e3o_do_heisenbug_na_su\u00edte_de_testes_test_19",
@@ -14634,7 +14634,7 @@
       "node_kind": "heading",
       "norm_label": "2. depuracao e resolucao do \"heisenbug\" na suite de testes (test 19)",
       "source_file": "HANDOFF.md",
-      "source_location": "L68"
+      "source_location": "L75"
     },
     {
       "id": "handoff_3_cobertura_de_testes_coverage_e_qualidade",
@@ -14646,7 +14646,7 @@
       "node_kind": "heading",
       "norm_label": "3. cobertura de testes (coverage) e qualidade",
       "source_file": "HANDOFF.md",
-      "source_location": "L84"
+      "source_location": "L91"
     },
     {
       "id": "handoff_3_padr\u00f5es_de_qualidade_e_workflow_ralph_multiagente",
@@ -14658,7 +14658,7 @@
       "node_kind": "heading",
       "norm_label": "3. padroes de qualidade e workflow ralph multiagente",
       "source_file": "HANDOFF.md",
-      "source_location": "L53"
+      "source_location": "L60"
     },
     {
       "id": "handoff_4_handoff",
@@ -14670,7 +14670,7 @@
       "node_kind": "heading",
       "norm_label": "4. handoff",
       "source_file": "HANDOFF.md",
-      "source_location": "L94"
+      "source_location": "L101"
     },
     {
       "id": "handoff_a_investiga\u00e7\u00e3o_profunda",
@@ -14682,7 +14682,7 @@
       "node_kind": "heading",
       "norm_label": "a investigacao profunda",
       "source_file": "HANDOFF.md",
-      "source_location": "L73"
+      "source_location": "L80"
     },
     {
       "id": "handoff_a_solu\u00e7\u00e3o",
@@ -14694,7 +14694,7 @@
       "node_kind": "heading",
       "norm_label": "a solucao",
       "source_file": "HANDOFF.md",
-      "source_location": "L81"
+      "source_location": "L88"
     },
     {
       "id": "handoff_comandos_de_verifica\u00e7\u00e3o",
@@ -14721,6 +14721,18 @@
       "source_location": "L3"
     },
     {
+      "id": "handoff_evid\u00eancia_final_desta_sess\u00e3o",
+      "label": "Evid\u00eancia final desta sess\u00e3o",
+      "_origin": "ast",
+      "community": 54,
+      "community_name": "HANDOFF.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "evidencia final desta sessao",
+      "source_file": "HANDOFF.md",
+      "source_location": "L40"
+    },
+    {
       "id": "handoff_handoff_detalhado_bloco_1_4_e_depura\u00e7\u00e3o_de_testes",
       "label": "Handoff Detalhado: Bloco 1.4 e Depura\u00e7\u00e3o de Testes",
       "_origin": "ast",
@@ -14730,7 +14742,7 @@
       "node_kind": "heading",
       "norm_label": "handoff detalhado: bloco 1.4 e depuracao de testes",
       "source_file": "HANDOFF.md",
-      "source_location": "L60"
+      "source_location": "L67"
     },
     {
       "id": "handoff_handoff_detalhado_bloco_1_5_trilha_de_auditoria",
@@ -14742,7 +14754,7 @@
       "node_kind": "heading",
       "norm_label": "handoff detalhado: bloco 1.5 - trilha de auditoria",
       "source_file": "HANDOFF.md",
-      "source_location": "L41"
+      "source_location": "L48"
     },
     {
       "id": "handoff_limites_e_retomada",
@@ -14766,7 +14778,7 @@
       "node_kind": "heading",
       "norm_label": "o problema",
       "source_file": "HANDOFF.md",
-      "source_location": "L70"
+      "source_location": "L77"
     },
     {
       "id": "docs_specs_consolidado_c01_h06_10_rubrica_de_autoavalia\u00e7\u00e3o_congelada_100_pontos",
@@ -19717,7 +19729,7 @@
       "node_kind": "heading",
       "norm_label": "fechamento obrigatorio",
       "source_file": "docs/execucao-bloco-2.md",
-      "source_location": "L88"
+      "source_location": "L89"
     },
     {
       "id": "docs_execucao_bloco_2_registro_de_agentes_e_continuidade",
@@ -36842,7 +36854,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/execucao-bloco-2.md",
-      "source_location": "L88",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -41324,13 +41336,24 @@
     },
     {
       "source": "handoff",
+      "target": "handoff_evid\u00eancia_final_desta_sess\u00e3o",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "HANDOFF.md",
+      "source_location": "L40",
+      "weight": 1.0
+    },
+    {
+      "source": "handoff",
       "target": "handoff_handoff_detalhado_bloco_1_5_trilha_de_auditoria",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "HANDOFF.md",
-      "source_location": "L41",
+      "source_location": "L48",
       "weight": 1.0
     },
     {
@@ -41341,7 +41364,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "HANDOFF.md",
-      "source_location": "L60",
+      "source_location": "L67",
       "weight": 1.0
     },
     {
@@ -41352,7 +41375,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "HANDOFF.md",
-      "source_location": "L70",
+      "source_location": "L77",
       "weight": 1.0
     },
     {
@@ -41363,7 +41386,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "HANDOFF.md",
-      "source_location": "L73",
+      "source_location": "L80",
       "weight": 1.0
     },
     {
@@ -41374,40 +41397,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "HANDOFF.md",
-      "source_location": "L81",
-      "weight": 1.0
-    },
-    {
-      "source": "handoff_handoff_detalhado_bloco_1_4_e_depura\u00e7\u00e3o_de_testes",
-      "target": "handoff_1_bloco_1_4_login_legado_e_rbac_conclu\u00eddo",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "HANDOFF.md",
-      "source_location": "L62",
-      "weight": 1.0
-    },
-    {
-      "source": "handoff_handoff_detalhado_bloco_1_4_e_depura\u00e7\u00e3o_de_testes",
-      "target": "handoff_2_depura\u00e7\u00e3o_e_resolu\u00e7\u00e3o_do_heisenbug_na_su\u00edte_de_testes_test_19",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "HANDOFF.md",
-      "source_location": "L68",
-      "weight": 1.0
-    },
-    {
-      "source": "handoff_handoff_detalhado_bloco_1_4_e_depura\u00e7\u00e3o_de_testes",
-      "target": "handoff_3_cobertura_de_testes_coverage_e_qualidade",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "HANDOFF.md",
-      "source_location": "L84",
+      "source_location": "L88",
       "weight": 1.0
     },
     {
@@ -41418,7 +41408,40 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "HANDOFF.md",
-      "source_location": "L94",
+      "source_location": "L101",
+      "weight": 1.0
+    },
+    {
+      "source": "handoff_handoff_detalhado_bloco_1_4_e_depura\u00e7\u00e3o_de_testes",
+      "target": "handoff_1_bloco_1_4_login_legado_e_rbac_conclu\u00eddo",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "HANDOFF.md",
+      "source_location": "L69",
+      "weight": 1.0
+    },
+    {
+      "source": "handoff_handoff_detalhado_bloco_1_4_e_depura\u00e7\u00e3o_de_testes",
+      "target": "handoff_2_depura\u00e7\u00e3o_e_resolu\u00e7\u00e3o_do_heisenbug_na_su\u00edte_de_testes_test_19",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "HANDOFF.md",
+      "source_location": "L75",
+      "weight": 1.0
+    },
+    {
+      "source": "handoff_handoff_detalhado_bloco_1_4_e_depura\u00e7\u00e3o_de_testes",
+      "target": "handoff_3_cobertura_de_testes_coverage_e_qualidade",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "HANDOFF.md",
+      "source_location": "L91",
       "weight": 1.0
     },
     {
@@ -41429,7 +41452,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "HANDOFF.md",
-      "source_location": "L43",
+      "source_location": "L50",
       "weight": 1.0
     },
     {
@@ -41440,7 +41463,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "HANDOFF.md",
-      "source_location": "L47",
+      "source_location": "L54",
       "weight": 1.0
     },
     {
@@ -41451,7 +41474,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "HANDOFF.md",
-      "source_location": "L53",
+      "source_location": "L60",
       "weight": 1.0
     },
     {
@@ -48281,5 +48304,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "e6678632f9875a93eb3fe3e8618253a88ded18f7"
+  "built_at_commit": "050faf0304d4d66fc4a9aa91bb6002f26d5d1dbb"
 }

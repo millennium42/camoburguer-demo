@@ -30,7 +30,7 @@ Procedimento permanente: [ciclo granular](../workflows/ciclo-granular-red-green.
 | 2.1 | SQL versionado `001_initial_schema`, ledger/checksum, lock transacional, up/down testados, adoção sem apagar dados | Comprovado no CI de `f0f0633` |
 | 2.2 | Sem seed de operação no boot/login público; `POST /admin/seed` admin + CSRF + flags + preflight; caixa fechado bloqueia seed | Comprovado no CI de `f0f0633` |
 | 2.3 | TZ America/Sao_Paulo em app/container/DB; teste de virada do dia; dump/restore isolado e prova de PITR do provedor | Fuso e restore lógico implementados; PITR depende de acesso/custo |
-| 2.4 | Retenção diária executável, dry-run sem writes; dados de clientes de pedidos entregues há mais de 30 dias; hashes, IDs e valores preservados | Implementado localmente; CI remoto deste SHA pendente |
+| 2.4 | Retenção diária executável, dry-run sem writes; dados de clientes de pedidos entregues há mais de 30 dias; hashes, IDs e valores preservados | Implementado e comprovado no CI remoto do SHA `050faf0` |
 
 Migrações: usar SQL + `pg` existente, sem ORM adicional. O ledger é a única fonte de versões; aplicar pendências sob advisory lock, registrar checksum somente na mesma transação do DDL. O init pode chamar o mesmo runner para compatibilidade, nunca manter uma segunda cópia do schema. Catálogo e saldo zero são dados de referência, não seed de pedidos/caixa. Rollback inicial é destrutivo e fica limitado a banco efêmero de teste, com confirmação de identidade e recusa de dados operacionais; nunca `DROP SCHEMA CASCADE`. Produção usa correção adiante ou restauração em outra instância.
 
@@ -84,6 +84,7 @@ reaproveitar agentes e escalar apenas quando a evidência exigir.
 - **B2.4-RETENTION-APPLY:** red real capturou cast JSON `#>>` ambíguo; green local com aplicação transacional, `FOR UPDATE SKIP LOCKED`, escopo por IDs, preservação de dados recentes, ledger e repetição no-op. Commit `db0f339`; revisão independente externa não ficou disponível por limite de uso, portanto não é declarada como aprovada.
 - **B2.4-RETENTION-CLEANUP-CLI:** green local com CLI default dry-run, confirmação do banco, limpeza externa autenticada em lotes, pendência persistente/retry e script diário executável. Commits `b7d7d37` e `2958b6d`; 7/7 testes de retenção passaram sem skips.
 - **B2.4-CI-GATE:** `test:retention` foi conectado ao workflow com `REQUIRE_RETENTION_TESTS=true` no commit `fe84e20`. O push e o CI do SHA final ainda são obrigatórios antes do fechamento.
+- **B2.4-CI-FINAL:** correção do modo executável e do contrato `orderId + jobId` publicada nos commits `23a6be9`, `e667863` e `050faf0`. [CI 33108145511](https://github.com/millennium42/camoburguer-demo/actions/runs/33108145511) verde no SHA `050faf0304d4d66fc4a9aa91bb6002f26d5d1dbb`, com todos os gates do workflow, inclusive `test:retention`, restore obrigatório, Docker, seed explícito, smoke, E2E e simulador.
 
 ## Fechamento obrigatório
 

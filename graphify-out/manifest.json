@@ -822,9 +822,9 @@
     "semantic_hash": ""
   },
   "HANDOFF.md": {
-    "mtime": 1787857987.899434,
-    "seen": 1787858086.7929428,
-    "ast_hash": "1e74b528c63b9fb3d2a95f1c574eeb52",
+    "mtime": 1787858743.9928293,
+    "seen": 1787858762.0895972,
+    "ast_hash": "6f4592b30c54dcea5a224be1d093c1eb",
     "semantic_hash": ""
   },
   "apps/ops-web-legacy/index.html": {
@@ -1182,9 +1182,9 @@
     "semantic_hash": ""
   },
   "docs/execucao-bloco-2.md": {
-    "mtime": 1787857987.8494477,
-    "seen": 1787858086.7937338,
-    "ast_hash": "776da35dccf4bd4a7680a2e6f13409ac",
+    "mtime": 1787858743.934575,
+    "seen": 1787858762.0905707,
+    "ast_hash": "a4db6a515ff31fa18d622a8ed83b748b",
     "semantic_hash": ""
   },
   "apps/api/src/migrate-cli.js": {

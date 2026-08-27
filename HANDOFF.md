@@ -8,8 +8,8 @@
   versionada, relógio de entrega, redator/guards, preview, apply, CLI, retry de
   spool e script diário). O `render.yaml` ativo não recebeu cron pago.
 - Último CI remoto verde anterior à retenção: [run 33102181696](https://github.com/millennium42/camoburguer-demo/actions/runs/33102181696), SHA `ca8010a6191552be169d98aafa6a2e21f9545866`.
-- O SHA final desta sessão ainda precisa ser publicado e verificado no CI; não
-  declarar entrega concluída antes dessa URL/conclusão.
+- SHA publicado e verificado: `050faf0304d4d66fc4a9aa91bb6002f26d5d1dbb`.
+  [CI remoto verde 33108145511](https://github.com/millennium42/camoburguer-demo/actions/runs/33108145511), incluindo todos os gates do workflow.
 
 ## Comandos de verificação
 
@@ -36,6 +36,13 @@ silencioso. O script diário exige `DATABASE_URL` e
   `workflows/ciclo-granular-red-green.md`: uma escritora por vez, RED→GREEN,
   revisão evidenciada, commit focal, CI remoto e handoff. Nunca interromper
   subagente em andamento por demora; retomar pelo mesmo ID quando possível.
+
+## Evidência final desta sessão
+
+O CI final confirmou `npm run check`, unitários, audit, migrations UP/DOWN,
+timezone, retenção sem skip, restore lógico protegido, seed explícito, Docker,
+smoke, E2E e simulador. O teste externo de retenção também cobre a persistência
+de `orderId + jobId` necessários ao bridge.
 
 ---
 # Handoff Detalhado: Bloco 1.5 - Trilha de Auditoria
