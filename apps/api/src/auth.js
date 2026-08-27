@@ -85,6 +85,7 @@ export async function verifyPassword(password, stored) {
 }
 
 export function permissionForRequest(method, path) {
+  if (method === "POST" && path === "/admin/seed") return "admin";
   if (path === "/auth/me" && method === "GET") return "session";
   if (path === "/audit") return "admin";
   if (path.startsWith("/users")) return "admin";

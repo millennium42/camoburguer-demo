@@ -455,7 +455,7 @@ export async function requestDemoSeed({
     .map((value) => value.split(";")[0])
     .filter(Boolean)
     .join("; ");
-  const response = await fetchImpl(`${base}/demo/seed`, {
+  const response = await fetchImpl(`${base}/admin/seed`, {
     method: "POST",
     headers: {
       cookie,

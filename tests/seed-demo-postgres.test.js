@@ -342,7 +342,7 @@ async function postSeed(
     headers.cookie = session.cookie;
     headers["x-csrf-token"] = session.body.csrfToken;
   }
-  const response = await fetch(`${server.base}/demo/seed`, {
+  const response = await fetch(`${server.base}/admin/seed`, {
     method: "POST",
     headers,
     body: JSON.stringify({ confirmTarget }),
@@ -540,6 +540,7 @@ if (!connectionString) {
           ["/orders/missing/accept", "POST"],
           ["/lgpd/anonymize", "POST"],
           ["/demo/seed", "POST"],
+          ["/admin/seed", "POST"],
         ];
         for (const [path, method] of protectedFamilies) {
           assert.equal(
@@ -624,6 +625,7 @@ if (!connectionString) {
           "/orders/x/accept",
           "/orders/x/reprint",
           "/demo/seed",
+          "/admin/seed",
           "/lgpd/anonymize",
         ]) {
           assert.equal(
@@ -648,7 +650,7 @@ if (!connectionString) {
         ]) {
           assert.equal((await requestAs(server, kitchen, path)).status, 403, `kitchen ${path}`);
         }
-        for (const path of ["/demo/seed", "/lgpd/anonymize"]) {
+        for (const path of ["/demo/seed", "/admin/seed", "/lgpd/anonymize"]) {
           assert.equal(
             (
               await requestAs(server, kitchen, path, {
@@ -666,6 +668,39 @@ if (!connectionString) {
         const appHtml = await appPage.text();
         assert.ok(appHtml.includes("main.js"));
         assert.ok(appHtml.includes("styles.css"));
+      } finally {
+        await stopServer(server);
+      }
+    });
+
+    test("B2.2 acesso demo nao semeia e seed administrativo preserva caixa fechado", async () => {
+      await resetBaseline();
+      const server = await startServer();
+      try {
+        const before = await snapshot();
+        const access = await requestAs(server, null, "/demo/access", {
+          method: "POST",
+          body: { role: "admin", prepare: true },
+        });
+        assert.equal(access.status, 200);
+        assert.equal(access.body.demoPrepared, "skipped");
+        assert.deepEqual(await snapshot(), before, "login publico nao altera dados operacionais");
+
+        await pool.query(`INSERT INTO cash_shifts (id, status, opened_at, closed_at)
+          VALUES ('b2-closed-shift', 'closed', NOW(), NOW())`);
+        const closed = await snapshot();
+        const refused = await postSeed(server);
+        assert.equal(refused.status, 409);
+        assert.ok(refused.body.blockers.includes("cash_shifts"));
+        const legacy = await requestAs(server, await adminSession(server), "/demo/seed", {
+          method: "POST", body: { confirmTarget: target },
+        });
+        assert.equal(legacy.status, 409, "alias legado usa a mesma trava");
+        assert.deepEqual(await snapshot(), closed);
+
+        await resetBaseline();
+        assert.equal((await postSeed(server)).status, 200);
+        assert.ok(Number((await pool.query("SELECT COUNT(*) FROM orders")).rows[0].count) > 0);
       } finally {
         await stopServer(server);
       }

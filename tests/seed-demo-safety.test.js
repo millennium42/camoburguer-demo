@@ -205,6 +205,7 @@ test("CLI direto é somente cliente HTTP e autentica sem enviar segredo ao seed"
 
   let loginBody;
   let seedHeaders;
+  let seedPath;
   const server = http.createServer((request, response) => {
     if (request.url === "/auth/login") {
       let body = "";
@@ -223,6 +224,7 @@ test("CLI direto é somente cliente HTTP e autentica sem enviar segredo ao seed"
       return;
     }
     seedHeaders = request.headers;
+    seedPath = request.url;
     response.writeHead(403, { "content-type": "application/json" });
     response.end(JSON.stringify({ code: "admin_auth_invalid", error: "Identidade inválida." }));
   });
@@ -247,6 +249,7 @@ test("CLI direto é somente cliente HTTP e autentica sem enviar segredo ao seed"
   assert.equal(exitCode, 1, stderr);
   assert.deepEqual(loginBody, { username: "admin", password: "arbitrario-um" });
   assert.equal(seedHeaders.authorization, undefined);
+  assert.equal(seedPath, "/admin/seed");
   assert.equal(seedHeaders["x-csrf-token"], "csrf");
   assert.match(seedHeaders.cookie, /camoburguer_session=sessao/);
   assert.match(stderr, /admin_auth_invalid/);

@@ -370,37 +370,7 @@ app.post("/demo/access", async (request, reply) => {
   }
 
   try {
-    let demoPrepared = "skipped";
-    if (request.body?.prepare !== false) {
-      try {
-        console.log(
-          "DEMO SEED REQUEST! APP_ENV IS:",
-          config.appEnvironment,
-          "process.env.APP_ENV:",
-          process.env.APP_ENV,
-        );
-        await runSeedDemo(db, {
-          authenticated: true,
-          environment: config.appEnvironment,
-          enabled: config.demoSeedEnabled,
-          expectedTarget: config.demoSeedTarget,
-          confirmedTarget: config.demoSeedTarget,
-          onDecision({ decision, target, blockers }) {
-            app.log.info({
-              event: "demo_access_seed",
-              decision,
-              role,
-              target,
-              blockers,
-            });
-          },
-        });
-        demoPrepared = "seeded";
-      } catch (error) {
-        if (error.code === "preflight_conflict") demoPrepared = "preserved";
-        else throw error;
-      }
-    }
+    const demoPrepared = "skipped";
 
     const demoUsers = await ensureDemoUsers();
     const result = await login(db, {
@@ -2519,7 +2489,8 @@ app.get("/events/finance", async (request, reply) => {
   return openEventStream(request, reply, "finance");
 });
 
-app.post("/demo/seed", async (request, reply) => {
+async function seedDemoHandler(request, reply) {
+  if (!requireDemoAdmin(request, reply)) return reply;
   const confirmedTarget = String(request.body?.confirmTarget || "").trim();
   const logDecision = ({ decision, target, blockers }) =>
     app.log.info({
@@ -2564,7 +2535,10 @@ app.post("/demo/seed", async (request, reply) => {
       ...(error.details?.blockers ? { blockers: error.details.blockers } : {}),
     });
   }
-});
+}
+
+app.post("/admin/seed", seedDemoHandler);
+app.post("/demo/seed", seedDemoHandler);
 
 await app.register(integrationRoutes, { db, sse, config });
 
