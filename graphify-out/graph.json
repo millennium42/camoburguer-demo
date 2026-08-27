@@ -1239,7 +1239,7 @@
       "file_type": "code",
       "norm_label": "batchesforartifacts()",
       "source_file": "apps/api/src/retention.js",
-      "source_location": "L316"
+      "source_location": "L321"
     },
     {
       "id": "apps_api_src_retention_cli_parseargs",
@@ -1311,7 +1311,7 @@
       "file_type": "code",
       "norm_label": "reconcilependingretention()",
       "source_file": "apps/api/src/retention.js",
-      "source_location": "L343"
+      "source_location": "L348"
     },
     {
       "id": "apps_api_src_retention_selectscope",
@@ -1347,7 +1347,7 @@
       "file_type": "code",
       "norm_label": "updatecleanupstatus()",
       "source_file": "apps/api/src/retention.js",
-      "source_location": "L331"
+      "source_location": "L336"
     },
     {
       "id": "tests_helpers_backup_restore_restorefixturebackup",
@@ -1515,7 +1515,7 @@
       "file_type": "code",
       "norm_label": "query()",
       "source_file": "tests/retention-preview.test.js",
-      "source_location": "L143"
+      "source_location": "L147"
     },
     {
       "id": "apps_api_src_integrations_providers_deliverymuch_createdeliverymuchadapter",
@@ -22262,7 +22262,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/retention.js",
-      "source_location": "L358",
+      "source_location": "L363",
       "weight": 1.0
     },
     {
@@ -22274,7 +22274,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "apps/api/src/retention.js",
-      "source_location": "L368",
+      "source_location": "L373",
       "weight": 1.0
     },
     {
@@ -33058,7 +33058,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/retention.js",
-      "source_location": "L316",
+      "source_location": "L321",
       "weight": 1.0
     },
     {
@@ -33069,7 +33069,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/retention.js",
-      "source_location": "L331",
+      "source_location": "L336",
       "weight": 1.0
     },
     {
@@ -33080,7 +33080,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/retention.js",
-      "source_location": "L343",
+      "source_location": "L348",
       "weight": 1.0
     },
     {
@@ -45917,7 +45917,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/retention-preview.test.js",
-      "source_location": "L143",
+      "source_location": "L147",
       "weight": 1.0
     },
     {
@@ -48281,5 +48281,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "c9fea597c773d0891d9eb7147b1a69037f84dd1a"
+  "built_at_commit": "e6678632f9875a93eb3fe3e8618253a88ded18f7"
 }
