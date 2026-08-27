@@ -1,5 +1,6 @@
 import pg from "pg";
 import { runMigrations } from "./migrations.js";
+import { withBusinessTimeZone } from "./postgres.js";
 
 let pool;
 try {
@@ -12,7 +13,10 @@ try {
   )
     throw new Error("Usage: migrate-cli.js up | down --confirm-database=NAME");
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
-  pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  pool = new pg.Pool({
+    connectionString: withBusinessTimeZone(process.env.DATABASE_URL),
+    max: 1,
+  });
   const result = await runMigrations(pool, {
     direction,
     environment: process.env.APP_ENV,

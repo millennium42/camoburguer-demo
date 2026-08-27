@@ -1,3 +1,4 @@
+import { DEFAULT_BUSINESS_TIME_ZONE } from "@camoburguer/finance-core";
 import "dotenv/config";
 
 function csv(value, fallback = []) {
@@ -29,13 +30,21 @@ export function parseListenPort(value) {
 }
 
 export function validateTimeZone(value) {
-  const normalized = String(value || "America/Sao_Paulo").trim();
+  const normalized = String(value || DEFAULT_BUSINESS_TIME_ZONE).trim();
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: normalized }).format(new Date(0));
   } catch {
     throw new Error(`BUSINESS_TIME_ZONE inválido: ${normalized}`);
   }
   return normalized;
+}
+
+function runtimeBusinessTimeZone(value) {
+  const normalized = String(value ?? DEFAULT_BUSINESS_TIME_ZONE).trim();
+  if (normalized !== DEFAULT_BUSINESS_TIME_ZONE) {
+    throw new Error(`BUSINESS_TIME_ZONE must be ${DEFAULT_BUSINESS_TIME_ZONE}`);
+  }
+  return DEFAULT_BUSINESS_TIME_ZONE;
 }
 
 export function assertSafeAutoSeed(value) {
@@ -63,7 +72,7 @@ export const config = {
   adminBootstrapPassword: String(process.env.ADMIN_BOOTSTRAP_PASSWORD || ""),
   appEnvironment,
   authCookieSecure,
-  businessTimeZone: validateTimeZone(process.env.BUSINESS_TIME_ZONE),
+  businessTimeZone: runtimeBusinessTimeZone(process.env.BUSINESS_TIME_ZONE),
   demoSeedEnabled: process.env.DEMO_SEED_ENABLED === "true",
   demoSeedTarget: String(process.env.DEMO_SEED_TARGET || "").trim(),
   corsOrigins: csv(process.env.CORS_ORIGINS, [

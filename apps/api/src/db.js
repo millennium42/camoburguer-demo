@@ -2,13 +2,14 @@ import { CATALOG, CATALOG_CAPTURED_AT } from "@camoburguer/domain";
 import { toMoney } from "@camoburguer/shared-types";
 import pg from "pg";
 import { runMigrations } from "./migrations.js";
+import { withBusinessTimeZone } from "./postgres.js";
 
 const { Pool, types } = pg;
 
 types.setTypeParser(1700, (value) => Number(value));
 
 export function createDb(connectionString) {
-  const pool = new Pool({ connectionString });
+  const pool = new Pool({ connectionString: withBusinessTimeZone(connectionString) });
   return {
     async init() {
       // Check for duplicate channel mappings (M-03)

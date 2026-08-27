@@ -27,8 +27,8 @@ Procedimento permanente: [ciclo granular](../workflows/ciclo-granular-red-green.
 
 | Microbloco | Contrato | Estado |
 |---|---|---|
-| 2.1 | SQL versionado `001_initial_schema`, ledger/checksum, lock transacional, up/down testados, adoção sem apagar dados | Implementado localmente; CI remoto pendente |
-| 2.2 | Sem seed de operação no boot/login público; `POST /admin/seed` admin + CSRF + flags + preflight; caixa fechado bloqueia seed | Implementado localmente; CI remoto pendente |
+| 2.1 | SQL versionado `001_initial_schema`, ledger/checksum, lock transacional, up/down testados, adoção sem apagar dados | Comprovado no CI de `f0f0633` |
+| 2.2 | Sem seed de operação no boot/login público; `POST /admin/seed` admin + CSRF + flags + preflight; caixa fechado bloqueia seed | Comprovado no CI de `f0f0633` |
 | 2.3 | TZ America/Sao_Paulo em app/container/DB; teste de virada do dia; dump/restore isolado e prova de PITR do provedor | Pendente; acesso externo necessário |
 | 2.4 | Retenção diária executável, dry-run sem writes; dados de clientes de pedidos entregues há mais de 30 dias; hashes, IDs e valores preservados | Pendente |
 
@@ -69,6 +69,9 @@ reaproveitar agentes e escalar apenas quando a evidência exigir.
 - **B2.2 concluído localmente:** red confirmou rota canônica não classificada, seed no login público e CLI usando alias. Green: 7/7 safety e 22/22 PostgreSQL/HTTP (sem skips); revisão Terra/high aprovada. Handler administrativo único com alias protegido, login sem seed e caixa fechado preservado. [Runbook](operacao/seed-seguro.md). O banco efêmero local foi recriado antes desta verificação para remover efeitos das antigas fixtures compartilhadas; nenhum banco operacional foi alterado.
 - **B2-CI-PORT:** red real no CI `33084537242`: `EADDRINUSE` em porta fixa. Testes agora usam `PORT=0` e recebem a porta efetiva via IPC somente após `listen`. Green local: parsing 1/1 e H01 + PostgreSQL/HTTP 32/32, zero skips. Revisão Luna/medium aprovada; o caminho IPC é exercitado pelos testes HTTP, não pelo teste unitário do parser. Não houve red unitário observado para este microproblema.
 - **B2-CI-CLEANUP:** red no Biome: variável `bridge` fora de escopo no timeout. Objeto mantido durante toda a inicialização; erro/timeout limpa filho e spool próprios, guardas distinguem saída por sinal. Green: sintaxe e lint focal aprovado; revisão independente Luna/low aprovada. Não houve nova execução integral PostgreSQL neste microcommit.
+- **Checkpoint remoto verde:** [CI 33087107265](https://github.com/millennium42/camoburguer-demo/actions/runs/33087107265), SHA `f0f0633200048e70e8d3db2625d123c3c42d03b3`: unitários, audit, migrations UP/DOWN, PostgreSQL/HTTP, Docker, seed explícito, smoke, E2E e simulador aprovados. Não cobre commits posteriores.
+- **B2.3-TZ:** executor observou red (sessão/data SQL em UTC e runtime permitindo divergência). Green reproduzido pelo principal: 23/23 timezone + financeiro, zero skips; opções/SSL/credenciais preservados, `statement_timeout=2000`, datas SQL em torno de 03:00Z iguais ao calendário de São Paulo. Pools da API/CLI usam o mesmo helper de DSN; config recusa outro fuso. Testes não chamam init e usam banco próprio. Container `node:24-alpine` com `TZ=America/Sao_Paulo` também passou sem pacote adicional. Revisão Terra/high aprovada por leitura independente.
+- **Continuidade após interrupção da conversa:** `resume_agent` recuperou Feynman como `interrupted`; continuação enfileirada no mesmo ID, sem recriar trabalho nem interromper agente por iniciativa do principal. Render segue `UNAUTHORIZED`/reautenticação necessária.
 
 ## Fechamento obrigatório
 
