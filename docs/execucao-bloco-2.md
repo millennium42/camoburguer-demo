@@ -44,15 +44,25 @@ Backups: testar restauração em banco novo isolado. Um dump local **não compro
 |---|---|---|
 | Nietzsche / gpt-5.6-luna / low | `01a04373-7acd-7ad0-8bfd-f2b0cd9c3eae` | B2-WF-01 documentação; B2-BASE-01 ligação do dispatcher |
 | Chandrasekhar / gpt-5.6-terra / high | `01a04377-6d89-7ed0-8646-4734808b79af` | Revisão independente dos mesmos microproblemas |
+| Feynman / gpt-5.6-luna / medium | `01a04386-c5f3-79a1-affd-9d216a4c9224` | B2.1-UP: implementação concluída; disponível para retomada |
 
 Escalar implementação delimitada para Luna/medium; Terra/high revisa dados/segurança. Sol/high somente se necessário. Uma escritora por vez; revisores somente leitura. Retomar IDs antes de criar agentes novos. Nenhum agente em andamento pode ser interrompido, encerrado ou substituído por demora.
+
+A sequência usa as capacidades expostas pela ferramenta desta sessão e a
+[orientação oficial OpenAI](https://developers.openai.com/api/docs/guides/latest-model)
+consultada em 2026-08-27. Não há promessa de economia numérica: usar contexto curto,
+reaproveitar agentes e escalar apenas quando a evidência exigir.
 
 ## Evidências incrementais
 
 - **B2-WF-01:** AGENTS/SUBAGENTES/workflow documentados; revisão independente aprovada; `git diff --check` aprovado. Sem teste funcional aplicável a documentação.
 - **B2-BASE-01 red:** suíte real no banco isolado: 144 testes, 120 passaram, 24 falharam. API não inicia porque factory recebe argumentos posicionais, mas exige `{ db, config }`. Também faltavam bindings `getPrimaryPrintJob`/`mapPrintJob`. Há falhas adicionais de preparação de banco vazio a investigar; não atribuir todas à mesma causa.
 - **B2-BASE-01 green:** corrigida ligação do dispatcher; `node --check` aprovado; `tests/seed-demo-postgres.test.js` no PostgreSQL isolado: 21/21, zero skips (130 s).
-- **B2-BASE-02:** revisão encontrou quatro bindings usados pelos adapters que o commit `e15e715` removeu. Restaurados antes do poller: `updateOrder`, `changeStock`, `reservePrintJob`, `insertOrder`. Revisão final e suíte de integrações pendentes. Não equivale a homologação real dos parceiros.
+- **B2-BASE-02:** revisão encontrou quatro bindings usados pelos adapters que o commit `e15e715` removeu. Restaurados antes do poller: `updateOrder`, `changeStock`, `reservePrintJob`, `insertOrder`. Revisão final independente aprovada; suíte de integrações 15/15. Não equivale a homologação real dos parceiros.
+- **Commits locais:** `2d7b017` (doutrina/contratos), `04badb6` (ligações do dispatcher/adapters). Ainda sem push/CI deste branch.
+- **B2.1-UP concluída:** red do executor: `ERR_MODULE_NOT_FOUND` para `migrations.js`; green reproduzido pelo principal: 9/9 (6 migrações + 3 proteções da fixture), zero skips. SQL extraído idêntico aos 23.300 bytes originais. Revisão Terra/high aprovada após remover `close()` duplicado e proteger cleanup por ownership. Comando: `TEST_MIGRATIONS_DATABASE_URL=.../camoburguer_migrations_test node --test --test-concurrency=1 tests/postgres-fixture.test.js tests/migrations.test.js`. Banco de controle não recebe DML de teste: cada execução cria um banco aleatório próprio e o remove ao final.
+- **B2.1-LEGACY concluída:** red reproduzido em outro banco descartável já migrado: M05 falhava na proteção unique (4 passaram, 2 falharam). A fixture agora representa um legado sem ledger em banco próprio; mantém todas as asserções e fecha conexões, sem `DROP TABLE CASCADE` compartilhado. Green 6/6 e revisão Luna/low aprovada. `h01` ainda precisa preparar schema antes de truncar um banco inicialmente vazio.
+- **B2.1-DOWN em andamento:** red do teste de bloqueio confirmou ausência de guarda para alvos não confirmados/remotos; ainda sem implementação/CI.
 
 ## Fechamento obrigatório
 
