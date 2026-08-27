@@ -23,6 +23,7 @@
     "test:migrations": "node --test --test-concurrency=1 tests/migrations.test.js tests/migrations-down.test.js tests/migrations-cli.test.js tests/postgres-fixture.test.js tests/retention-clock.test.js tests/retention-redaction.test.js",
     "test:timezone": "node --test --test-concurrency=1 tests/postgres-timezone.test.js tests/timezone-config.test.js tests/finance.test.js",
     "test:recovery": "node --test tests/backup-restore.test.js",
+    "test:retention": "node --test --test-concurrency=1 tests/retention-preview.test.js tests/retention-cli.test.js tests/retention-cron.test.js",
     "migrate:up": "node --env-file-if-exists=.env apps/api/src/migrate-cli.js up",
     "migrate:down": "node --env-file-if-exists=.env apps/api/src/migrate-cli.js down",
     "retention": "node --env-file-if-exists=.env apps/api/src/retention-cli.js",

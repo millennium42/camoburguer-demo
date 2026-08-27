@@ -58,6 +58,11 @@ jobs:
         env:
           TEST_MIGRATIONS_DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_migrations_test
           TEST_COMPOSE_CONFIG: "true"
+      - name: Retenção LGPD em PostgreSQL efêmero
+        run: npm run test:retention
+        env:
+          REQUIRE_RETENTION_TESTS: "true"
+          TEST_MIGRATIONS_DATABASE_URL: postgres://camoburguer:camoburguer@127.0.0.1:5432/camoburguer_migrations_test
       - name: Restauração lógica em outro banco efêmero
         run: |
           TEST_POSTGRES_CONTAINER="$(POSTGRES_DB=camoburguer_auto_seed_test docker compose -p camoburguer-auto-seed-test ps -q db)"

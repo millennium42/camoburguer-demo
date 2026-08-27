@@ -9,6 +9,8 @@ import {
 import { createRetentionFixture, databaseDigest } from "./helpers/retention-fixture.js";
 
 const options = { skip: !process.env.TEST_MIGRATIONS_DATABASE_URL };
+if (process.env.REQUIRE_RETENTION_TESTS && !process.env.TEST_MIGRATIONS_DATABASE_URL)
+  throw new Error("TEST_MIGRATIONS_DATABASE_URL is required for retention CI");
 
 test(
   "retention boundary is strictly older than 30 days and requires a delivery",
