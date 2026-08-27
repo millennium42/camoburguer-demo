@@ -28,6 +28,18 @@ export const migrationManifest = Object.freeze([
       "utf8",
     ),
   }),
+  Object.freeze({
+    version: 3,
+    name: "003_retention_redaction.up.sql",
+    sql: readFileSync(
+      new URL("../migrations/003_retention_redaction.up.sql", import.meta.url),
+      "utf8",
+    ),
+    down: readFileSync(
+      new URL("../migrations/003_retention_redaction.down.sql", import.meta.url),
+      "utf8",
+    ),
+  }),
 ]);
 
 function validateManifest(migrations) {

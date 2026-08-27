@@ -111,6 +111,12 @@ flowchart LR
   o pedido. A migration inicial continua imutável; a evolução usa versão nova.
   Invariantes: não antecipar entrega com timestamp fornecido pelo cliente, não
   reiniciar retenção em replays, não alterar IDs, hashes, parcelas ou totais.
+  A política JSON de retenção preserva identificadores, hashes, enums financeiros,
+  SKUs e valores, removendo identificação/contato e texto livre. Guards no banco
+  impedem reintrodução de dados no pedido já anonimizado e em seus tickets,
+  inclusive quando um write concorrente estava aguardando o pedido. O job diário
+  também revisita os artefatos relacionados antigos e recupera limpeza externa
+  pendente. A anonimização administrativa manual existente continua separada.
 
 - **Núcleo único de pedidos** — `orders` é o único agregado operacional; comanda
   é coleção comercial de rodadas.
