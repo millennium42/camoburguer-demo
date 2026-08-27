@@ -95,6 +95,15 @@ flowchart LR
 
 ## Decisões arquiteturais
 
+- **Bloco 2 — persistência versionada:** substituir o DDL inline por migrations SQL
+  executadas por um único runner com ledger, checksum e lock. Manter adoção de
+  bancos existentes sem apagar dados. O rollback destrutivo inicial só pode ser
+  exercitado em banco efêmero vazio de teste. Contratos e evidências em
+  [execucao-bloco-2.md](execucao-bloco-2.md).
+- **Retenção:** execução diária separada do request operacional, com dry-run,
+  seleção por pedido entregue antigo, preservação de valores/vínculos/hashes e
+  recuperação de limpeza de spool; não equivale a apagar backups.
+
 - **Núcleo único de pedidos** — `orders` é o único agregado operacional; comanda
   é coleção comercial de rodadas.
 - **Frontend estático e leve** — sem React no fluxo principal do console legado.

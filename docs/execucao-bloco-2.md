@@ -1,0 +1,59 @@
+---
+tags: [dados, entrega-02, evidencias]
+---
+
+# Execução do Bloco 2 — dados, recuperação e retenção
+
+## Escopo e solicitação registrada
+
+Solicitação do usuário (2026-08-27):
+
+> complete o Bloco 2 + commmit + push + handoff (se acabar os token em meio a uma execução multiagente/subagentes ao voltar automaticamente continue com os subagentes) Gaste o minimo de tokens possivel CI Remoto Verde Workflow Multiagente Use diferentes modelos e esforços para os subagentes Subagentes mega granulares (para cada micro problema a ser resolvido, passando por extensa revisão) Crie a sequencia de modelos de subagentes vizando diminuir ao minimo o uso do tokens Loop Enginering Extremamente granular uma tarefa por vez com review Workflow Multiagente extremamente granular Commit granular Red -> Green
+>
+> Registre tudo que disse nesse prompt em documentação para que todo desenvolvimento siga essas recomendações
+
+Complemento: **NUNCA interromper subagentes em andamento, independentemente do tempo**.
+Procedimento permanente: [ciclo granular](../workflows/ciclo-granular-red-green.md).
+
+## Checkout e ambiente comprovados
+
+- Trabalho: WSL `/home/millennium42/camoburguer-demo`, branch `codex/bloco-2-dados-recuperacao`.
+- Base local `e15e715`, quatro commits adiante de `origin/main` (`c1fc555` no início).
+- Preservar as exclusões preexistentes de `patch-h04.mjs`, `patch-tests-h04-fix.mjs`, `patch-tests-h04.mjs`, `patch-types.mjs`; não pertencem a esta entrega.
+- Node nativo WSL 22.23.2; CI usa Node 24. Banco de teste isolado: container `camoburguer-bloco2-test`, PostgreSQL 16.14, loopback 55432, database `camoburguer_auto_seed_test`.
+- m1nd first-minute retornou `needs_authority`; não inventar autoridade. Fallback: Graphify + código + testes. Graphify não prova funcionamento.
+
+## Critérios de aceite e decisões antes da implementação
+
+| Microbloco | Contrato | Estado |
+|---|---|---|
+| 2.1 | SQL versionado `001_initial_schema`, ledger/checksum, lock transacional, up/down testados, adoção sem apagar dados | Pendente |
+| 2.2 | Sem seed de operação no boot/login público; `POST /admin/seed` admin + CSRF + flags + preflight; caixa fechado bloqueia seed | Pendente |
+| 2.3 | TZ America/Sao_Paulo em app/container/DB; teste de virada do dia; dump/restore isolado e prova de PITR do provedor | Pendente; acesso externo necessário |
+| 2.4 | Retenção diária executável, dry-run sem writes; dados de clientes de pedidos entregues há mais de 30 dias; hashes, IDs e valores preservados | Pendente |
+
+Migrações: usar SQL + `pg` existente, sem ORM adicional. O ledger é a única fonte de versões; aplicar pendências sob advisory lock, registrar checksum somente na mesma transação do DDL. O init pode chamar o mesmo runner para compatibilidade, nunca manter uma segunda cópia do schema. Catálogo e saldo zero são dados de referência, não seed de pedidos/caixa. Rollback inicial é destrutivo e fica limitado a banco efêmero de teste, com confirmação de identidade e recusa de dados operacionais; nunca `DROP SCHEMA CASCADE`. Produção usa correção adiante ou restauração em outra instância.
+
+Retenção: seleção por pedido terminal e instante de entrega, não busca global por nome. O dry-run apenas conta candidatos. A execução deve preservar vínculos e trilhas de segurança/financeiras, registrar execução idempotente e tratar spool externo com status honesto de limpeza pendente. A política não modifica backups do provedor.
+
+Backups: testar restauração em banco novo isolado. Um dump local **não comprova PITR**. O blueprint atual usa plano Free; a [documentação oficial do Render](https://render.com/docs/postgresql-backups) consultada em 2026-08-27 informa PITR apenas em planos pagos. O conector requer reautenticação; não alterar plano nem gerar custo sem aprovação.
+
+## Registro de agentes e continuidade
+
+| Agente / modelo / esforço | ID | Trabalho |
+|---|---|---|
+| Nietzsche / gpt-5.6-luna / low | `01a04373-7acd-7ad0-8bfd-f2b0cd9c3eae` | B2-WF-01 documentação; B2-BASE-01 ligação do dispatcher |
+| Chandrasekhar / gpt-5.6-terra / high | `01a04377-6d89-7ed0-8646-4734808b79af` | Revisão independente dos mesmos microproblemas |
+
+Escalar implementação delimitada para Luna/medium; Terra/high revisa dados/segurança. Sol/high somente se necessário. Uma escritora por vez; revisores somente leitura. Retomar IDs antes de criar agentes novos. Nenhum agente em andamento pode ser interrompido, encerrado ou substituído por demora.
+
+## Evidências incrementais
+
+- **B2-WF-01:** AGENTS/SUBAGENTES/workflow documentados; revisão independente aprovada; `git diff --check` aprovado. Sem teste funcional aplicável a documentação.
+- **B2-BASE-01 red:** suíte real no banco isolado: 144 testes, 120 passaram, 24 falharam. API não inicia porque factory recebe argumentos posicionais, mas exige `{ db, config }`. Também faltavam bindings `getPrimaryPrintJob`/`mapPrintJob`. Há falhas adicionais de preparação de banco vazio a investigar; não atribuir todas à mesma causa.
+- **B2-BASE-01 green:** corrigida ligação do dispatcher; `node --check` aprovado; `tests/seed-demo-postgres.test.js` no PostgreSQL isolado: 21/21, zero skips (130 s).
+- **B2-BASE-02:** revisão encontrou quatro bindings usados pelos adapters que o commit `e15e715` removeu. Restaurados antes do poller: `updateOrder`, `changeStock`, `reservePrintJob`, `insertOrder`. Revisão final e suíte de integrações pendentes. Não equivale a homologação real dos parceiros.
+
+## Fechamento obrigatório
+
+Registrar por microtarefa: red/green, revisão, commit e limitações. Ao concluir, adicionar SHA publicado, URL/conclusão de CI **desse SHA**, comandos reproduzíveis, rollback seguro e handoff. Não marcar o Bloco 2 concluído enquanto faltar evidência de requisito, mesmo com testes locais verdes.

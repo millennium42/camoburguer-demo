@@ -66,3 +66,37 @@ The repository is expected to maintain at least:
 
 [00-mapa-do-projeto.md](00-mapa-do-projeto.md) ·
 [docs/guia-de-desenvolvimento.md](docs/guia-de-desenvolvimento.md)
+
+## Política explícita do Bloco 2
+
+> completar Bloco 2 + commits granulares + push + handoff + CI REMOTO VERDE.
+
+Registrar e seguir workflow multiagente, diferentes modelos/esforços, um
+microproblema por vez, implementação → review extensa proporcional ao risco →
+red/green. Usar Luna/low para docs/triagem, Luna/medium para mudança
+delimitada, Terra/high para review de dados/segurança e Sol/high somente como
+escalada bloqueante. Reusar agentes/contexto, cápsulas concisas, sem
+repetições; preservar IDs/status/evidências para continuar os mesmos
+subagentes após interrupção/compactação quando a plataforma permitir, sem
+alegar retomada garantida se indisponível. Não simular subagentes.
+
+Uma microtarefa escritora por vez exige review independente, testes vermelhos
+antes e verdes depois, sem alterar testes para esconder erro, e commit focado
+após revisão. Nunca declarar completo sem CI verde no SHA publicado e handoff
+com limites. O mesmo fluxo vale para desenvolvimento futuro por preferência
+explícita do usuário, mantendo autorização da plataforma. Para typo, escalar o
+esforço e evitar cerimônia cara, conservando review e registrando a economia.
+Preservar mudanças preexistentes e limites de segurança.
+
+## Continuidade de subagentes
+
+Orientação explícita do usuário: nunca interromper subagentes em andamento,
+sem importar quanto tempo levem. Não usar `interrupt=true`, `close` ou
+`terminate` em agente em andamento por impaciência ou tempo; aguardar e
+retomar pelos IDs. Mensagens de orientação devem ser enfileiradas sem
+interromper.
+
+O comando WSL robusto usa `--exec env PATH=... rtk`, não `-- env`. Como `rg`
+não está disponível no WSL, usar `rtk /usr/bin/grep` ou leitura focada.
+`m1nd` first-minute Linux tentou e retornou `needs_authority`; o fallback
+autorizado pelo payload é Graphify + prova direta.

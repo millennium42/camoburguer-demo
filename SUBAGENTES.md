@@ -48,3 +48,34 @@ Maker e revisor não devem editar simultaneamente o mesmo arquivo. O revisor rec
 ## Poder do gate
 
 O gate termina em `aprovado`, `aprovado com ressalvas` ou `reprovado`. Toda ressalva/reprovação aponta evidência e checklist de correção. Ausência de teste real deve ser descrita como ausência, nunca convertida em aprovação presumida.
+
+## Solicitação operacional vigente
+
+Completar Bloco 2 + commits granulares + push + handoff + **CI REMOTO
+VERDE**. Usar workflow multiagente, diferentes modelos/esforços, um
+microproblema por vez, implementação → review extensa proporcional ao risco →
+red/green. Sequência econômica: Luna/low docs/triagem; Luna/medium mudança
+delimitada; Terra/high review dados/segurança; Sol/high somente escalada
+bloqueante. Reusar agentes/contexto, cápsulas concisas, sem repetições.
+
+Preservar IDs/status/evidências para continuar os mesmos subagentes após
+interrupção/compactação quando a plataforma permitir; não alegar retomada
+garantida se indisponível. Uma microtarefa escritora por vez, review
+independente, testes vermelhos antes e verdes depois, sem alterar testes para
+esconder erro, commit focado após revisão. Nunca declarar completo sem CI verde
+no SHA publicado e handoff com limites. O mesmo fluxo vale futuramente por
+preferência explícita do usuário, mantendo autorização da plataforma e sem
+simular subagentes. Para typo, evitar cerimônia cara, mas manter review e
+registrar a economia. Preservar mudanças preexistentes e limites de segurança.
+
+## Continuidade e operação do host
+
+Orientação explícita do usuário: **NUNCA interromper subagentes em andamento**,
+sem se importar com o tempo que levarem. Não usar `interrupt=true`, `close` ou
+`terminate` em agente em andamento por impaciência/tempo; aguardar e retomar
+IDs. Mensagens de orientação devem ser enfileiradas sem interromper.
+
+O comando WSL robusto é `--exec env PATH=... rtk`, não `-- env`. Como `rg` não
+está disponível no WSL, usar `rtk /usr/bin/grep` ou leitura focada. O m1nd
+first-minute Linux tentou e recebeu `needs_authority`; usar o fallback
+Graphify + prova direta autorizado pelo payload.
