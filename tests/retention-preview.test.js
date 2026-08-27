@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { previewRetention, RETENTION_ELIGIBLE_SQL } from "../apps/api/src/retention.js";
+import {
+  applyRetention,
+  previewRetention,
+  RETENTION_ELIGIBLE_SQL,
+} from "../apps/api/src/retention.js";
 import { createRetentionFixture, databaseDigest } from "./helpers/retention-fixture.js";
 
 const options = { skip: !process.env.TEST_MIGRATIONS_DATABASE_URL };
@@ -22,6 +26,52 @@ test(
       assert.deepEqual(
         rows.map(({ id }) => id),
         ["cancelled-after-delivery", "old"],
+      );
+    } finally {
+      await fixture.close();
+    }
+  },
+);
+
+test(
+  "apply uses a guarded transaction, records one ledger row and is idempotent",
+  options,
+  async () => {
+    const fixture = await createRetentionFixture();
+    try {
+      const first = await applyRetention(fixture.db);
+      assert.equal(first.status, "db_completed");
+      assert.equal(first.selectedOrders, 4);
+      assert.equal(first.deferredOrders, 1);
+      assert.equal(first.changes.orders, 4);
+      assert.equal(first.changes.service_tabs, 1);
+      assert.equal(
+        (
+          await fixture.pool.query(
+            "SELECT customer_name, privacy_anonymized_at FROM orders WHERE id='old-alone'",
+          )
+        ).rows[0].customer_name,
+        "[DADO ANONIMIZADO LGPD]",
+      );
+      assert.equal(
+        (await fixture.pool.query("SELECT customer_name FROM orders WHERE id='recent'")).rows[0]
+          .customer_name,
+        "Synthetic Customer",
+      );
+      assert.equal(
+        (await fixture.pool.query("SELECT customer_name FROM orders WHERE id='old-sending'"))
+          .rows[0].customer_name,
+        "Synthetic Customer",
+      );
+      assert.equal(
+        (await fixture.pool.query("SELECT COUNT(*) FROM privacy_requests")).rows[0].count,
+        "1",
+      );
+      const repeated = await applyRetention(fixture.db);
+      assert.equal(repeated.status, "no_op");
+      assert.equal(
+        (await fixture.pool.query("SELECT COUNT(*) FROM privacy_requests")).rows[0].count,
+        "1",
       );
     } finally {
       await fixture.close();
