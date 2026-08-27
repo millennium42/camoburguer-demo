@@ -1,17 +1,30 @@
 import assert from "node:assert/strict";
-import { execSync } from "node:child_process";
-import fs from "node:fs";
+import { execFileSync } from "node:child_process";
 import test from "node:test";
 import { createDb } from "../apps/api/src/db.js";
+import { createPostgresFixture } from "./helpers/postgres-fixture.js";
 
 const testDbUrl = process.env.TEST_DATABASE_URL;
 
 test("M-05: Fechamento financeiro silencioso removido e reconciliação admin", {
   skip: !testDbUrl ? "PostgreSQL efêmero requer TEST_DATABASE_URL" : false,
 }, async (t) => {
-  const db = createDb(testDbUrl);
-
-  await db.query("DROP TABLE IF EXISTS cash_shifts CASCADE");
+  const fixture = await createPostgresFixture(testDbUrl, {
+    controlDatabase: "camoburguer_auto_seed_test",
+  });
+  const db = createDb(fixture.connectionString);
+  t.after(async () => {
+    try {
+      await db.close();
+    } finally {
+      await fixture.close();
+    }
+  });
+  const childEnv = {
+    ...process.env,
+    TEST_DATABASE_URL: fixture.connectionString,
+    DATABASE_URL: fixture.connectionString,
+  };
 
   await db.query(
     "CREATE TABLE IF NOT EXISTS cash_shifts (" +
@@ -43,14 +56,15 @@ test("M-05: Fechamento financeiro silencioso removido e reconciliação admin", 
       process.exit(1);
     });
   `;
-  fs.writeFileSync("temp-runner.js", runnerContent);
+  const runInit = () =>
+    execFileSync(process.execPath, ["--input-type=module", "-e", runnerContent], {
+      env: childEnv,
+      stdio: "pipe",
+    });
 
   await t.test("Preflight detecta dois caixas abertos e aborta inicialização", async () => {
     try {
-      execSync("node temp-runner.js", {
-        env: { ...process.env, TEST_DATABASE_URL: testDbUrl },
-        stdio: "pipe",
-      });
+      runInit();
       assert.fail("Deveria ter abortado a inicialização");
     } catch (err) {
       assert.equal(err.status, 1);
@@ -60,10 +74,14 @@ test("M-05: Fechamento financeiro silencioso removido e reconciliação admin", 
 
   await t.test("Ferramenta administrativa: Erro em alvo inválido", async () => {
     try {
-      execSync('node scripts/reconcile-shifts.js caixa1 caixa_inexistente 0 "Motivo teste"', {
-        env: { ...process.env, DATABASE_URL: testDbUrl },
-        stdio: "pipe",
-      });
+      execFileSync(
+        process.execPath,
+        ["scripts/reconcile-shifts.js", "caixa1", "caixa_inexistente", "0", "Motivo teste"],
+        {
+          env: childEnv,
+          stdio: "pipe",
+        },
+      );
       assert.fail("Deveria falhar");
     } catch (err) {
       assert.equal(err.status, 1);
@@ -75,10 +93,14 @@ test("M-05: Fechamento financeiro silencioso removido e reconciliação admin", 
   });
 
   await t.test("Ferramenta administrativa: Sucesso em alvo válido", async () => {
-    execSync('node scripts/reconcile-shifts.js caixa1 caixa2 15000 "Motivo válido manual"', {
-      env: { ...process.env, DATABASE_URL: testDbUrl },
-      stdio: "pipe",
-    });
+    execFileSync(
+      process.execPath,
+      ["scripts/reconcile-shifts.js", "caixa1", "caixa2", "15000", "Motivo válido manual"],
+      {
+        env: childEnv,
+        stdio: "pipe",
+      },
+    );
 
     const { rows } = await db.query(
       "SELECT id, status, declared_amount, difference_amount, notes FROM cash_shifts WHERE id = 'caixa2'",
@@ -90,10 +112,8 @@ test("M-05: Fechamento financeiro silencioso removido e reconciliação admin", 
   });
 
   await t.test("Migração agora passa após reconciliação (banco íntegro)", async () => {
-    execSync("node temp-runner.js", {
-      env: { ...process.env, TEST_DATABASE_URL: testDbUrl },
-      stdio: "pipe",
-    });
+    runInit();
+    assert.equal((await db.query("SELECT version FROM schema_migrations")).rows[0].version, 1);
   });
 
   await t.test("Constraint protege contra novas duplicatas", async () => {
@@ -106,9 +126,4 @@ test("M-05: Fechamento financeiro silencioso removido e reconciliação admin", 
       assert.equal(err.code, "23505");
     }
   });
-
-  await db.query("DROP TABLE IF EXISTS cash_shifts CASCADE");
-  if (fs.existsSync("temp-runner.js")) {
-    fs.unlinkSync("temp-runner.js");
-  }
 });
