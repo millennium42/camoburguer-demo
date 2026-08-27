@@ -103,6 +103,14 @@ flowchart LR
 - **Retenção:** execução diária separada do request operacional, com dry-run,
   seleção por pedido entregue antigo, preservação de valores/vínculos/hashes e
   recuperação de limpeza de spool; não equivale a apagar backups.
+  `orders.completed_at` registra a primeira passagem por `completed` no banco,
+  inclusive para adapters; repetição ou cancelamento posterior não muda o relógio.
+  Legado já concluído recebe `GREATEST(created_at, updated_at)` como aproximação
+  conservadora explicitamente inferida; não inventar entrega para cancelados sem
+  histórico. `privacy_anonymized_at` registra a aplicação da política sem apagar
+  o pedido. A migration inicial continua imutável; a evolução usa versão nova.
+  Invariantes: não antecipar entrega com timestamp fornecido pelo cliente, não
+  reiniciar retenção em replays, não alterar IDs, hashes, parcelas ou totais.
 
 - **Núcleo único de pedidos** — `orders` é o único agregado operacional; comanda
   é coleção comercial de rodadas.

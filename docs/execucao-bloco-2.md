@@ -29,8 +29,8 @@ Procedimento permanente: [ciclo granular](../workflows/ciclo-granular-red-green.
 |---|---|---|
 | 2.1 | SQL versionado `001_initial_schema`, ledger/checksum, lock transacional, up/down testados, adoção sem apagar dados | Comprovado no CI de `f0f0633` |
 | 2.2 | Sem seed de operação no boot/login público; `POST /admin/seed` admin + CSRF + flags + preflight; caixa fechado bloqueia seed | Comprovado no CI de `f0f0633` |
-| 2.3 | TZ America/Sao_Paulo em app/container/DB; teste de virada do dia; dump/restore isolado e prova de PITR do provedor | Pendente; acesso externo necessário |
-| 2.4 | Retenção diária executável, dry-run sem writes; dados de clientes de pedidos entregues há mais de 30 dias; hashes, IDs e valores preservados | Pendente |
+| 2.3 | TZ America/Sao_Paulo em app/container/DB; teste de virada do dia; dump/restore isolado e prova de PITR do provedor | Fuso e restore lógico implementados; PITR depende de acesso/custo |
+| 2.4 | Retenção diária executável, dry-run sem writes; dados de clientes de pedidos entregues há mais de 30 dias; hashes, IDs e valores preservados | Relógio de conclusão implementado; política/job pendentes |
 
 Migrações: usar SQL + `pg` existente, sem ORM adicional. O ledger é a única fonte de versões; aplicar pendências sob advisory lock, registrar checksum somente na mesma transação do DDL. O init pode chamar o mesmo runner para compatibilidade, nunca manter uma segunda cópia do schema. Catálogo e saldo zero são dados de referência, não seed de pedidos/caixa. Rollback inicial é destrutivo e fica limitado a banco efêmero de teste, com confirmação de identidade e recusa de dados operacionais; nunca `DROP SCHEMA CASCADE`. Produção usa correção adiante ou restauração em outra instância.
 
@@ -77,6 +77,7 @@ reaproveitar agentes e escalar apenas quando a evidência exigir.
 - **B2.3-RESTORE:** red por helper ausente; green 3/3, zero skips, em PostgreSQL 16.14. `pg_dump -Fc`/`pg_restore --single-transaction` em dois bancos aleatórios próprios preservaram ledger, relações, hashes e valores financeiros, com origem intacta. Destino não vazio, alvo igual ou não-fixture são recusados; dump apenas em memória. Gate CI `test:recovery` e [runbook](operacao/fuso-e-recuperacao.md). Esta prova não fecha PITR.
 - **B2.3-RESTORE review/correção:** Terra/high reprovou skip silencioso no gate e conexão implícita dos clientes. Ambos reproduzidos em red. Corrigidos assign/test/export, flag obrigatória sem skip, ambiente `env -i`, host/porta fixos e comparação dos identificadores de cluster/banco entre pool e CLI. Green final 4/4, zero skips, com `PGSERVICE`/`PGHOSTADDR` conflitantes injetados. Probes de subprocesso removem `NODE_TEST_CONTEXT` herdado para executar de fato o runner filho; nenhuma alegação de green antes desse resultado vale como evidência.
 - **B2.3-RESTORE revisão final:** Terra/high aprovou as correções por leitura, sem achados residuais; principal comprovou os 4/4. [CI 33100420912](https://github.com/millennium42/camoburguer-demo/actions/runs/33100420912) verde para `9e4f9dec321cb4bb4b2e945b3f140c2634291636`, incluindo timezone/Blueprint, mas ainda não o microcommit de recuperação.
+- **B2.4-CLOCK:** red 2/2 (migration/campos ausentes); green 16/16 migrations e 2/2 relógio isolado, zero skips. Migration 002 registra a primeira conclusão via trigger, preserva data em replay/cancelamento e mantém o marco de anonimização após criado. Legado concluído usa data conservadora inferida; cancelado sem entrega comprovada fica sem relógio. Testes/CLI percorrem todas as versões UP/DOWN/UP; 001 não foi editada. Revisão Terra/high aprovada por leitura independente.
 
 ## Fechamento obrigatório
 

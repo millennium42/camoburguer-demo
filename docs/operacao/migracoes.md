@@ -42,3 +42,12 @@ são explicitamente pulados; os testes unitários de segurança continuam rodand
 Cobertura: primeira aplicação concorrente, reexecução, adoção de legado com
 sentinelas, drift, DDL inválido sem ledger parcial, DOWN recusado com dados,
 round-trip UP/DOWN/UP e CLI sem exposição de credenciais.
+
+## Relógio de retenção (002)
+
+A primeira transição para `completed` recebe `completed_at` do banco. Replays,
+cancelamento posterior e timestamps fornecidos no write não reiniciam o prazo.
+Pedidos legados já concluídos usam `GREATEST(created_at, updated_at)`: aproximação
+histórica conservadora, não uma entrega reconstituída com precisão. Cancelados
+sem evidência de conclusão ficam sem relógio. `privacy_anonymized_at` marca a
+aplicação da política; nenhuma destas colunas altera IDs, hashes ou valores.

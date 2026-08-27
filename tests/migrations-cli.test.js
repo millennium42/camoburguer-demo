@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { migrationManifest } from "../apps/api/src/migrations.js";
 import { createPostgresFixture } from "./helpers/postgres-fixture.js";
 
 const command = "apps/api/src/migrate-cli.js";
@@ -37,11 +38,20 @@ test("migration CLI performs an actual up/down/up roundtrip", {
   });
   try {
     const env = { DATABASE_URL: fixture.connectionString, APP_ENV: "test" };
-    for (const args of [["up"], ["down", `--confirm-database=${fixture.databaseName}`], ["up"]]) {
+    for (const args of [
+      ["up"],
+      ...migrationManifest.map(() => ["down", `--confirm-database=${fixture.databaseName}`]),
+    ]) {
       const result = run(args, env);
       assert.equal(result.status, 0, result.stderr);
       assert.doesNotThrow(() => JSON.parse(result.stdout));
     }
+    assert.equal(
+      (await fixture.pool.query("SELECT to_regclass('orders') AS name")).rows[0].name,
+      null,
+    );
+    const up = run(["up"], env);
+    assert.equal(up.status, 0, up.stderr);
     assert.ok((await fixture.pool.query("SELECT to_regclass('orders') AS name")).rows[0].name);
   } finally {
     await fixture.close();

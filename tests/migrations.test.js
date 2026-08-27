@@ -48,7 +48,7 @@ test("invalid manifests are rejected before connecting", async () => {
     await assert.rejects(runMigrations(noConnection, { migrations }), /version|ordered|duplicate/);
 });
 
-test("fresh up creates schema and records one migration", { skip: !enabled }, async () => {
+test("fresh up creates schema and records every migration", { skip: !enabled }, async () => {
   await withDb(async (db) => {
     await Promise.all([runMigrations(pool), runMigrations(pool), runMigrations(pool)]);
     await db.init();
@@ -57,7 +57,7 @@ test("fresh up creates schema and records one migration", { skip: !enabled }, as
     );
     assert.deepEqual(
       ledger.rows.map(({ version, name }) => ({ version, name })),
-      [{ version: 1, name: "001_initial_schema.up.sql" }],
+      migrationManifest.map(({ version, name }) => ({ version, name })),
     );
     assert.match(ledger.rows[0].checksum, /^[0-9a-f]{64}$/);
     assert.equal(
@@ -72,10 +72,10 @@ test("rerun is a no-op and concurrent runners do not duplicate ledger", {
 }, async () => {
   await withDb(async (db) => {
     await Promise.all([db.init(), db.init(), db.init()]);
-    const ledger = await query("SELECT version FROM schema_migrations");
+    const ledger = await query("SELECT version FROM schema_migrations ORDER BY version");
     assert.deepEqual(
       ledger.rows.map((row) => row.version),
-      [1],
+      migrationManifest.map(({ version }) => version),
     );
   });
 });
@@ -95,7 +95,7 @@ test("adoption reapplies the real 001 schema without losing operational sentinel
     "INSERT INTO orders (id, source, status, customer_name, fulfillment_mode, tab_id, round_number) VALUES ($1, $2, $3, $4, 'local', $5, 1)",
     ["sentinel-order", "operator", "confirmed", "Cliente legado", "sentinel-tab"],
   );
-  await query("DELETE FROM schema_migrations WHERE version = 1");
+  await query("DELETE FROM schema_migrations");
   await withDb(async (db) => db.init());
   assert.equal(
     (await query("SELECT name FROM users WHERE id = 'sentinel-user'")).rows[0].name,
@@ -121,7 +121,9 @@ test("adoption reapplies the real 001 schema without losing operational sentinel
 
 test("checksum drift and unknown versions are refused", { skip: !enabled }, async () => {
   await assert.rejects(
-    runMigrations(pool, { migrations: [{ ...migrationManifest[0], sql: "SELECT 1" }] }),
+    runMigrations(pool, {
+      migrations: [{ ...migrationManifest[0], sql: "SELECT 1" }, ...migrationManifest.slice(1)],
+    }),
     /checksum|altered|diverg/i,
   );
   await query(
@@ -132,13 +134,14 @@ test("checksum drift and unknown versions are refused", { skip: !enabled }, asyn
 });
 
 test("failed DDL rolls back without a partial ledger row", { skip: !enabled }, async () => {
+  const nextVersion = migrationManifest.at(-1).version + 1;
   await assert.rejects(
     runMigrations(pool, {
       migrations: [
         ...migrationManifest,
         {
-          version: 2,
-          name: "002_invalid.up.sql",
+          version: nextVersion,
+          name: "test_invalid.up.sql",
           sql: "CREATE TABLE migration_partial (id text primary key); SELECT no_such_function();",
         },
       ],
@@ -149,5 +152,8 @@ test("failed DDL rolls back without a partial ledger row", { skip: !enabled }, a
     (await query("SELECT 1 FROM pg_class WHERE relname = 'migration_partial'")).rows.length,
     0,
   );
-  assert.equal((await query("SELECT 1 FROM schema_migrations WHERE version = 2")).rows.length, 0);
+  assert.equal(
+    (await query("SELECT 1 FROM schema_migrations WHERE version = $1", [nextVersion])).rows.length,
+    0,
+  );
 });

@@ -16,6 +16,18 @@ export const migrationManifest = Object.freeze([
       "utf8",
     ),
   }),
+  Object.freeze({
+    version: 2,
+    name: "002_order_retention_clock.up.sql",
+    sql: readFileSync(
+      new URL("../migrations/002_order_retention_clock.up.sql", import.meta.url),
+      "utf8",
+    ),
+    down: readFileSync(
+      new URL("../migrations/002_order_retention_clock.down.sql", import.meta.url),
+      "utf8",
+    ),
+  }),
 ]);
 
 function validateManifest(migrations) {
