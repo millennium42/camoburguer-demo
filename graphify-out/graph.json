@@ -19729,7 +19729,7 @@
       "node_kind": "heading",
       "norm_label": "fechamento obrigatorio",
       "source_file": "docs/execucao-bloco-2.md",
-      "source_location": "L89"
+      "source_location": "L90"
     },
     {
       "id": "docs_execucao_bloco_2_registro_de_agentes_e_continuidade",
@@ -36854,7 +36854,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/execucao-bloco-2.md",
-      "source_location": "L89",
+      "source_location": "L90",
       "weight": 1.0
     },
     {
@@ -48304,5 +48304,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "050faf0304d4d66fc4a9aa91bb6002f26d5d1dbb"
+  "built_at_commit": "f21ddc72df959b74bfb6928a86dc3f16e1fb1c98"
 }

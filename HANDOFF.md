@@ -8,8 +8,8 @@
   versionada, relógio de entrega, redator/guards, preview, apply, CLI, retry de
   spool e script diário). O `render.yaml` ativo não recebeu cron pago.
 - Último CI remoto verde anterior à retenção: [run 33102181696](https://github.com/millennium42/camoburguer-demo/actions/runs/33102181696), SHA `ca8010a6191552be169d98aafa6a2e21f9545866`.
-- SHA publicado e verificado: `050faf0304d4d66fc4a9aa91bb6002f26d5d1dbb`.
-  [CI remoto verde 33108145511](https://github.com/millennium42/camoburguer-demo/actions/runs/33108145511), incluindo todos os gates do workflow.
+- SHA publicado e verificado: `f21ddc72df959b74bfb6928a86dc3f16e1fb1c98`.
+  [CI remoto verde 33108450686](https://github.com/millennium42/camoburguer-demo/actions/runs/33108450686), incluindo todos os gates do workflow.
 
 ## Comandos de verificação
 

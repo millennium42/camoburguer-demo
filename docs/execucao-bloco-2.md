@@ -85,6 +85,7 @@ reaproveitar agentes e escalar apenas quando a evidência exigir.
 - **B2.4-RETENTION-CLEANUP-CLI:** green local com CLI default dry-run, confirmação do banco, limpeza externa autenticada em lotes, pendência persistente/retry e script diário executável. Commits `b7d7d37` e `2958b6d`; 7/7 testes de retenção passaram sem skips.
 - **B2.4-CI-GATE:** `test:retention` foi conectado ao workflow com `REQUIRE_RETENTION_TESTS=true` no commit `fe84e20`. O push e o CI do SHA final ainda são obrigatórios antes do fechamento.
 - **B2.4-CI-FINAL:** correção do modo executável e do contrato `orderId + jobId` publicada nos commits `23a6be9`, `e667863` e `050faf0`. [CI 33108145511](https://github.com/millennium42/camoburguer-demo/actions/runs/33108145511) verde no SHA `050faf0304d4d66fc4a9aa91bb6002f26d5d1dbb`, com todos os gates do workflow, inclusive `test:retention`, restore obrigatório, Docker, seed explícito, smoke, E2E e simulador.
+- **B2.4-HANDOFF-FINAL:** documentação e mapa Graphify publicados no SHA `f21ddc72df959b74bfb6928a86dc3f16e1fb1c98`; [CI 33108450686](https://github.com/millennium42/camoburguer-demo/actions/runs/33108450686) verde nesse SHA, com todos os gates concluídos.
 
 ## Fechamento obrigatório
 
