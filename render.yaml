@@ -9,7 +9,7 @@ services:
   # 2. API Core (Fastify + Domínio Transacional)
   - type: web
     name: camoburguer-api
-    env: node
+    runtime: node
     plan: free
     healthCheckPath: /health
     buildCommand: npm ci
@@ -53,7 +53,7 @@ services:
   # 3. Print Bridge Service (Fastify)
   - type: web
     name: camoburguer-bridge
-    env: node
+    runtime: node
     plan: free
     healthCheckPath: /health
     buildCommand: npm ci

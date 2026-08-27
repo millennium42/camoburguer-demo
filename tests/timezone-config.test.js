@@ -21,6 +21,8 @@ test("Compose pins database startup and every service timezone", () => {
 
 test("Render native services pin their process timezone without changing plans", () => {
   const blueprint = read("render.yaml");
+  assert.equal(blueprint.match(/runtime: node/g)?.length, 2);
+  assert.doesNotMatch(blueprint, /^\s+env: node/m);
   assert.equal(blueprint.match(/key: TZ\s+value: America\/Sao_Paulo/g)?.length, 2);
   assert.equal(blueprint.match(/plan: free/g)?.length, 3);
 });
