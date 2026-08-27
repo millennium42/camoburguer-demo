@@ -1,4 +1,44 @@
-﻿# Handoff Detalhado: Bloco 1.5 - Trilha de Auditoria
+﻿# Handoff Atual — Bloco 2 (27/08/2026)
+
+## Estado comprovado
+
+- Checkout WSL: `/home/millennium42/camoburguer-demo`, branch
+  `codex/bloco-2-dados-recuperacao`.
+- Implementados os blocos 2.1, 2.2 e 2.3 localmente, além de 2.4 (retenção
+  versionada, relógio de entrega, redator/guards, preview, apply, CLI, retry de
+  spool e script diário). O `render.yaml` ativo não recebeu cron pago.
+- Último CI remoto verde anterior à retenção: [run 33102181696](https://github.com/millennium42/camoburguer-demo/actions/runs/33102181696), SHA `ca8010a6191552be169d98aafa6a2e21f9545866`.
+- O SHA final desta sessão ainda precisa ser publicado e verificado no CI; não
+  declarar entrega concluída antes dessa URL/conclusão.
+
+## Comandos de verificação
+
+```bash
+TEST_MIGRATIONS_DATABASE_URL=postgres://camoburguer:camoburguer@127.0.0.1:55432/camoburguer_migrations_test npm run test:retention
+npm run check
+```
+
+O gate de retenção exige `REQUIRE_RETENTION_TESTS=true` e não permite skip
+silencioso. O script diário exige `DATABASE_URL` e
+`RETENTION_DATABASE_NAME`; o CLI usa dry-run por padrão e só aplica com
+`--apply --confirm-database=NAME`. Falhas de bridge ficam em
+`pending_external_cleanup` e retornam exit code diferente de zero.
+
+## Limites e retomada
+
+- PITR gerenciado ainda não foi comprovado: o conector Render requer
+  reautenticação e o blueprint atual declara plano Free. A documentação oficial
+  informa que PITR é recurso pago; não alterar plano ou gerar custo sem
+  autorização.
+- Preservar as exclusões preexistentes de `patch-h04.mjs`,
+  `patch-tests-h04-fix.mjs`, `patch-tests-h04.mjs` e `patch-types.mjs`.
+- Seguir `AGENTS.md`, `SUBAGENTES.md` e
+  `workflows/ciclo-granular-red-green.md`: uma escritora por vez, RED→GREEN,
+  revisão evidenciada, commit focal, CI remoto e handoff. Nunca interromper
+  subagente em andamento por demora; retomar pelo mesmo ID quando possível.
+
+---
+# Handoff Detalhado: Bloco 1.5 - Trilha de Auditoria
 
 ## 1. Implementação da Tabela `audit_logs`
 - Adicionada a migração da tabela `audit_logs` diretamente no arquivo de schema base (`apps/api/src/db.js`), garantindo integridade transacional (restringindo exclusões do usuário referenciado com `ON DELETE RESTRICT`) e padronização com o timestamp UTC-aware local.

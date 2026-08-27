@@ -72,9 +72,9 @@ tags: [cronograma, roadmap]
 - [ ] Configurar rotinas de Backup Contínuo no banco de dados gerenciado (PITR - Point in Time Recovery).
 
 ### Bloco 2.4: Compliance LGPD
-- [ ] Criar cron job (script executável diário) para rotinas de retenção de dados.
-- [ ] Implementar dry-run do script de anonimização (substituição de nome/telefone/endereço de clientes com +30 dias da entrega).
-- [ ] Garantir que hashes de segurança e integridade transacional financeira (valor da comanda) não sejam quebrados pela anonimização.
+- [x] Criar cron job (script executável diário) para rotinas de retenção de dados (template Render opt-in; ativação ainda requer aprovação).
+- [x] Implementar dry-run do script de anonimização (substituição de nome/telefone/endereço de clientes com +30 dias da entrega).
+- [x] Garantir que hashes de segurança e integridade transacional financeira (valor da comanda) não sejam quebrados pela anonimização.
 
 ---
 

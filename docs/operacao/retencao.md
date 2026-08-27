@@ -1,7 +1,7 @@
 # Retenção de clientes após entrega
 
-Status deste snapshot: relógio e política JSON/guards implementados; serviço,
-CLI e agendamento diário ainda pendentes. Não há anonimização automática ativa.
+Status deste snapshot: relógio, política JSON/guards, serviço, CLI e script
+diário implementados. A execução automática no provedor continua opt-in.
 
 ## Contrato
 
@@ -22,11 +22,12 @@ CLI e agendamento diário ainda pendentes. Não há anonimização automática a
   seus tickets. O guard de impressão usa `FOR SHARE`, inclusive contra updates
   não-chave. O formato normal do ticket permanece inalterado.
 
-## Contrato do job ainda a implementar
+## Job diário implementado
 
-Dry-run padrão em transação somente leitura, sem init/migrations, seed ou chamadas
-que alterem spool. Mostrar apenas contagens, nunca nomes, contatos ou DSN.
-Apply exige ação explícita e confirmação do banco efetivamente conectado.
+O CLI tem dry-run como padrão em transação `REPEATABLE READ READ ONLY`, sem
+`init`/migrations, seed ou chamadas que alterem spool. Mostra apenas contagens,
+nunca nomes, contatos ou DSN. Apply exige `--apply` e
+`--confirm-database=NAME`, conferindo `current_database()` no servidor conectado.
 
 Uma transação deve revisar pedidos antigos e artefatos ligados (comandas,
 financeiro, integrações, auditoria e impressão), preservando operações recentes.
@@ -35,11 +36,15 @@ novos payloads pessoais que cheguem atrasados. Repetição sem mudança é no-op
 Pedidos/prints ocupados ou em envio devem ser adiados com resultado explícito;
 não declarar sucesso completo nem disputar locks em ordem inversa com o worker.
 
-Registrar resultado em `privacy_requests` com política/chave próprias. Confirmar
-limpeza autenticada do spool depois do commit; falha deixa pendência persistida,
-recuperável na próxima execução. Interrupção após o commit não perde essa fila.
+Registrar resultado em `privacy_requests` com política/chave próprias. A limpeza
+autenticada do spool ocorre depois do commit, em lotes de até 100 artefatos;
+falha deixa `pending_external_cleanup`, recuperável na próxima execução.
+Interrupção após o commit não perde essa fila. Pedidos/prints ocupados são
+adiados com `SKIP LOCKED`.
 Não alterar a operação administrativa manual `/lgpd/anonymize` nem os backups.
 
-O agendamento deve executar uma vez por dia; templates não equivalem a ativação
-no provedor. Aprovação de plano/custo continua obrigatória para recursos pagos.
+O script executável `scripts/retention-daily.sh` agenda uma execução por dia;
+o template Render está em [retencao-cron.md](retencao-cron.md), mas templates
+não equivalem a ativação no provedor. Aprovação de plano/custo continua
+obrigatória para recursos pagos.
 Após restaurar um backup, reaplicar a política antes de expor os dados recuperados.
