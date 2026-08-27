@@ -11,6 +11,10 @@ export const migrationManifest = Object.freeze([
     version: 1,
     name: "001_initial_schema.up.sql",
     sql: initialSql,
+    down: readFileSync(
+      new URL("../migrations/001_initial_schema.down.sql", import.meta.url),
+      "utf8",
+    ),
   }),
 ]);
 
@@ -43,11 +47,68 @@ function checksum(sql) {
   return createHash("sha256").update(sql, "utf8").digest("hex");
 }
 
-export async function runMigrations(pool, { migrations = migrationManifest } = {}) {
+function assertRollbackTarget(pool, environment, confirmDatabase) {
+  let url;
+  try {
+    url = new URL(pool.options?.connectionString);
+  } catch {
+    throw new Error("unsafe rollback: explicit test connection required");
+  }
+  const routingKeys = new Set(["host", "hostaddr", "port", "database", "dbname", "service"]);
+  if (
+    environment !== "test" ||
+    !["postgres:", "postgresql:"].includes(url.protocol) ||
+    url.hostname !== "127.0.0.1" ||
+    !["5432", "55432"].includes(url.port) ||
+    !/^camoburguer_[a-z0-9_]+_test$/.test(confirmDatabase || "") ||
+    url.pathname !== `/${confirmDatabase}` ||
+    [...url.searchParams.keys()].some((key) => routingKeys.has(key.toLowerCase()))
+  )
+    throw new Error("unsafe rollback: APP_ENV=test and confirmed loopback test database required");
+}
+
+async function assertEmptyForRollback(client) {
+  const { rows: tables } = await client.query(
+    "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename",
+  );
+  const quote = (name) => `public."${name.replaceAll('"', '""')}"`;
+  if (tables.length) {
+    await client.query(
+      `LOCK TABLE ${tables.map(({ tablename }) => quote(tablename)).join(", ")} IN ACCESS EXCLUSIVE MODE`,
+    );
+  }
+  for (const { tablename } of tables) {
+    if (tablename === "schema_migrations") continue;
+    const predicate =
+      tablename === "stock_balances"
+        ? " WHERE quantity <> 0 OR category NOT IN ('xis', 'dog', 'hamburguer')"
+        : "";
+    const {
+      rows: [{ populated }],
+    } = await client.query(
+      `SELECT EXISTS(SELECT 1 FROM ${quote(tablename)}${predicate}) AS populated`,
+    );
+    if (populated) throw new Error(`unsafe rollback: ${tablename} contains data`);
+  }
+}
+
+export async function runMigrations(
+  pool,
+  { migrations = migrationManifest, direction = "up", environment, confirmDatabase } = {},
+) {
+  if (!["up", "down"].includes(direction)) throw new Error("unsupported migration direction");
+  if (direction === "down") assertRollbackTarget(pool, environment, confirmDatabase);
   validateManifest(migrations);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    if (direction === "down") {
+      const {
+        rows: [{ database }],
+      } = await client.query("SELECT current_database() AS database");
+      if (database !== confirmDatabase)
+        throw new Error("unsafe rollback: server identity mismatch");
+    }
     await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
       "camoburguer:schema_migrations",
     ]);
@@ -74,6 +135,17 @@ export async function runMigrations(pool, { migrations = migrationManifest } = {
       if (actual.name !== expected.name || actual.checksum !== checksum(expected.sql)) {
         throw new Error(`migration checksum drift: version ${actual.version}`);
       }
+    }
+    if (direction === "down") {
+      const latest = migrations[applied.length - 1];
+      if (latest) {
+        if (!latest.down?.trim()) throw new Error("migration down SQL is required");
+        await assertEmptyForRollback(client);
+        await client.query(latest.down);
+        await client.query("DELETE FROM schema_migrations WHERE version = $1", [latest.version]);
+      }
+      await client.query("COMMIT");
+      return { rolledBack: latest ? [{ version: latest.version, name: latest.name }] : [] };
     }
     for (const migration of migrations.slice(applied.length)) {
       const migrationChecksum = checksum(migration.sql);
